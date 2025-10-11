@@ -57,9 +57,14 @@ body {
     transform: scaleY(0);
     transform-origin: top;
     transition: transform 0.3s ease;
+    z-index: 10;
 }
 #lang-options.visible { transform: scaleY(1); }
-#lang-options button { background: none; border: none; font-size: 24px; cursor: pointer; padding: 5px; border-radius: 4px; }
+#lang-options button { 
+    background: none; border: none; font-size: 16px; cursor: pointer; 
+    padding: 8px 12px; border-radius: 4px; color: var(--text-color);
+    display: flex; align-items: center; gap: 8px;
+}
 #lang-options button:hover { background-color: rgba(159, 80, 255, 0.3); }
 
 .header-button {
@@ -98,6 +103,7 @@ button {
     border-radius: 12px; padding: 15px 30px; min-width: 300px; cursor: pointer;
     backdrop-filter: blur(5px);
     position: relative; overflow: hidden; transition: color 0.3s ease;
+    display: flex; justify-content: center; align-items: center;
 }
 .glow-on-hover:before {
     content: ''; position: absolute; top: 0; left: -100%;
@@ -147,8 +153,8 @@ input:focus { outline: none; border-color: var(--success-color); }
 #profile-details .level-info { font-size: 1.2rem; }
 .xp-bar { width: 100%; height: 15px; background-color: rgba(255, 255, 255, 0.1); border-radius: 10px; margin-top: 10px; overflow: hidden; }
 .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--success-color), #2ECC71); border-radius: 10px; transition: width 0.5s ease-in-out; }
-.shark-image-container { margin-top: auto; padding-top: 20px; }
-.shark-image-container img { width: 200px; height: 200px; border-radius: 50%; border: 2px solid var(--accent-color); }
+.shark-image-container { margin-bottom: 20px; }
+.shark-image-container img { width: 250px; height: 250px; border-radius: 50%; border: 2px solid var(--accent-color); }
 .back-button { margin: 20px auto 0 auto; }
 
 /* Lecture & Dictionary Screens */
@@ -164,15 +170,13 @@ input:focus { outline: none; border-color: var(--success-color); }
 #training-screen { align-items: center; justify-content: center; gap: 20px; }
 .training-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 600px; }
 .training-progress { font-size: 1.2rem; opacity: 0.8; }
-.training-exit-btn { min-width: auto; padding: 5px 10px; }
 .training-word { font-size: 4rem; font-weight: 900; color: #FFD700; text-align: center; }
 .training-input { max-width: 500px; }
 .training-feedback { font-size: 1.5rem; font-weight: bold; min-height: 50px; text-align: center; }
-.training-check-btn { min-width: 200px; }
-.xp-gain {
-    animation: xp-animation 1s ease-out;
-    color: var(--success-color);
-}
+.training-buttons { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+.training-check-btn { min-width: 250px; }
+.training-exit-btn { min-width: 300px; font-size: 20px; padding: 18px; }
+.xp-gain { animation: xp-animation 1s ease-out; color: var(--success-color); }
 @keyframes xp-animation {
     0% { transform: translateY(0) scale(1); opacity: 1; }
     100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
@@ -188,14 +192,13 @@ input:focus { outline: none; border-color: var(--success-color); }
 .diff-correct { color: var(--success-color); }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
-
 /* Mobile Adaptivity */
 @media (max-width: 768px) {
     .title { font-size: 1.8rem; margin-bottom: 20px; }
     .profile-layout { flex-direction: column; }
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0;}
     #leaderboard-container { max-height: 250px; }
-    .shark-image-container img { width: 120px; height: 120px; }
+    .shark-image-container img { width: 150px; height: 150px; }
     button { min-width: 250px; }
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }

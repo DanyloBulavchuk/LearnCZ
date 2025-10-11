@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 words: [],
                 index: 0,
                 results: [],
-                mode: '', // 'random' or 'specific'
-                direction: '', // 'cz_to_lang' or 'lang_to_cz'
+                mode: '',
+                direction: '',
                 selectedLectures: [],
             }
         },
@@ -34,24 +34,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
-                const target = e.target;
-                if (target.matches('[data-screen]')) this.navigateTo(target.dataset.screen);
-                if (target.matches('[data-action]')) this.handleAction(target.dataset.action, target.dataset);
-                if (!this.elements.langSwitcher.contains(target)) {
+                const target = e.target.closest('[data-screen], [data-action]');
+                if (target) {
+                    if (target.matches('[data-screen]')) this.navigateTo(target.dataset.screen);
+                    if (target.matches('[data-action]')) this.handleAction(target.dataset.action, target.dataset);
+                }
+                if (!this.elements.langSwitcher.contains(e.target)) {
                     this.elements.langOptions.classList.remove('visible');
                 }
             });
 
-            this.elements.profileButton.addEventListener('click', () => this.navigateTo('profile-screen'));
             this.elements.currentLangBtn.addEventListener('click', () => this.elements.langOptions.classList.toggle('visible'));
-            this.elements.langOptions.addEventListener('click', (e) => {
-                if (e.target.matches('[data-lang]')) {
-                    this.setLanguage(e.target.dataset.lang);
-                    this.elements.langOptions.classList.remove('visible');
-                }
-            });
         },
-
+        
         navigateTo(screenId) {
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
@@ -91,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 'show-dictionary': () => this.showLectureSelection('dictionary'),
                 'select-lecture': (ds) => {
-                    const btn = document.querySelector(`[data-lecture="${ds.lecture}"]`);
+                    const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${ds.lecture}"]`);
                     if (btn) {
                         const lectureNum = parseInt(ds.lecture, 10);
                         const index = this.state.currentTraining.selectedLectures.indexOf(lectureNum);
@@ -106,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 'start-selected-lectures-training': () => {
                     if (this.state.currentTraining.selectedLectures.length > 0) {
+                        this.state.currentTraining.mode = 'specific_selected';
                         this.navigateTo('direction-selection-screen');
                     } else {
                         alert('Будь ласка, оберіть хоча б одну лекцію.');
@@ -116,15 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.state.currentTraining.direction = ds.direction;
                     const mode = this.state.currentTraining.mode;
                     let words = [];
-                    if (mode === 'random') {
-                        words = this.state.words;
-                    } else if (mode === 'specific_all') {
+                    if (mode === 'random' || mode === 'specific_all') {
                         words = this.state.words;
                     } else if (mode === 'specific_selected') {
                         const selected = this.state.currentTraining.selectedLectures;
                         words = this.state.words.filter(w => selected.includes(w.lecture));
-                    } else if (mode === 'specific_single') {
-                        words = this.state.words.filter(w => w.lecture == this.state.currentTraining.lecture);
                     }
                     this.startTraining(words, true);
                 },
@@ -137,28 +129,31 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.currentLang = lang;
             const flags = { ua: '🇺🇦', en: '🇬🇧', ru: '🇷🇺' };
             this.elements.currentLangBtn.textContent = flags[lang];
-            this.elements.langSwitcher.querySelectorAll('button').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.lang === lang);
-            });
             this.updateAllTexts();
         },
 
         updateAllTexts() {
             const texts = this.state.texts[this.state.currentLang];
             if (!texts) return;
+
             document.querySelectorAll('[data-i18n]').forEach(el => {
-                if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n];
+                const key = el.dataset.i18n;
+                if (texts[key]) el.textContent = texts[key];
             });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder];
+            });
+
+            document.querySelectorAll('[data-lecture-title]').forEach(el => {
+                 el.textContent = `${texts.lecture || 'Лекція'} №${el.dataset.lectureTitle}`;
             });
         },
 
         async checkSession() {
             try {
+                await this.loadInitialData();
                 const response = await fetch('/api/session');
                 const data = await response.json();
-                await this.loadInitialData();
                 if (data.user) {
                     this.state.currentUser = data.user;
                     this.updateHeader();
@@ -268,9 +263,9 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
                 button.className = 'glow-on-hover';
-                button.textContent = `Лекція №${lectureNum}`;
                 button.dataset.action = mode === 'training' ? 'select-lecture' : 'select-lecture-for-dictionary';
                 button.dataset.lecture = lectureNum;
+                button.dataset.lectureTitle = lectureNum;
                 container.appendChild(button);
             });
 
@@ -279,18 +274,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 startBtn.className = 'glow-on-hover';
                 startBtn.dataset.action = 'start-selected-lectures-training';
                 startBtn.dataset.i18n = 'start_training';
-                this.state.currentTraining.mode = 'specific_selected';
                 actionsContainer.appendChild(startBtn);
             }
             this.updateAllTexts();
         },
         
-        startTrainingForLecture(lectureNum) {
-            this.state.currentTraining.mode = 'specific_single';
-            this.state.currentTraining.lecture = lectureNum;
-            this.navigateTo('direction-selection-screen');
-        },
-
         showDictionaryForLecture(lectureNum) {
             this.navigateTo('dictionary-view-screen');
             const container = document.getElementById('dictionary-words-container');
@@ -319,22 +307,20 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCurrentWord() {
             const screen = document.getElementById('training-screen-active');
             if (!screen || this.state.currentTraining.index >= this.state.currentTraining.words.length) {
-                this.showResults();
-                return;
+                this.showResults(); return;
             }
             const T = this.state.texts[this.state.currentLang];
             const { index, words, direction } = this.state.currentTraining;
             const wordData = words[index];
-            
             screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
-            screen.querySelector('.training-word').textContent = direction === 'cz_to_lang' ? wordData.CZ : (wordData[this.state.currentLang.toUpperCase()] || wordData.UA);
-            
+            const langKey = this.state.currentLang.toUpperCase();
+            screen.querySelector('.training-word').textContent = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
             const inputEl = screen.querySelector('.training-input');
             inputEl.value = ''; inputEl.disabled = false; inputEl.focus();
             screen.querySelector('.training-feedback').innerHTML = '';
         },
 
-        checkAnswer() {
+        async checkAnswer() {
             const screen = document.getElementById('training-screen-active');
             const { index, words, direction, results } = this.state.currentTraining;
             const wordData = words[index];
@@ -343,25 +329,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const T = this.state.texts[this.state.currentLang];
             const langKey = this.state.currentLang.toUpperCase();
 
-            const userAnswer = inputEl.value.trim();
-            const correctAnswersRaw = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
+            const userAnswer = inputEl.value.trim().toLowerCase();
+            
+            // Get raw correct answer string
+            const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
+            
+            // **NEW LOGIC: Remove parentheses before splitting**
+            const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
+
             const correctAnswers = correctAnswersRaw.toLowerCase().split(',').map(s => s.trim());
-            const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
+            const isCorrect = correctAnswers.includes(userAnswer);
             
             results.push({
-                wordData,
-                userAnswer: userAnswer,
-                isCorrect,
                 question: direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA),
+                userAnswer: inputEl.value.trim(), 
+                isCorrect, 
                 correctAnswer: correctAnswers[0]
             });
             
             if (isCorrect) {
                 feedbackEl.innerHTML = `<span class="xp-gain">${T.correct} +10 XP</span>`;
-                fetch('/api/update_xp', {
+                const response = await fetch('/api/update_xp', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ xp: 10 })
-                }).then(res => res.json()).then(data => { this.state.currentUser.xp = data.new_xp; });
+                });
+                if(response.ok) {
+                    const data = await response.json();
+                    this.state.currentUser.xp = data.new_xp;
+                }
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
             }
@@ -381,33 +376,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const { results } = this.state.currentTraining;
             const correctCount = results.filter(r => r.isCorrect).length;
             summaryEl.innerHTML = `Ваш результат: <b>${correctCount} з ${results.length}</b> (+${correctCount * 10} XP)`;
-
             listEl.innerHTML = '';
             results.forEach((res, index) => {
                 const item = document.createElement('div');
                 item.className = `result-item ${res.isCorrect ? 'correct' : 'incorrect'}`;
-                let answerHTML = res.isCorrect ? `<span class="diff-correct">${res.userAnswer}</span>` : this.generateDiffHtml(res.correctAnswer, res.userAnswer);
-                
+                const answerHTML = this.generateDiffHtml(res.correctAnswer, res.userAnswer);
                 item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(${res.isCorrect ? '+10' : '0'} XP)</span>`;
                 listEl.appendChild(item);
             });
-            // Update leaderboard data after training
             this.loadInitialData();
         },
         
         generateDiffHtml(correct, user) {
             let html = '';
-            for (let i = 0; i < Math.max(correct.length, user.length); i++) {
-                if (user[i] && user[i].toLowerCase() === (correct[i] || '').toLowerCase()) {
+            const userLower = user.toLowerCase();
+            const correctLower = correct.toLowerCase();
+            for (let i = 0; i < user.length; i++) {
+                if (userLower[i] === (correctLower[i] || '')) {
                     html += `<span class="diff-correct">${user[i]}</span>`;
-                } else if (user[i]) {
+                } else {
                     html += `<span class="diff-incorrect">${user[i]}</span>`;
                 }
             }
             return html || '(пусто)';
         },
 
-        // --- Helper Functions ---
         xpToLevel(xp) {
             let level = 1, startXp = 0, needed = 100;
             while (xp >= startXp + needed) {

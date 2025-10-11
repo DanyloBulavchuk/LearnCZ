@@ -14,12 +14,12 @@
         <div id="lang-switcher">
             <button id="current-lang-btn">🇺🇦</button>
             <div id="lang-options" class="hidden">
-                <button data-lang="ua">🇺🇦</button>
-                <button data-lang="en">🇬🇧</button>
-                <button data-lang="ru">🇷🇺</button>
+                <button data-lang="ua">🇺🇦 UA</button>
+                <button data-lang="en">🇬🇧 EN</button>
+                <button data-lang="ru">🇷🇺 RU</button>
             </div>
         </div>
-        <div class="logo">CzechBuddy</div>
+        <div class="logo" data-screen="main-menu-screen" style="cursor: pointer;">CzechBuddy</div>
         <nav><button id="profile-button" class="header-button"></button></nav>
     </header>
 
@@ -68,8 +68,8 @@
                     <div id="leaderboard-container" class="scrollable"></div>
                 </div>
                 <div class="panel right-panel">
-                    <div id="profile-details"></div>
                     <div class="shark-image-container"><img src="{{ url_for('static', filename='shark.png') }}" alt="Shark mascot"></div>
+                    <div id="profile-details"></div>
                 </div>
             </div>
             <button data-screen="main-menu-screen" class="glow-on-hover back-button" data-i18n="back_to_menu"></button>
@@ -91,14 +91,16 @@
         <div id="training-screen">
             <div class="training-header">
                 <div class="training-progress"></div>
-                <button class="glow-on-hover secondary training-exit-btn" data-action="show-results" data-i18n="finish_training"></button>
             </div>
             <div class="training-word"></div>
             <form class="training-form">
                 <input type="text" class="training-input" placeholder="Ваша відповідь..." autocomplete="off">
             </form>
             <div class="training-feedback"></div>
-            <button class="glow-on-hover training-check-btn" data-i18n="check"></button>
+            <div class="training-buttons">
+                <button class="glow-on-hover training-check-btn" data-i18n="check"></button>
+                <button class="glow-on-hover secondary training-exit-btn" data-action="show-results" data-i18n="finish_training"></button>
+            </div>
         </div>
         <div id="results-screen">
             <h1 class="title" data-i18n="results_title"></h1>
