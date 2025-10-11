@@ -33,18 +33,27 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         addEventListeners() {
+            // Use event delegation on the body for dynamic elements
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action]');
                 if (target) {
-                    if (target.matches('[data-screen]')) this.navigateTo(target.dataset.screen);
-                    if (target.matches('[data-action]')) this.handleAction(target.dataset.action, target.dataset);
+                    e.preventDefault();
+                    if (target.dataset.screen) this.navigateTo(target.dataset.screen);
+                    if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
                 }
+            });
+
+            // Specific listeners for static elements
+            this.elements.currentLangBtn.addEventListener('click', (e) => {
+                 e.stopPropagation();
+                this.elements.langOptions.classList.toggle('visible');
+            });
+            
+            document.addEventListener('click', (e) => {
                 if (!this.elements.langSwitcher.contains(e.target)) {
                     this.elements.langOptions.classList.remove('visible');
                 }
             });
-
-            this.elements.currentLangBtn.addEventListener('click', () => this.elements.langOptions.classList.toggle('visible'));
         },
         
         navigateTo(screenId) {
@@ -151,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async checkSession() {
             try {
-                await this.loadInitialData();
+                await this.loadInitialData(); // Load texts first for everyone
                 const response = await fetch('/api/session');
                 const data = await response.json();
                 if (data.user) {
@@ -192,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
                 this.state.currentUser = data.user;
-                await this.loadInitialData(); this.updateHeader(); this.navigateTo('main-menu-screen');
+                this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert('Неправильний нікнейм або PIN-код.'); }
         },
 
@@ -204,32 +213,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
                 this.state.currentUser = data.user;
-                await this.loadInitialData(); this.updateHeader(); this.navigateTo('main-menu-screen');
+                this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert(`Помилка реєстрації: ${await response.text()}`); }
         },
         
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
             this.state.currentUser = null;
-            this.updateHeader(); this.navigateTo('welcome-screen');
+            this.updateHeader();
+            this.navigateTo('welcome-screen');
         },
 
         renderProfile() {
             const detailsContainer = document.getElementById('profile-details');
-            if (!detailsContainer) return;
+            if (!detailsContainer || !this.state.currentUser) return;
             const xp = this.state.currentUser.xp;
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
+            const T = this.state.texts[this.state.currentLang];
 
             detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
-                <div class="level-info">${this.state.texts[this.state.currentLang].level} ${level}</div>
+                <div class="level-info">${T.level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
                 <div>${progress} / ${needed} XP</div>`;
 
             const leaderboardContainer = document.getElementById('leaderboard-container');
             leaderboardContainer.innerHTML = '';
-            this.state.leaderboard.forEach((user, index) => {
+            (this.state.leaderboard || []).forEach((user, index) => {
                 const userLevel = this.xpToLevel(user.xp).level;
                 const userRank = this.getRank(userLevel);
                 const item = document.createElement('div');
@@ -328,25 +339,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const feedbackEl = screen.querySelector('.training-feedback');
             const T = this.state.texts[this.state.currentLang];
             const langKey = this.state.currentLang.toUpperCase();
-
-            const userAnswer = inputEl.value.trim().toLowerCase();
-            
-            // Get raw correct answer string
+            const userAnswer = inputEl.value.trim();
             const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
-            
-            // **NEW LOGIC: Remove parentheses before splitting**
             const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
-
-            const correctAnswers = correctAnswersRaw.toLowerCase().split(',').map(s => s.trim());
-            const isCorrect = correctAnswers.includes(userAnswer);
-            
+            const correctAnswers = correctAnswersRaw.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+            const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
             results.push({
                 question: direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA),
-                userAnswer: inputEl.value.trim(), 
-                isCorrect, 
-                correctAnswer: correctAnswers[0]
+                userAnswer, isCorrect, correctAnswer: correctAnswers[0]
             });
-            
             if (isCorrect) {
                 feedbackEl.innerHTML = `<span class="xp-gain">${T.correct} +10 XP</span>`;
                 const response = await fetch('/api/update_xp', {
@@ -361,7 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
             }
             feedbackEl.style.color = isCorrect ? 'var(--success-color)' : 'var(--danger-color)';
-
             inputEl.disabled = true;
             setTimeout(() => {
                 this.state.currentTraining.index++;
