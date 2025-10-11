@@ -166,9 +166,9 @@ input:focus { outline: none; border-color: var(--success-color); }
 #profile-details .level-info { font-size: 1.2rem; }
 .xp-bar { width: 100%; height: 15px; background-color: rgba(255, 255, 255, 0.1); border-radius: 10px; margin-top: 10px; overflow: hidden; }
 .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--success-color), #2ECC71); border-radius: 10px; transition: width 0.5s ease-in-out; }
-.shark-image-container { margin-bottom: auto; padding-top: 0; margin-top: 20px; }
+.shark-image-container { margin-bottom: auto; padding-top: 0; margin-top: 20px; flex-shrink: 0;}
 .shark-image-container img { width: 250px; height: 250px; border-radius: 50%; border: 2px solid var(--accent-color); }
-.back-button { margin: 20px auto 0 auto; }
+.back-button { margin: 20px auto 0 auto; flex-shrink: 0; }
 
 /* Lecture & Dictionary Screens */
 .lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; padding: 10px; flex-grow: 1; }
@@ -208,7 +208,8 @@ input:focus { outline: none; border-color: var(--success-color); }
 /* Mobile Adaptivity */
 @media (max-width: 768px) {
     .title { font-size: 1.8rem; margin-bottom: 20px; }
-    .profile-layout { flex-direction: column; }
+    #profile-screen { justify-content: space-between; }
+    .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 0;}
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0;}
     #leaderboard-container { max-height: 250px; }
     .shark-image-container img { width: 150px; height: 150px; }
