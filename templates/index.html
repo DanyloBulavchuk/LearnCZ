@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CzechBuddy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header id="main-header" class="hidden">
+        <div class="logo">CzechBuddy</div>
+        <nav>
+            <button id="profile-button" class="header-button"></button>
+        </nav>
+    </header>
+
+    <main id="app-container"></main>
+
+    <div id="templates" style="display: none;">
+
+        <div id="welcome-screen">
+            <h1 class="title">Ласкаво просимо!</h1>
+            <div class="button-group">
+                <button data-screen="login-screen">Вхід</button>
+                <button data-screen="register-screen">Реєстрація</button>
+            </div>
+        </div>
+
+        <div id="login-screen">
+            <h1 class="title">Вхід</h1>
+            <form id="login-form">
+                <input type="text" id="login-username" placeholder="Нікнейм" required>
+                <input type="password" id="login-pin" placeholder="PIN-код (4 цифри)" required pattern="\d{4}">
+                <button type="submit">Увійти</button>
+                <button type="button" class="secondary" data-screen="welcome-screen">Назад</button>
+            </form>
+        </div>
+
+        <div id="register-screen">
+            <h1 class="title">Реєстрація</h1>
+            <form id="register-form">
+                <input type="text" id="register-username" placeholder="Нікнейм (3-24 символи)" required minlength="3" maxlength="24">
+                <input type="password" id="register-pin" placeholder="Створіть PIN-код (4 цифри)" required pattern="\d{4}">
+                <button type="submit">Зареєструватися</button>
+                <button type="button" class="secondary" data-screen="welcome-screen">Назад</button>
+            </form>
+        </div>
+
+        <div id="main-menu-screen">
+            <h1 class="title">Оберіть режим</h1>
+             <div class="button-group">
+                <button id="random-training-btn">Рандомне навчання</button>
+                <button id="specific-training-btn">Конкретне навчання</button>
+                <button id="dictionary-btn">Словник</button>
+                <button id="logout-btn" class="danger">Вихід</button>
+            </div>
+        </div>
+
+        <div id="profile-screen">
+            <div class="profile-header">
+                <h1 class="title">Мій профіль</h1>
+            </div>
+            <div class="profile-layout">
+                <div class="panel left-panel">
+                    <h2>Рейтинг гравців</h2>
+                    <div id="leaderboard-container" class="scrollable"></div>
+                </div>
+                <div class="panel right-panel">
+                    <div id="profile-details">
+                         </div>
+                    <div class="shark-image-container">
+                        <img src="{{ url_for('static', filename='shark.png') }}" alt="Shark mascot">
+                    </div>
+                </div>
+            </div>
+             <button data-screen="main-menu-screen" class="back-button">Повернутися до меню</button>
+        </div>
+
+        </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
