@@ -12,62 +12,56 @@
 <body>
     <header id="main-header" class="hidden">
         <div id="lang-switcher">
-            <button data-lang="ua">🇺🇦</button>
-            <button data-lang="en">🇬🇧</button>
-            <button data-lang="ru">🇷🇺</button>
+            <button id="current-lang-btn">🇺🇦</button>
+            <div id="lang-options" class="hidden">
+                <button data-lang="ua">🇺🇦</button>
+                <button data-lang="en">🇬🇧</button>
+                <button data-lang="ru">🇷🇺</button>
+            </div>
         </div>
         <div class="logo">CzechBuddy</div>
-        <nav>
-            <button id="profile-button" class="header-button"></button>
-        </nav>
+        <nav><button id="profile-button" class="header-button"></button></nav>
     </header>
 
     <main id="app-container"></main>
 
     <div id="templates" style="display: none;">
-
         <div id="welcome-screen">
             <h1 class="title" data-i18n="welcome"></h1>
             <div class="button-group">
-                <button data-screen="login-screen" data-i18n="login"></button>
-                <button data-screen="register-screen" data-i18n="register"></button>
+                <button class="glow-on-hover" data-screen="login-screen" data-i18n="login"></button>
+                <button class="glow-on-hover" data-screen="register-screen" data-i18n="register"></button>
             </div>
         </div>
-
         <div id="login-screen">
             <h1 class="title" data-i18n="login"></h1>
             <form id="login-form">
                 <input type="text" id="login-username" data-i18n-placeholder="enter_nickname" required>
                 <input type="password" id="login-pin" data-i18n-placeholder="enter_pin" required pattern="\d{4}">
-                <button type="submit" data-i18n="login"></button>
-                <button type="button" class="secondary" data-screen="welcome-screen" data-i18n="back"></button>
+                <button type="submit" class="glow-on-hover" data-i18n="login"></button>
+                <button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button>
             </form>
         </div>
-
         <div id="register-screen">
             <h1 class="title" data-i18n="register"></h1>
             <form id="register-form">
                 <input type="text" id="register-username" data-i18n-placeholder="enter_nickname" required minlength="3" maxlength="24">
                 <input type="password" id="register-pin" data-i18n-placeholder="create_pin" required pattern="\d{4}">
-                <button type="submit" data-i18n="register"></button>
-                <button type="button" class="secondary" data-screen="welcome-screen" data-i18n="back"></button>
+                <button type="submit" class="glow-on-hover" data-i18n="register"></button>
+                <button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button>
             </form>
         </div>
-
         <div id="main-menu-screen">
             <h1 class="title" data-i18n="main_menu_title"></h1>
-             <div class="button-group">
-                <button data-action="start-random-training" data-i18n="random_training"></button>
-                <button data-action="start-specific-training" data-i18n="specific_training"></button>
-                <button data-action="show-dictionary" data-i18n="dictionary"></button>
-                <button id="logout-btn" class="danger" data-i18n="logout"></button>
+            <div class="button-group">
+                <button class="glow-on-hover" data-action="start-random-training" data-i18n="random_training"></button>
+                <button class="glow-on-hover" data-action="start-specific-training" data-i18n="specific_training"></button>
+                <button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button>
+                <button id="logout-btn" class="glow-on-hover danger" data-i18n="logout"></button>
             </div>
         </div>
-
         <div id="profile-screen">
-            <div class="profile-header">
-                <h1 class="title" data-i18n="profile_title"></h1>
-            </div>
+            <h1 class="title" data-i18n="profile_title"></h1>
             <div class="profile-layout">
                 <div class="panel left-panel">
                     <h2 data-i18n="leaderboard_title"></h2>
@@ -75,55 +69,48 @@
                 </div>
                 <div class="panel right-panel">
                     <div id="profile-details"></div>
-                    <div class="shark-image-container">
-                        <img src="{{ url_for('static', filename='shark.png') }}" alt="Shark mascot">
-                    </div>
+                    <div class="shark-image-container"><img src="{{ url_for('static', filename='shark.png') }}" alt="Shark mascot"></div>
                 </div>
             </div>
-             <button data-screen="main-menu-screen" class="back-button" data-i18n="back_to_menu"></button>
+            <button data-screen="main-menu-screen" class="glow-on-hover back-button" data-i18n="back_to_menu"></button>
         </div>
-        
         <div id="lecture-selection-screen">
             <h1 class="title" data-i18n="choose_lecture"></h1>
             <div id="lecture-buttons-container" class="lecture-grid scrollable"></div>
-            <button type="button" class="secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
+            <div id="lecture-actions-container"></div>
+            <button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
-
         <div id="direction-selection-screen">
             <h1 class="title" data-i18n="direction_title"></h1>
             <div class="button-group">
-                <button data-action="set-direction" data-direction="cz_to_lang" data-i18n="cz_to_lang"></button>
-                <button data-action="set-direction" data-direction="lang_to_cz" data-i18n="lang_to_cz"></button>
+                <button class="glow-on-hover" data-action="set-direction" data-direction="cz_to_lang" data-i18n="cz_to_lang"></button>
+                <button class="glow-on-hover" data-action="set-direction" data-direction="lang_to_cz" data-i18n="lang_to_cz"></button>
             </div>
-            <button type="button" class="secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
+            <button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
-
         <div id="training-screen">
             <div class="training-header">
                 <div class="training-progress"></div>
-                <button class="secondary training-exit-btn" data-screen="main-menu-screen">X</button>
+                <button class="glow-on-hover secondary training-exit-btn" data-action="show-results" data-i18n="finish_training"></button>
             </div>
             <div class="training-word"></div>
             <form class="training-form">
                 <input type="text" class="training-input" placeholder="Ваша відповідь..." autocomplete="off">
             </form>
             <div class="training-feedback"></div>
-            <button class="training-check-btn" data-i18n="check"></button>
+            <button class="glow-on-hover training-check-btn" data-i18n="check"></button>
         </div>
-
         <div id="results-screen">
             <h1 class="title" data-i18n="results_title"></h1>
             <div id="results-summary"></div>
             <div id="results-list" class="scrollable"></div>
-            <button class="back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
+            <button class="glow-on-hover back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
         </div>
-
         <div id="dictionary-view-screen">
              <h1 class="title" data-i18n="dictionary"></h1>
              <div id="dictionary-words-container" class="scrollable dictionary-list"></div>
-             <button type="button" class="secondary back-button" data-action="show-dictionary" data-i18n="back"></button>
+             <button type="button" class="glow-on-hover secondary back-button" data-action="show-dictionary" data-i18n="back"></button>
         </div>
-
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

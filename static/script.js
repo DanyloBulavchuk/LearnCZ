@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 results: [],
                 mode: '', // 'random' or 'specific'
                 direction: '', // 'cz_to_lang' or 'lang_to_cz'
+                selectedLectures: [],
             }
         },
 
@@ -22,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
             mainHeader: document.getElementById('main-header'),
             profileButton: document.getElementById('profile-button'),
             langSwitcher: document.getElementById('lang-switcher'),
+            currentLangBtn: document.getElementById('current-lang-btn'),
+            langOptions: document.getElementById('lang-options'),
         },
 
         init() {
@@ -29,16 +32,23 @@ document.addEventListener('DOMContentLoaded', () => {
             this.checkSession();
         },
 
-        // --- Core Navigation and Listeners ---
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
                 const target = e.target;
                 if (target.matches('[data-screen]')) this.navigateTo(target.dataset.screen);
                 if (target.matches('[data-action]')) this.handleAction(target.dataset.action, target.dataset);
+                if (!this.elements.langSwitcher.contains(target)) {
+                    this.elements.langOptions.classList.remove('visible');
+                }
             });
+
             this.elements.profileButton.addEventListener('click', () => this.navigateTo('profile-screen'));
-            this.elements.langSwitcher.addEventListener('click', (e) => {
-                if (e.target.matches('[data-lang]')) this.setLanguage(e.target.dataset.lang);
+            this.elements.currentLangBtn.addEventListener('click', () => this.elements.langOptions.classList.toggle('visible'));
+            this.elements.langOptions.addEventListener('click', (e) => {
+                if (e.target.matches('[data-lang]')) {
+                    this.setLanguage(e.target.dataset.lang);
+                    this.elements.langOptions.classList.remove('visible');
+                }
             });
         },
 
@@ -58,50 +68,75 @@ document.addEventListener('DOMContentLoaded', () => {
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
                 '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
-                '.training-form': (e) => {
-                    e.preventDefault();
-                    this.checkAnswer(activeScreen);
-                }
+                '.training-form': (e) => { e.preventDefault(); this.checkAnswer(); }
             };
-
             for (const selector in formActions) {
                 const form = activeScreen.querySelector(selector);
                 if (form) form.addEventListener('submit', formActions[selector]);
             }
-            
-            if (activeScreen.querySelector('#logout-btn')) {
-                activeScreen.querySelector('#logout-btn').addEventListener('click', () => this.handleLogout());
-            }
-             if (activeScreen.querySelector('.training-check-btn')) {
-                activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer(activeScreen));
-            }
-
-
+            if (activeScreen.querySelector('#logout-btn')) activeScreen.querySelector('#logout-btn').addEventListener('click', () => this.handleLogout());
+            if (activeScreen.querySelector('.training-check-btn')) activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer());
             if (screenId === 'profile-screen') this.renderProfile();
         },
 
         handleAction(action, dataset) {
             const actions = {
-                'start-random-training': () => { this.state.currentTraining.mode = 'random'; this.navigateTo('direction-selection-screen'); },
-                'start-specific-training': () => { this.state.currentTraining.mode = 'specific'; this.showLectureSelection('training'); },
+                'start-random-training': () => {
+                    this.state.currentTraining.mode = 'random';
+                    this.navigateTo('direction-selection-screen');
+                },
+                'start-specific-training': () => {
+                    this.state.currentTraining.mode = 'specific';
+                    this.showLectureSelection('training');
+                },
                 'show-dictionary': () => this.showLectureSelection('dictionary'),
-                'select-lecture-for-training': () => this.startTrainingForLecture(dataset.lecture),
-                'select-lecture-for-dictionary': () => this.showDictionaryForLecture(dataset.lecture),
-                'set-direction': () => {
-                    this.state.currentTraining.direction = dataset.direction;
-                    if (this.state.currentTraining.mode === 'random') {
-                        this.startTraining(this.state.words, true);
-                    } else { // From specific lecture
-                        this.startTrainingForLecture(this.state.currentTraining.lecture);
+                'select-lecture': (ds) => {
+                    const btn = document.querySelector(`[data-lecture="${ds.lecture}"]`);
+                    if (btn) {
+                        const lectureNum = parseInt(ds.lecture, 10);
+                        const index = this.state.currentTraining.selectedLectures.indexOf(lectureNum);
+                        if (index > -1) {
+                            this.state.currentTraining.selectedLectures.splice(index, 1);
+                            btn.classList.remove('selected');
+                        } else {
+                            this.state.currentTraining.selectedLectures.push(lectureNum);
+                            btn.classList.add('selected');
+                        }
                     }
-                }
+                },
+                'start-selected-lectures-training': () => {
+                    if (this.state.currentTraining.selectedLectures.length > 0) {
+                        this.navigateTo('direction-selection-screen');
+                    } else {
+                        alert('Будь ласка, оберіть хоча б одну лекцію.');
+                    }
+                },
+                'select-lecture-for-dictionary': (ds) => this.showDictionaryForLecture(ds.lecture),
+                'set-direction': (ds) => {
+                    this.state.currentTraining.direction = ds.direction;
+                    const mode = this.state.currentTraining.mode;
+                    let words = [];
+                    if (mode === 'random') {
+                        words = this.state.words;
+                    } else if (mode === 'specific_all') {
+                        words = this.state.words;
+                    } else if (mode === 'specific_selected') {
+                        const selected = this.state.currentTraining.selectedLectures;
+                        words = this.state.words.filter(w => selected.includes(w.lecture));
+                    } else if (mode === 'specific_single') {
+                        words = this.state.words.filter(w => w.lecture == this.state.currentTraining.lecture);
+                    }
+                    this.startTraining(words, true);
+                },
+                'show-results': () => this.showResults(),
             };
-            if (actions[action]) actions[action]();
+            if (actions[action]) actions[action](dataset);
         },
 
-        // --- Localization ---
         setLanguage(lang) {
             this.state.currentLang = lang;
+            const flags = { ua: '🇺🇦', en: '🇬🇧', ru: '🇷🇺' };
+            this.elements.currentLangBtn.textContent = flags[lang];
             this.elements.langSwitcher.querySelectorAll('button').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.lang === lang);
             });
@@ -111,35 +146,27 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAllTexts() {
             const texts = this.state.texts[this.state.currentLang];
             if (!texts) return;
-
             document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.dataset.i18n;
-                if (texts[key]) el.textContent = texts[key];
+                if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n];
             });
-             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                const key = el.dataset.i18nPlaceholder;
-                if (texts[key]) el.placeholder = texts[key];
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder];
             });
         },
 
-        // --- Authentication & Data Loading ---
         async checkSession() {
             try {
                 const response = await fetch('/api/session');
                 const data = await response.json();
+                await this.loadInitialData();
                 if (data.user) {
                     this.state.currentUser = data.user;
-                    await this.loadInitialData();
                     this.updateHeader();
                     this.navigateTo('main-menu-screen');
                 } else {
-                    await this.loadInitialData(); // Load texts even for guests
                     this.navigateTo('welcome-screen');
                 }
-            } catch (e) {
-                console.error("Session check failed:", e);
-                this.navigateTo('welcome-screen');
-            }
+            } catch (e) { this.navigateTo('welcome-screen'); }
         },
         
         async loadInitialData() {
@@ -164,63 +191,46 @@ document.addEventListener('DOMContentLoaded', () => {
         async handleLoginSubmit(e, screen) {
             e.preventDefault();
             const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    username: screen.querySelector('#login-username').value, 
-                    pin: screen.querySelector('#login-pin').value 
-                }),
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: screen.querySelector('#login-username').value, pin: screen.querySelector('#login-pin').value }),
             });
             if (response.ok) {
                 const data = await response.json();
                 this.state.currentUser = data.user;
-                await this.loadInitialData();
-                this.updateHeader();
-                this.navigateTo('main-menu-screen');
+                await this.loadInitialData(); this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert('Неправильний нікнейм або PIN-код.'); }
         },
 
         async handleRegisterSubmit(e, screen) {
              const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    username: screen.querySelector('#register-username').value,
-                    pin: screen.querySelector('#register-pin').value
-                }),
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: screen.querySelector('#register-username').value, pin: screen.querySelector('#register-pin').value }),
             });
             if (response.ok) {
                 const data = await response.json();
                 this.state.currentUser = data.user;
-                await this.loadInitialData();
-                this.updateHeader();
-                this.navigateTo('main-menu-screen');
+                await this.loadInitialData(); this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert(`Помилка реєстрації: ${await response.text()}`); }
         },
         
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
             this.state.currentUser = null;
-            this.updateHeader();
-            this.navigateTo('welcome-screen');
+            this.updateHeader(); this.navigateTo('welcome-screen');
         },
 
-        // --- Profile & Leaderboard ---
         renderProfile() {
             const detailsContainer = document.getElementById('profile-details');
             if (!detailsContainer) return;
-            
             const xp = this.state.currentUser.xp;
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
 
-            detailsContainer.innerHTML = `
-                <div class="username">${this.state.currentUser.username}</div>
+            detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
-                <div class="level-info" data-i18n="level">Рівень ${level}</div>
+                <div class="level-info">${this.state.texts[this.state.currentLang].level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
-                <div>${progress} / ${needed} XP</div>
-            `;
+                <div>${progress} / ${needed} XP</div>`;
 
             const leaderboardContainer = document.getElementById('leaderboard-container');
             leaderboardContainer.innerHTML = '';
@@ -230,31 +240,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 const item = document.createElement('div');
                 item.className = 'leaderboard-item';
                 if (user.username === this.state.currentUser.username) item.classList.add('current-user');
-                item.innerHTML = `
-                    <span class="lb-pos">${index + 1}.</span>
+                item.innerHTML = `<span class="lb-pos">${index + 1}.</span>
                     <span class="lb-rank">${userRank.emoji}</span>
                     <span class="lb-name">⏹️${user.username}⏹️</span>
-                    <span class="lb-xp">(${user.xp} XP)</span>
-                `;
+                    <span class="lb-xp">(${user.xp} XP)</span>`;
                 leaderboardContainer.appendChild(item);
             });
         },
 
-        // --- Training and Dictionary Logic ---
         showLectureSelection(mode) {
             this.navigateTo('lecture-selection-screen');
+            this.state.currentTraining.selectedLectures = [];
             const container = document.getElementById('lecture-buttons-container');
+            const actionsContainer = document.getElementById('lecture-actions-container');
             container.innerHTML = '';
+            actionsContainer.innerHTML = '';
+            
+            if (mode === 'training') {
+                const allBtn = document.createElement('button');
+                allBtn.className = 'glow-on-hover';
+                allBtn.dataset.action = 'set-direction';
+                allBtn.dataset.i18n = 'all_lectures';
+                this.state.currentTraining.mode = 'specific_all';
+                container.appendChild(allBtn);
+            }
+            
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
+                button.className = 'glow-on-hover';
                 button.textContent = `Лекція №${lectureNum}`;
-                button.dataset.action = `select-lecture-for-${mode}`;
+                button.dataset.action = mode === 'training' ? 'select-lecture' : 'select-lecture-for-dictionary';
                 button.dataset.lecture = lectureNum;
                 container.appendChild(button);
             });
+
+            if (mode === 'training') {
+                const startBtn = document.createElement('button');
+                startBtn.className = 'glow-on-hover';
+                startBtn.dataset.action = 'start-selected-lectures-training';
+                startBtn.dataset.i18n = 'start_training';
+                this.state.currentTraining.mode = 'specific_selected';
+                actionsContainer.appendChild(startBtn);
+            }
+            this.updateAllTexts();
         },
         
         startTrainingForLecture(lectureNum) {
+            this.state.currentTraining.mode = 'specific_single';
             this.state.currentTraining.lecture = lectureNum;
             this.navigateTo('direction-selection-screen');
         },
@@ -263,20 +295,18 @@ document.addEventListener('DOMContentLoaded', () => {
             this.navigateTo('dictionary-view-screen');
             const container = document.getElementById('dictionary-words-container');
             container.innerHTML = '';
+            const langKey = this.state.currentLang.toUpperCase();
             const words = this.state.words.filter(w => w.lecture == lectureNum);
-            words.forEach(word => {
+            words.forEach((word, index) => {
                 const item = document.createElement('div');
                 item.className = 'dict-item';
-                item.innerHTML = `<span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[this.state.currentLang.toUpperCase()]}</span>`;
+                item.innerHTML = `<b>${index + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                 container.appendChild(item);
             });
         },
 
         startTraining(words, isRandom) {
-            if (!words || words.length === 0) {
-                alert("Для цього режиму немає слів.");
-                return;
-            }
+            if (!words || words.length === 0) { alert("Для цього режиму немає слів."); return; }
             let trainingWords = [...words];
             if (isRandom) trainingWords.sort(() => Math.random() - 0.5);
             this.state.currentTraining.words = trainingWords;
@@ -293,88 +323,95 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const T = this.state.texts[this.state.currentLang];
-            const training = this.state.currentTraining;
-            const wordData = training.words[training.index];
+            const { index, words, direction } = this.state.currentTraining;
+            const wordData = words[index];
             
-            const progressEl = screen.querySelector('.training-progress');
-            const wordEl = screen.querySelector('.training-word');
+            screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
+            screen.querySelector('.training-word').textContent = direction === 'cz_to_lang' ? wordData.CZ : (wordData[this.state.currentLang.toUpperCase()] || wordData.UA);
+            
             const inputEl = screen.querySelector('.training-input');
-            const feedbackEl = screen.querySelector('.training-feedback');
-            
-            progressEl.textContent = `${T.word} ${training.index + 1} ${T.of} ${training.words.length}`;
-            
-            const isCzToLang = training.direction === 'cz_to_lang';
-            wordEl.textContent = isCzToLang ? wordData.CZ : wordData[this.state.currentLang.toUpperCase()];
-            
-            inputEl.value = '';
-            inputEl.disabled = false;
-            inputEl.focus();
-            feedbackEl.innerHTML = '';
+            inputEl.value = ''; inputEl.disabled = false; inputEl.focus();
+            screen.querySelector('.training-feedback').innerHTML = '';
         },
 
-        checkAnswer(screen) {
-            const training = this.state.currentTraining;
-            const wordData = training.words[training.index];
+        checkAnswer() {
+            const screen = document.getElementById('training-screen-active');
+            const { index, words, direction, results } = this.state.currentTraining;
+            const wordData = words[index];
             const inputEl = screen.querySelector('.training-input');
             const feedbackEl = screen.querySelector('.training-feedback');
             const T = this.state.texts[this.state.currentLang];
+            const langKey = this.state.currentLang.toUpperCase();
 
-            const userAnswer = inputEl.value.trim().toLowerCase();
-            const isCzToLang = training.direction === 'cz_to_lang';
-            
-            const correctAnswersRaw = isCzToLang ? wordData[this.state.currentLang.toUpperCase()] : wordData.CZ;
+            const userAnswer = inputEl.value.trim();
+            const correctAnswersRaw = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
             const correctAnswers = correctAnswersRaw.toLowerCase().split(',').map(s => s.trim());
-
-            const isCorrect = correctAnswers.includes(userAnswer);
+            const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
             
-            training.results.push({ wordData, userAnswer, isCorrect });
+            results.push({
+                wordData,
+                userAnswer: userAnswer,
+                isCorrect,
+                question: direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA),
+                correctAnswer: correctAnswers[0]
+            });
             
             if (isCorrect) {
-                feedbackEl.textContent = T.correct + " +10 XP";
-                feedbackEl.style.color = 'var(--success-color)';
+                feedbackEl.innerHTML = `<span class="xp-gain">${T.correct} +10 XP</span>`;
                 fetch('/api/update_xp', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ xp: 10 })
-                }).then(res => res.json()).then(data => {
-                    this.state.currentUser.xp = data.new_xp;
-                });
+                }).then(res => res.json()).then(data => { this.state.currentUser.xp = data.new_xp; });
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
-                feedbackEl.style.color = 'var(--danger-color)';
             }
+            feedbackEl.style.color = isCorrect ? 'var(--success-color)' : 'var(--danger-color)';
 
             inputEl.disabled = true;
             setTimeout(() => {
-                training.index++;
+                this.state.currentTraining.index++;
                 this.renderCurrentWord();
-            }, 1500);
+            }, isCorrect ? 1000 : 2000);
         },
 
         showResults() {
             this.navigateTo('results-screen');
             const summaryEl = document.getElementById('results-summary');
             const listEl = document.getElementById('results-list');
-            const results = this.state.currentTraining.results;
+            const { results } = this.state.currentTraining;
             const correctCount = results.filter(r => r.isCorrect).length;
-            summaryEl.textContent = `Ваш результат: ${correctCount} з ${results.length}`;
+            summaryEl.innerHTML = `Ваш результат: <b>${correctCount} з ${results.length}</b> (+${correctCount * 10} XP)`;
 
             listEl.innerHTML = '';
-            results.forEach(res => {
+            results.forEach((res, index) => {
                 const item = document.createElement('div');
                 item.className = `result-item ${res.isCorrect ? 'correct' : 'incorrect'}`;
-                const question = this.state.currentTraining.direction === 'cz_to_lang' ? res.wordData.CZ : res.wordData[this.state.currentLang.toUpperCase()];
-                item.innerHTML = `<span>${question}</span> -> <span>${res.userAnswer || "(пусто)"}</span>`;
+                let answerHTML = res.isCorrect ? `<span class="diff-correct">${res.userAnswer}</span>` : this.generateDiffHtml(res.correctAnswer, res.userAnswer);
+                
+                item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(${res.isCorrect ? '+10' : '0'} XP)</span>`;
                 listEl.appendChild(item);
             });
+            // Update leaderboard data after training
+            this.loadInitialData();
+        },
+        
+        generateDiffHtml(correct, user) {
+            let html = '';
+            for (let i = 0; i < Math.max(correct.length, user.length); i++) {
+                if (user[i] && user[i].toLowerCase() === (correct[i] || '').toLowerCase()) {
+                    html += `<span class="diff-correct">${user[i]}</span>`;
+                } else if (user[i]) {
+                    html += `<span class="diff-incorrect">${user[i]}</span>`;
+                }
+            }
+            return html || '(пусто)';
         },
 
         // --- Helper Functions ---
         xpToLevel(xp) {
             let level = 1, startXp = 0, needed = 100;
             while (xp >= startXp + needed) {
-                startXp += needed;
-                level++;
+                startXp += needed; level++;
                 needed = Math.floor(100 * (1.2 ** (level - 1)));
             }
             return { level, progress: xp - startXp, needed };
