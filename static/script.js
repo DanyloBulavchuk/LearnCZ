@@ -33,32 +33,43 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         addEventListeners() {
-            // Use event delegation on the body for dynamic elements
+            // Main event listener for all dynamic actions and navigation
             document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('[data-screen], [data-action]');
-                if (target) {
-                    e.preventDefault();
-                    if (target.dataset.screen) this.navigateTo(target.dataset.screen);
-                    if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
-                }
-            });
+                const actionTarget = e.target.closest('[data-action]');
+                const screenTarget = e.target.closest('[data-screen]');
+                const langTarget = e.target.closest('[data-lang]');
 
-            // Specific listeners for static elements
-            this.elements.currentLangBtn.addEventListener('click', (e) => {
-                 e.stopPropagation();
-                this.elements.langOptions.classList.toggle('visible');
-            });
-            
-            document.addEventListener('click', (e) => {
+                if (langTarget) {
+                    this.setLanguage(langTarget.dataset.lang);
+                    this.elements.langOptions.classList.remove('visible');
+                    return;
+                }
+                
+                if (actionTarget) {
+                    this.handleAction(actionTarget.dataset.action, actionTarget.dataset);
+                } else if (screenTarget) {
+                    this.navigateTo(screenTarget.dataset.screen);
+                }
+
+                // Hide lang options if clicked outside
                 if (!this.elements.langSwitcher.contains(e.target)) {
                     this.elements.langOptions.classList.remove('visible');
                 }
+            });
+
+            // Specific listeners for static header elements
+            this.elements.currentLangBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.elements.langOptions.classList.toggle('visible');
             });
         },
         
         navigateTo(screenId) {
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
+                // Hide header on auth screens, show on others
+                this.elements.mainHeader.classList.toggle('hidden', ['welcome-screen', 'login-screen', 'register-screen'].includes(screenId));
+                
                 this.elements.appContainer.innerHTML = `<div class="screen" id="${screenId}-active">${template.innerHTML}</div>`;
                 this.onScreenLoad(screenId);
                 this.updateAllTexts();
@@ -142,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         updateAllTexts() {
+            if (!this.state.texts || Object.keys(this.state.texts).length === 0) return;
             const texts = this.state.texts[this.state.currentLang];
             if (!texts) return;
 
@@ -160,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         async checkSession() {
             try {
-                await this.loadInitialData(); // Load texts first for everyone
+                await this.loadInitialData();
                 const response = await fetch('/api/session');
                 const data = await response.json();
                 if (data.user) {
@@ -186,9 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHeader() {
             if (this.state.currentUser) {
                 this.elements.profileButton.textContent = this.state.currentUser.username;
-                this.elements.mainHeader.classList.remove('hidden');
-            } else {
-                this.elements.mainHeader.classList.add('hidden');
             }
         },
 
@@ -220,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
             this.state.currentUser = null;
-            this.updateHeader();
             this.navigateTo('welcome-screen');
         },
 
