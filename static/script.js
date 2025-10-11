@@ -33,31 +33,21 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         addEventListeners() {
-            // Main event listener for all dynamic actions and navigation
             document.body.addEventListener('click', (e) => {
-                const actionTarget = e.target.closest('[data-action]');
-                const screenTarget = e.target.closest('[data-screen]');
-                const langTarget = e.target.closest('[data-lang]');
-
-                if (langTarget) {
-                    this.setLanguage(langTarget.dataset.lang);
-                    this.elements.langOptions.classList.remove('visible');
-                    return;
+                const target = e.target.closest('[data-screen], [data-action], [data-lang]');
+                if (target) {
+                    if (target.dataset.screen) this.navigateTo(target.dataset.screen);
+                    else if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
+                    else if (target.dataset.lang) {
+                        this.setLanguage(target.dataset.lang);
+                        this.elements.langOptions.classList.remove('visible');
+                    }
                 }
-                
-                if (actionTarget) {
-                    this.handleAction(actionTarget.dataset.action, actionTarget.dataset);
-                } else if (screenTarget) {
-                    this.navigateTo(screenTarget.dataset.screen);
-                }
-
-                // Hide lang options if clicked outside
                 if (!this.elements.langSwitcher.contains(e.target)) {
                     this.elements.langOptions.classList.remove('visible');
                 }
             });
 
-            // Specific listeners for static header elements
             this.elements.currentLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.elements.langOptions.classList.toggle('visible');
@@ -67,9 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
         navigateTo(screenId) {
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
-                // Hide header on auth screens, show on others
-                this.elements.mainHeader.classList.toggle('hidden', ['welcome-screen', 'login-screen', 'register-screen'].includes(screenId));
-                
                 this.elements.appContainer.innerHTML = `<div class="screen" id="${screenId}-active">${template.innerHTML}</div>`;
                 this.onScreenLoad(screenId);
                 this.updateAllTexts();
@@ -79,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
         onScreenLoad(screenId) {
             const activeScreen = document.getElementById(`${screenId}-active`);
             if (!activeScreen) return;
-
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
                 '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
@@ -158,13 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!texts) return;
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.dataset.i18n;
-                if (texts[key]) el.textContent = texts[key];
+                if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n];
             });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder];
             });
-
             document.querySelectorAll('[data-lecture-title]').forEach(el => {
                  el.textContent = `${texts.lecture || 'Лекція'} №${el.dataset.lectureTitle}`;
             });
@@ -177,27 +161,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 if (data.user) {
                     this.state.currentUser = data.user;
-                    this.updateHeader();
                     this.navigateTo('main-menu-screen');
                 } else {
                     this.navigateTo('welcome-screen');
                 }
-            } catch (e) { this.navigateTo('welcome-screen'); }
+                this.updateHeader();
+            } catch (e) { 
+                this.navigateTo('welcome-screen');
+                this.updateHeader();
+            }
         },
         
         async loadInitialData() {
-            const response = await fetch('/api/data/initial');
-            const data = await response.json();
-            this.state.words = data.words;
-            this.state.lectures = data.lectures;
-            this.state.leaderboard = data.leaderboard;
-            this.state.texts = data.texts;
-            this.setLanguage(this.state.currentLang);
+            try {
+                const response = await fetch('/api/data/initial');
+                const data = await response.json();
+                this.state.words = data.words;
+                this.state.lectures = data.lectures;
+                this.state.leaderboard = data.leaderboard;
+                this.state.texts = data.texts;
+                this.setLanguage(this.state.currentLang);
+            } catch (e) {
+                console.error("Could not load initial data:", e);
+            }
         },
 
         updateHeader() {
             if (this.state.currentUser) {
                 this.elements.profileButton.textContent = this.state.currentUser.username;
+                this.elements.profileButton.style.display = 'flex';
+            } else {
+                this.elements.profileButton.style.display = 'none';
             }
         },
 
@@ -229,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
             this.state.currentUser = null;
+            this.updateHeader();
             this.navigateTo('welcome-screen');
         },
 
