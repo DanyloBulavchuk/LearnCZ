@@ -7,13 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
             leaderboard: [],
             texts: {},
             currentLang: 'ua',
+            isShiftActive: false,
             currentTraining: {
-                words: [],
-                index: 0,
-                results: [],
-                mode: '',
-                direction: '',
-                selectedLectures: [],
+                words: [], index: 0, results: [], mode: '',
+                direction: '', selectedLectures: [],
             }
         },
 
@@ -34,22 +31,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('[data-screen], [data-action], [data-lang]');
+                const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
                 if (!target) {
-                    if (!this.elements.langSwitcher.contains(e.target)) {
-                        this.elements.langOptions.classList.remove('visible');
-                    }
+                    if (!this.elements.langSwitcher.contains(e.target)) this.elements.langOptions.classList.remove('visible');
                     return;
                 }
-                
                 if (target.dataset.screen) this.navigateTo(target.dataset.screen);
                 if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
                 if (target.dataset.lang) {
                     this.setLanguage(target.dataset.lang);
                     this.elements.langOptions.classList.remove('visible');
                 }
+                if (target.matches('.char-btn')) this.insertChar(target.textContent);
+                if (target.matches('.shift-btn')) this.toggleShift();
             });
-
             this.elements.currentLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.elements.langOptions.classList.toggle('visible');
@@ -68,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         onScreenLoad(screenId) {
             const activeScreen = document.getElementById(`${screenId}-active`);
             if (!activeScreen) return;
-
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
                 '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
@@ -80,19 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (activeScreen.querySelector('#logout-btn')) activeScreen.querySelector('#logout-btn').addEventListener('click', () => this.handleLogout());
             if (activeScreen.querySelector('.training-check-btn')) activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer());
+            
             if (screenId === 'profile-screen') this.renderProfile();
+            if (screenId === 'training-screen') this.renderKeyboard();
         },
 
         handleAction(action, dataset) {
             const actions = {
-                'start-random-training': () => {
-                    this.state.currentTraining.mode = 'random';
-                    this.navigateTo('direction-selection-screen');
-                },
-                'start-specific-training': () => {
-                    this.state.currentTraining.mode = 'specific';
-                    this.showLectureSelection('training');
-                },
+                'start-random-training': () => { this.state.currentTraining.mode = 'random'; this.navigateTo('direction-selection-screen'); },
+                'start-specific-training': () => { this.state.currentTraining.mode = 'specific'; this.showLectureSelection('training'); },
                 'show-dictionary': () => this.showLectureSelection('dictionary'),
                 'select-lecture': (ds) => {
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${ds.lecture}"]`);
@@ -112,21 +102,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (this.state.currentTraining.selectedLectures.length > 0) {
                         this.state.currentTraining.mode = 'specific_selected';
                         this.navigateTo('direction-selection-screen');
-                    } else {
-                        alert('Будь ласка, оберіть хоча б одну лекцію.');
-                    }
+                    } else { alert('Будь ласка, оберіть хоча б одну лекцію.'); }
                 },
                 'select-lecture-for-dictionary': (ds) => this.showDictionaryForLecture(ds.lecture),
                 'set-direction': (ds) => {
                     this.state.currentTraining.direction = ds.direction;
                     const mode = this.state.currentTraining.mode;
                     let words = [];
-                    if (mode === 'random' || mode === 'specific_all') {
-                        words = this.state.words;
-                    } else if (mode === 'specific_selected') {
-                        const selected = this.state.currentTraining.selectedLectures;
-                        words = this.state.words.filter(w => selected.includes(w.lecture));
-                    }
+                    if (mode === 'random' || mode === 'specific_all') words = this.state.words;
+                    else if (mode === 'specific_selected') words = this.state.words.filter(w => this.state.currentTraining.selectedLectures.includes(w.lecture));
                     this.startTraining(words, true);
                 },
                 'show-results': () => this.showResults(),
@@ -145,16 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.texts || Object.keys(this.state.texts).length === 0) return;
             const texts = this.state.texts[this.state.currentLang];
             if (!texts) return;
-
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n];
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder];
-            });
-            document.querySelectorAll('[data-lecture-title]').forEach(el => {
-                 el.textContent = `${texts.lecture || 'Лекція'} №${el.dataset.lectureTitle}`;
-            });
+            document.querySelectorAll('[data-i18n]').forEach(el => { if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n]; });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder]; });
+            document.querySelectorAll('[data-lecture-title]').forEach(el => { el.textContent = `${texts.lecture || 'Лекція'} №${el.dataset.lectureTitle}`; });
         },
 
         async checkSession() {
@@ -162,18 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 await this.loadInitialData();
                 const response = await fetch('/api/session');
                 const data = await response.json();
-                if (data.user) {
-                    this.state.currentUser = data.user;
-                    this.navigateTo('main-menu-screen');
-                } else {
-                    this.state.currentUser = null;
-                    this.navigateTo('welcome-screen');
-                }
-            } catch (e) { 
-                this.state.currentUser = null;
-                this.navigateTo('welcome-screen');
-            } finally {
+                this.state.currentUser = data.user || null;
+            } catch (e) { this.state.currentUser = null; } 
+            finally {
                 this.updateHeader();
+                this.navigateTo(this.state.currentUser ? 'main-menu-screen' : 'welcome-screen');
             }
         },
         
@@ -186,9 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.leaderboard = data.leaderboard;
                 this.state.texts = data.texts;
                 this.setLanguage(this.state.currentLang);
-            } catch (e) {
-                console.error("Could not load initial data:", e);
-            }
+            } catch (e) { console.error("Could not load initial data:", e); }
         },
 
         updateHeader() {
@@ -239,13 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
             const T = this.state.texts[this.state.currentLang];
-
             detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
                 <div class="level-info">${T.level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
                 <div>${progress} / ${needed} XP</div>`;
-
             const leaderboardContainer = document.getElementById('leaderboard-container');
             leaderboardContainer.innerHTML = '';
             (this.state.leaderboard || []).forEach((user, index) => {
@@ -269,16 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const actionsContainer = document.getElementById('lecture-actions-container');
             container.innerHTML = '';
             actionsContainer.innerHTML = '';
-            
             if (mode === 'training') {
                 const allBtn = document.createElement('button');
                 allBtn.className = 'glow-on-hover';
                 allBtn.dataset.action = 'set-direction';
-                allBtn.dataset.i18n = 'all_lectures';
                 this.state.currentTraining.mode = 'specific_all';
+                allBtn.dataset.i18n = 'all_lectures';
                 container.appendChild(allBtn);
             }
-            
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
                 button.className = 'glow-on-hover';
@@ -287,7 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.dataset.lectureTitle = lectureNum;
                 container.appendChild(button);
             });
-
             if (mode === 'training') {
                 const startBtn = document.createElement('button');
                 startBtn.className = 'glow-on-hover';
@@ -407,6 +370,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             return html || '(пусто)';
+        },
+        
+        renderKeyboard() {
+            const CZECH_LOWER = ['á', 'č', 'ď', 'é', 'ě', 'í', 'ň', 'ó', 'ř', 'š', 'ť', 'ú', 'ů', 'ý', 'ž'];
+            const CZECH_UPPER = ['Á', 'Č', 'Ď', 'É', 'Ě', 'Í', 'Ň', 'Ó', 'Ř', 'Š', 'Ť', 'Ú', 'Ů', 'Ý', 'Ž'];
+            const chars = this.state.isShiftActive ? CZECH_UPPER : CZECH_LOWER;
+            const keyboardContainer = document.getElementById('special-chars-keyboard');
+            if (!keyboardContainer) return;
+            
+            let html = '<div class="keyboard-row">';
+            chars.forEach((char, index) => {
+                html += `<button class="char-btn glow-on-hover">${char}</button>`;
+                if (index === 7) { // Split into two rows
+                    html += '</div><div class="keyboard-row">';
+                }
+            });
+            html += '</div>';
+            html += '<div class="keyboard-row"><button class="shift-btn glow-on-hover">Shift</button></div>';
+            keyboardContainer.innerHTML = html;
+        },
+
+        toggleShift() {
+            this.state.isShiftActive = !this.state.isShiftActive;
+            this.renderKeyboard();
+        },
+
+        insertChar(char) {
+            const inputEl = document.querySelector('.training-input');
+            if (inputEl) {
+                const start = inputEl.selectionStart;
+                const end = inputEl.selectionEnd;
+                inputEl.value = inputEl.value.substring(0, start) + char + inputEl.value.substring(end);
+                inputEl.selectionStart = inputEl.selectionEnd = start + 1;
+                inputEl.focus();
+            }
         },
 
         xpToLevel(xp) {
