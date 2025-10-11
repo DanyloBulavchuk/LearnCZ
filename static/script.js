@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return;
                 }
-
+                
                 if (target.dataset.screen) this.navigateTo(target.dataset.screen);
                 if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
                 if (target.dataset.lang) {
@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         onScreenLoad(screenId) {
             const activeScreen = document.getElementById(`${screenId}-active`);
             if (!activeScreen) return;
+
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
                 '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
@@ -135,8 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLanguage(lang) {
             this.state.currentLang = lang;
-            const flags = { ua: '🇺🇦', en: '🇬🇧', ru: '🇷🇺' };
-            this.elements.currentLangBtn.textContent = flags[lang];
+            const flagClasses = { ua: 'flag-ua', en: 'flag-us', ru: 'flag-ru' };
+            this.elements.currentLangBtn.className = `flag-icon ${flagClasses[lang]}`;
             this.updateAllTexts();
         },
 
@@ -163,18 +164,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 if (data.user) {
                     this.state.currentUser = data.user;
+                    this.navigateTo('main-menu-screen');
                 } else {
                     this.state.currentUser = null;
+                    this.navigateTo('welcome-screen');
                 }
             } catch (e) { 
                 this.state.currentUser = null;
+                this.navigateTo('welcome-screen');
             } finally {
                 this.updateHeader();
-                if (this.state.currentUser) {
-                    this.navigateTo('main-menu-screen');
-                } else {
-                    this.navigateTo('welcome-screen');
-                }
             }
         },
         
