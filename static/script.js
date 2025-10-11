@@ -35,15 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang]');
-                if (target) {
-                    if (target.dataset.screen) this.navigateTo(target.dataset.screen);
-                    else if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
-                    else if (target.dataset.lang) {
-                        this.setLanguage(target.dataset.lang);
+                if (!target) {
+                    if (!this.elements.langSwitcher.contains(e.target)) {
                         this.elements.langOptions.classList.remove('visible');
                     }
+                    return;
                 }
-                if (!this.elements.langSwitcher.contains(e.target)) {
+
+                if (target.dataset.screen) this.navigateTo(target.dataset.screen);
+                if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
+                if (target.dataset.lang) {
+                    this.setLanguage(target.dataset.lang);
                     this.elements.langOptions.classList.remove('visible');
                 }
             });
@@ -161,14 +163,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 if (data.user) {
                     this.state.currentUser = data.user;
+                } else {
+                    this.state.currentUser = null;
+                }
+            } catch (e) { 
+                this.state.currentUser = null;
+            } finally {
+                this.updateHeader();
+                if (this.state.currentUser) {
                     this.navigateTo('main-menu-screen');
                 } else {
                     this.navigateTo('welcome-screen');
                 }
-                this.updateHeader();
-            } catch (e) { 
-                this.navigateTo('welcome-screen');
-                this.updateHeader();
             }
         },
         
