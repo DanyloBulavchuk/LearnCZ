@@ -8,10 +8,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# --- App Configuration ---
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_fallback_secret_key_for_dev')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# --- Database Connection ---
 def get_db_connection():
     try:
         return psycopg2.connect(DATABASE_URL)
@@ -36,6 +38,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+# --- Constants, Ranks, and Localization ---
 WORDS_DIR = 'words_CZ'
 TEXTS = {
     'ua': {
@@ -105,6 +108,7 @@ TEXTS = {
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
 TEXTS['en']['cz_to_lang'] = "Czech → English"; TEXTS['en']['lang_to_cz'] = "English → Czech"
 TEXTS['ru']['cz_to_lang'] = "Чешский → Русский"; TEXTS['ru']['lang_to_cz'] = "Русский → Чешский"
+
 RANKS = { 1: ("🥉", "Nováček"), 6: ("🥈", "Učedník"), 16: ("🥇", "Znalec"), 31: ("🏆", "Mistr"), 51: ("💎", "Polyglot") }
 
 def get_rank(level):
@@ -115,9 +119,12 @@ def get_rank(level):
     return r
 
 def xp_to_level(xp):
-    level, startXp, needed = 1, 0, 100
+    level = 1
+    startXp = 0
+    needed = 100
     while xp >= startXp + needed:
-        startXp += needed; level += 1
+        startXp += needed
+        level += 1
         needed = int(100 * (1.2 ** (level - 1)))
     return level, xp - startXp, needed
 
@@ -143,6 +150,7 @@ def load_all_words():
 ALL_WORDS = load_all_words()
 AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
 
+# --- Flask Routes ---
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -152,25 +160,24 @@ def register():
     username, pin = data.get('username'), data.get('pin')
     if not (username and pin and 3 <= len(username) <= 24 and pin.isdigit() and len(pin) == 4): abort(400)
     conn = get_db_connection()
+    if conn is None: abort(500)
     with conn.cursor() as cur:
         cur.execute("SELECT id FROM users WHERE username = %s;", (username.lower(),))
         if cur.fetchone(): abort(409)
-        cur.execute(
-            "INSERT INTO users (username, original_case, pin, xp, streak_count, last_streak_date) VALUES (%s, %s, %s, %s, %s, %s);",
-            (username.lower(), username, pin, 0, 0, None)
-        )
+        cur.execute("INSERT INTO users (username, original_case, pin, xp) VALUES (%s, %s, %s, %s);", (username.lower(), username, pin, 0))
     conn.commit()
     conn.close()
     session['username'] = username
-    return jsonify({"user": {"username": username, "xp": 0, "streak_count": 0}})
+    return jsonify({"user": {"username": username, "xp": 0}})
 
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
     username, pin = data.get('username'), data.get('pin')
     conn = get_db_connection()
+    if conn is None: abort(500)
     with conn.cursor() as cur:
-        cur.execute("SELECT original_case, pin, xp, streak_count, last_streak_date FROM users WHERE username = %s;", (username.lower(),))
+        cur.execute("SELECT original_case, pin, xp, streak_count FROM users WHERE username = %s;", (username.lower(),))
         user = cur.fetchone()
     conn.close()
     if user and user[1] == pin:
@@ -187,6 +194,7 @@ def logout():
 def get_session():
     if 'username' in session:
         conn = get_db_connection()
+        if conn is None: return jsonify({"user": None})
         with conn.cursor() as cur:
             cur.execute("SELECT xp, streak_count FROM users WHERE username = %s;", (session['username'].lower(),))
             user = cur.fetchone()
@@ -196,11 +204,13 @@ def get_session():
 
 @app.route('/api/data/initial')
 def get_initial_data():
+    leaderboard = []
     conn = get_db_connection()
-    with conn.cursor() as cur:
-        cur.execute("SELECT original_case, xp FROM users ORDER BY xp DESC, username ASC;")
-        leaderboard = [{"username": row[0], "xp": row[1]} for row in cur.fetchall()]
-    conn.close()
+    if conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT original_case, xp FROM users ORDER BY xp DESC, username ASC;")
+            leaderboard = [{"username": row[0], "xp": row[1]} for row in cur.fetchall()]
+        conn.close()
     return jsonify({"words": ALL_WORDS, "lectures": AVAILABLE_LECTURES, "leaderboard": leaderboard, "texts": TEXTS})
 
 @app.route('/api/update_xp', methods=['POST'])
@@ -208,27 +218,20 @@ def update_xp():
     if 'username' not in session: abort(401)
     xp_to_add = request.json.get('xp', 0)
     conn = get_db_connection()
+    if conn is None: abort(500)
     with conn.cursor() as cur:
         user_key = session['username'].lower()
         today = date.today()
         yesterday = today - timedelta(days=1)
-        
         cur.execute("SELECT xp, streak_count, last_streak_date FROM users WHERE username = %s;", (user_key,))
         user = cur.fetchone()
-        
         new_xp = user[0] + xp_to_add
-        new_streak = user[1]
-        last_date = user[2]
-
+        new_streak, last_date = user[1], user[2]
         if last_date is None or last_date < yesterday:
-            new_streak = 1 # Reset or start streak
+            new_streak = 1
         elif last_date == yesterday:
-            new_streak += 1 # Continue streak
-        
-        cur.execute(
-            "UPDATE users SET xp = %s, streak_count = %s, last_streak_date = %s WHERE username = %s;",
-            (new_xp, new_streak, today, user_key)
-        )
+            new_streak += 1
+        cur.execute("UPDATE users SET xp = %s, streak_count = %s, last_streak_date = %s WHERE username = %s;", (new_xp, new_streak, today, user_key))
     conn.commit()
     conn.close()
     return jsonify({"new_xp": new_xp, "new_streak": new_streak})
@@ -237,15 +240,14 @@ def update_xp():
 def change_pin():
     if 'username' not in session: abort(401)
     new_pin = request.json.get('new_pin')
-    if not (new_pin and new_pin.isdigit() and len(new_pin) == 4):
-        abort(400, "Invalid PIN format.")
-    
+    if not (new_pin and new_pin.isdigit() and len(new_pin) == 4): abort(400)
     conn = get_db_connection()
+    if conn is None: abort(500)
     with conn.cursor() as cur:
         cur.execute("UPDATE users SET pin = %s WHERE username = %s;", (new_pin, session['username'].lower()))
     conn.commit()
     conn.close()
-    return jsonify({"message": "PIN updated successfully."})
+    return jsonify({"message": "PIN updated."})
 
 with app.app_context():
     init_db()

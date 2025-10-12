@@ -58,8 +58,6 @@
                 <button class="glow-on-hover" data-action="start-specific-training" data-i18n="specific_training"></button>
                 <button class="glow-on-hover" data-action="repeat-difficult" data-i18n="repeat_difficult"></button>
                 <button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button>
-                <button class="glow-on-hover secondary" data-screen="settings-screen" data-i18n="settings"></button>
-                <button id="logout-btn" class="glow-on-hover danger" data-i18n="logout"></button>
             </div>
         </div>
         <div id="profile-screen">
@@ -72,6 +70,10 @@
                 <div class="panel right-panel">
                     <div class="shark-image-container"><img src="{{ url_for('static', filename='shark.png') }}" alt="Shark mascot"></div>
                     <div id="profile-details"></div>
+                    <div class="profile-actions">
+                        <button class="glow-on-hover secondary settings-btn" data-screen="settings-screen" data-i18n="settings">⚙️</button>
+                        <button class="glow-on-hover danger" data-action="logout" data-i18n="logout"></button>
+                    </div>
                 </div>
             </div>
             <button data-screen="main-menu-screen" class="glow-on-hover back-button" data-i18n="back_to_menu"></button>
@@ -83,7 +85,7 @@
                 <input type="password" id="new-pin" data-i18n-placeholder="new_pin" required pattern="\d{4}">
                 <button type="submit" class="glow-on-hover" data-i18n="save_changes"></button>
              </form>
-             <button data-screen="main-menu-screen" class="glow-on-hover secondary back-button" data-i18n="back_to_menu"></button>
+             <button data-screen="profile-screen" class="glow-on-hover secondary back-button" data-i18n="back"></button>
         </div>
         <div id="lecture-selection-screen">
             <h1 class="title" data-i18n="choose_lecture"></h1>
@@ -126,6 +128,7 @@
              <button type="button" class="glow-on-hover secondary back-button" data-action="show-dictionary" data-i18n="back"></button>
         </div>
     </div>
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
