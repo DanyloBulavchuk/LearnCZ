@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
-            },
-            difficultWords: JSON.parse(localStorage.getItem('difficultWords') || '{}')
+            }
         },
 
         elements: {
@@ -33,13 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
-                
                 if (!target) {
                     if (!this.elements.langSwitcher.contains(e.target)) this.elements.langOptions.classList.remove('visible');
                     return;
                 }
-
-                const handleNav = (screenId) => {
+                
+                if (target.dataset.screen) {
+                    const screenId = target.dataset.screen;
+                    if (screenId === 'main-menu-screen' && !this.state.currentUser) return;
+                    
                     if ('ontouchstart' in window) {
                         target.classList.add('active-animation');
                         setTimeout(() => {
@@ -49,11 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         this.navigateTo(screenId);
                     }
-                };
-                
-                if (target.dataset.screen) {
-                    if (target.dataset.screen === 'main-menu-screen' && !this.state.currentUser) return;
-                    handleNav(target.dataset.screen);
                 }
                 else if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
                 else if (target.dataset.lang) {
@@ -102,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const actions = {
                 'start-random-training': () => { this.state.currentTraining.mode = 'random'; this.navigateTo('direction-selection-screen'); },
                 'start-specific-training': () => { this.state.currentTraining.mode = 'specific'; this.showLectureSelection('training'); },
-                'repeat-difficult': () => { this.startDifficultWordsTraining(); },
                 'show-dictionary': () => this.showLectureSelection('dictionary'),
                 'select-lecture': (ds) => {
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${ds.lecture}"]`);
@@ -325,18 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(item);
             });
         },
-        
-        startDifficultWordsTraining() {
-            if (!this.state.currentUser) return;
-            const difficultWordIds = this.state.difficultWords[this.state.currentUser.username] || [];
-            if (difficultWordIds.length === 0) {
-                alert("У вас ще немає складних слів для повторення.");
-                return;
-            }
-            const difficultWords = this.state.words.filter(word => difficultWordIds.includes(word.CZ));
-            this.state.currentTraining.mode = 'difficult';
-            this.navigateTo('direction-selection-screen');
-        },
 
         startTraining(words, isRandom) {
             if (!words || words.length === 0) { alert("Для цього режиму немає слів."); return; }
@@ -396,10 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.state.currentUser.xp = data.new_xp;
                     this.state.currentUser.streak_count = data.new_streak;
                 }
-                this.removeDifficultWord(wordData.CZ);
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
-                this.addDifficultWord(wordData.CZ);
             }
             
             results.push({
@@ -413,23 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.currentTraining.index++;
                 this.renderCurrentWord();
             }, isCorrect ? 1000 : 2000);
-        },
-        
-        addDifficultWord(wordId) {
-            if(!this.state.currentUser) return;
-            const user = this.state.currentUser.username;
-            if (!this.state.difficultWords[user]) this.state.difficultWords[user] = [];
-            if (!this.state.difficultWords[user].includes(wordId)) this.state.difficultWords[user].push(wordId);
-            localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
-        },
-
-        removeDifficultWord(wordId) {
-            if(!this.state.currentUser) return;
-            const user = this.state.currentUser.username;
-            if (this.state.difficultWords[user]) {
-                this.state.difficultWords[user] = this.state.difficultWords[user].filter(id => id !== wordId);
-                localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
-            }
         },
 
         showResults() {
