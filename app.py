@@ -23,6 +23,9 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
+    if conn is None:
+        print("ПОМИЛКА: Неможливо ініціалізувати БД, немає з'єднання.")
+        return
     with conn.cursor() as cur:
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -119,9 +122,7 @@ def get_rank(level):
     return r
 
 def xp_to_level(xp):
-    level = 1
-    startXp = 0
-    needed = 100
+    level, startXp, needed = 1, 0, 100
     while xp >= startXp + needed:
         startXp += needed
         level += 1
@@ -199,7 +200,11 @@ def get_session():
             cur.execute("SELECT xp, streak_count FROM users WHERE username = %s;", (session['username'].lower(),))
             user = cur.fetchone()
         conn.close()
-        return jsonify({"user": {"username": session['username'], "xp": user[0] if user else 0, "streak_count": user[1] if user else 0}})
+        if user:
+            return jsonify({"user": {"username": session['username'], "xp": user[0], "streak_count": user[1]}})
+        else:
+            session.pop('username', None)
+            return jsonify({"user": None})
     return jsonify({"user": None})
 
 @app.route('/api/data/initial')

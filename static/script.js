@@ -33,20 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
+                
                 if (!target) {
-                    if (!this.elements.langSwitcher.contains(e.target)) {
-                        this.elements.langOptions.classList.remove('visible');
-                    }
+                    if (!this.elements.langSwitcher.contains(e.target)) this.elements.langOptions.classList.remove('visible');
                     return;
                 }
 
-                if (target.dataset.screen) {
-                    const screenId = target.dataset.screen;
-                    // Block navigation to main menu if not logged in
-                    if (screenId === 'main-menu-screen' && !this.state.currentUser) {
-                        return;
-                    }
-                    // Delay navigation on mobile to show animation
+                const handleNav = (screenId) => {
                     if ('ontouchstart' in window) {
                         target.classList.add('active-animation');
                         setTimeout(() => {
@@ -56,6 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         this.navigateTo(screenId);
                     }
+                };
+                
+                if (target.dataset.screen) {
+                    if (target.dataset.screen === 'main-menu-screen' && !this.state.currentUser) return;
+                    handleNav(target.dataset.screen);
                 }
                 else if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
                 else if (target.dataset.lang) {
@@ -94,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const form = activeScreen.querySelector(selector);
                 if (form) form.addEventListener('submit', formActions[selector]);
             }
-            if (activeScreen.querySelector('#logout-btn')) activeScreen.querySelector('#logout-btn').addEventListener('click', () => this.handleLogout());
             if (activeScreen.querySelector('.training-check-btn')) activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer());
             
             if (screenId === 'profile-screen') this.renderProfile();
@@ -139,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.startTraining(words, true);
                 },
                 'show-results': () => this.showResults(),
+                'logout': () => this.handleLogout(),
             };
             if (actions[action]) actions[action](dataset);
         },
@@ -239,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 alert(this.state.texts[this.state.currentLang].pin_changed_success);
-                this.navigateTo('main-menu-screen');
+                this.navigateTo('profile-screen');
             } else {
                 alert('Не вдалося змінити PIN-код.');
             }
@@ -252,10 +250,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
             const T = this.state.texts[this.state.currentLang];
-            const wordsToday = this.state.currentTraining.results.length; // Simple version
-            
-            detailsContainer.innerHTML = `
-                <div class="username">${this.state.currentUser.username}</div>
+            const wordsToday = this.state.currentTraining.results.length;
+            detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
                 <div class="level-info">${T.level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
@@ -267,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span>${this.state.currentUser.streak_count || 0} ${T.daily_streak}</span>
                     </div>
                 </div>`;
-
             const leaderboardContainer = document.getElementById('leaderboard-container');
             leaderboardContainer.innerHTML = '';
             (this.state.leaderboard || []).forEach((user, index) => {
@@ -330,8 +325,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(item);
             });
         },
-
+        
         startDifficultWordsTraining() {
+            if (!this.state.currentUser) return;
             const difficultWordIds = this.state.difficultWords[this.state.currentUser.username] || [];
             if (difficultWordIds.length === 0) {
                 alert("У вас ще немає складних слів для повторення.");
@@ -420,17 +416,15 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         addDifficultWord(wordId) {
+            if(!this.state.currentUser) return;
             const user = this.state.currentUser.username;
-            if (!this.state.difficultWords[user]) {
-                this.state.difficultWords[user] = [];
-            }
-            if (!this.state.difficultWords[user].includes(wordId)) {
-                this.state.difficultWords[user].push(wordId);
-            }
+            if (!this.state.difficultWords[user]) this.state.difficultWords[user] = [];
+            if (!this.state.difficultWords[user].includes(wordId)) this.state.difficultWords[user].push(wordId);
             localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
         },
 
         removeDifficultWord(wordId) {
+            if(!this.state.currentUser) return;
             const user = this.state.currentUser.username;
             if (this.state.difficultWords[user]) {
                 this.state.difficultWords[user] = this.state.difficultWords[user].filter(id => id !== wordId);
