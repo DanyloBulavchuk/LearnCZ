@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
-            }
+            },
+            difficultWords: JSON.parse(localStorage.getItem('difficultWords') || '{}')
         },
 
         elements: {
@@ -33,18 +34,38 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
                 if (!target) {
-                    if (!this.elements.langSwitcher.contains(e.target)) this.elements.langOptions.classList.remove('visible');
+                    if (!this.elements.langSwitcher.contains(e.target)) {
+                        this.elements.langOptions.classList.remove('visible');
+                    }
                     return;
                 }
-                if (target.dataset.screen) this.navigateTo(target.dataset.screen);
-                if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
-                if (target.dataset.lang) {
+
+                if (target.dataset.screen) {
+                    const screenId = target.dataset.screen;
+                    // Block navigation to main menu if not logged in
+                    if (screenId === 'main-menu-screen' && !this.state.currentUser) {
+                        return;
+                    }
+                    // Delay navigation on mobile to show animation
+                    if ('ontouchstart' in window) {
+                        target.classList.add('active-animation');
+                        setTimeout(() => {
+                            this.navigateTo(screenId);
+                            target.classList.remove('active-animation');
+                        }, 300);
+                    } else {
+                        this.navigateTo(screenId);
+                    }
+                }
+                else if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
+                else if (target.dataset.lang) {
                     this.setLanguage(target.dataset.lang);
                     this.elements.langOptions.classList.remove('visible');
                 }
-                if (target.matches('.char-btn')) this.insertChar(target.textContent);
-                if (target.matches('.shift-btn')) this.toggleShift();
+                else if (target.matches('.char-btn')) this.insertChar(target.textContent);
+                else if (target.matches('.shift-btn')) this.toggleShift();
             });
+
             this.elements.currentLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.elements.langOptions.classList.toggle('visible');
@@ -66,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
                 '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
+                '#settings-form': (e) => this.handleChangePin(e, activeScreen),
                 '.training-form': (e) => { e.preventDefault(); this.checkAnswer(); }
             };
             for (const selector in formActions) {
@@ -83,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const actions = {
                 'start-random-training': () => { this.state.currentTraining.mode = 'random'; this.navigateTo('direction-selection-screen'); },
                 'start-specific-training': () => { this.state.currentTraining.mode = 'specific'; this.showLectureSelection('training'); },
+                'repeat-difficult': () => { this.startDifficultWordsTraining(); },
                 'show-dictionary': () => this.showLectureSelection('dictionary'),
                 'select-lecture': (ds) => {
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${ds.lecture}"]`);
@@ -102,7 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (this.state.currentTraining.selectedLectures.length > 0) {
                         this.state.currentTraining.mode = 'specific_selected';
                         this.navigateTo('direction-selection-screen');
-                    } else { alert('Будь ласка, оберіть хоча б одну лекцію.'); }
+                    } else {
+                        alert(this.state.texts[this.state.currentLang].select_at_least_one_lecture);
+                    }
                 },
                 'select-lecture-for-dictionary': (ds) => this.showDictionaryForLecture(ds.lecture),
                 'set-direction': (ds) => {
@@ -129,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!this.state.texts || Object.keys(this.state.texts).length === 0) return;
             const texts = this.state.texts[this.state.currentLang];
             if (!texts) return;
+
             document.querySelectorAll('[data-i18n]').forEach(el => { if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n]; });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder]; });
             document.querySelectorAll('[data-lecture-title]').forEach(el => { el.textContent = `${texts.lecture || 'Лекція'} №${el.dataset.lectureTitle}`; });
@@ -199,6 +225,25 @@ document.addEventListener('DOMContentLoaded', () => {
             this.updateHeader();
             this.navigateTo('welcome-screen');
         },
+        
+        async handleChangePin(e, screen) {
+            e.preventDefault();
+            const newPin = screen.querySelector('#new-pin').value;
+            if (!/^\d{4}$/.test(newPin)) {
+                alert('PIN-код повинен складатися з 4 цифр.');
+                return;
+            }
+            const response = await fetch('/api/settings/change_pin', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ new_pin: newPin })
+            });
+            if (response.ok) {
+                alert(this.state.texts[this.state.currentLang].pin_changed_success);
+                this.navigateTo('main-menu-screen');
+            } else {
+                alert('Не вдалося змінити PIN-код.');
+            }
+        },
 
         renderProfile() {
             const detailsContainer = document.getElementById('profile-details');
@@ -207,11 +252,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
             const T = this.state.texts[this.state.currentLang];
-            detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
+            const wordsToday = this.state.currentTraining.results.length; // Simple version
+            
+            detailsContainer.innerHTML = `
+                <div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
                 <div class="level-info">${T.level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
-                <div>${progress} / ${needed} XP</div>`;
+                <div>${progress} / ${needed} XP</div>
+                <div class="daily-stats">
+                    <div>${T.words_learned_today}: ${wordsToday}</div>
+                    <div class="streak-display">
+                        <span class="streak-flame">🔥</span>
+                        <span>${this.state.currentUser.streak_count || 0} ${T.daily_streak}</span>
+                    </div>
+                </div>`;
+
             const leaderboardContainer = document.getElementById('leaderboard-container');
             leaderboardContainer.innerHTML = '';
             (this.state.leaderboard || []).forEach((user, index) => {
@@ -222,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (user.username === this.state.currentUser.username) item.classList.add('current-user');
                 item.innerHTML = `<span class="lb-pos">${index + 1}.</span>
                     <span class="lb-rank">${userRank.emoji}</span>
-                    <span class="lb-name">⏹️${user.username}⏹️</span>
+                    <span class="lb-name">${user.username}</span>
                     <span class="lb-xp">(${user.xp} XP)</span>`;
                 leaderboardContainer.appendChild(item);
             });
@@ -275,6 +331,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
+        startDifficultWordsTraining() {
+            const difficultWordIds = this.state.difficultWords[this.state.currentUser.username] || [];
+            if (difficultWordIds.length === 0) {
+                alert("У вас ще немає складних слів для повторення.");
+                return;
+            }
+            const difficultWords = this.state.words.filter(word => difficultWordIds.includes(word.CZ));
+            this.state.currentTraining.mode = 'difficult';
+            this.navigateTo('direction-selection-screen');
+        },
+
         startTraining(words, isRandom) {
             if (!words || words.length === 0) { alert("Для цього режиму немає слів."); return; }
             let trainingWords = [...words];
@@ -311,33 +378,64 @@ document.addEventListener('DOMContentLoaded', () => {
             const T = this.state.texts[this.state.currentLang];
             const langKey = this.state.currentLang.toUpperCase();
             const userAnswer = inputEl.value.trim();
+            if (userAnswer === '') {
+                alert(T.field_cannot_be_empty);
+                return;
+            }
             const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
             const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
             const correctAnswers = correctAnswersRaw.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
             const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
-            results.push({
-                question: direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA),
-                userAnswer, isCorrect, correctAnswer: correctAnswers[0]
-            });
+            
+            let xp_earned = 0;
             if (isCorrect) {
-                feedbackEl.innerHTML = `<span class="xp-gain">${T.correct} +10 XP</span>`;
+                xp_earned = direction === 'lang_to_cz' ? 12 : 5;
+                feedbackEl.innerHTML = `<span class="xp-gain">${T.correct} +${xp_earned} XP</span>`;
                 const response = await fetch('/api/update_xp', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ xp: 10 })
+                    body: JSON.stringify({ xp: xp_earned })
                 });
                 if(response.ok) {
                     const data = await response.json();
                     this.state.currentUser.xp = data.new_xp;
+                    this.state.currentUser.streak_count = data.new_streak;
                 }
+                this.removeDifficultWord(wordData.CZ);
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
+                this.addDifficultWord(wordData.CZ);
             }
+            
+            results.push({
+                question: direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA),
+                userAnswer, isCorrect, correctAnswer: correctAnswers[0], xp_earned
+            });
+            
             feedbackEl.style.color = isCorrect ? 'var(--success-color)' : 'var(--danger-color)';
             inputEl.disabled = true;
             setTimeout(() => {
                 this.state.currentTraining.index++;
                 this.renderCurrentWord();
             }, isCorrect ? 1000 : 2000);
+        },
+        
+        addDifficultWord(wordId) {
+            const user = this.state.currentUser.username;
+            if (!this.state.difficultWords[user]) {
+                this.state.difficultWords[user] = [];
+            }
+            if (!this.state.difficultWords[user].includes(wordId)) {
+                this.state.difficultWords[user].push(wordId);
+            }
+            localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
+        },
+
+        removeDifficultWord(wordId) {
+            const user = this.state.currentUser.username;
+            if (this.state.difficultWords[user]) {
+                this.state.difficultWords[user] = this.state.difficultWords[user].filter(id => id !== wordId);
+                localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
+            }
         },
 
         showResults() {
@@ -346,13 +444,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const listEl = document.getElementById('results-list');
             const { results } = this.state.currentTraining;
             const correctCount = results.filter(r => r.isCorrect).length;
-            summaryEl.innerHTML = `Ваш результат: <b>${correctCount} з ${results.length}</b> (+${correctCount * 10} XP)`;
+            const totalXpEarned = results.reduce((sum, res) => sum + res.xp_earned, 0);
+
+            summaryEl.innerHTML = `Ваш результат: <b>${correctCount} з ${results.length}</b> (+${totalXpEarned} XP)`;
             listEl.innerHTML = '';
             results.forEach((res, index) => {
                 const item = document.createElement('div');
                 item.className = `result-item ${res.isCorrect ? 'correct' : 'incorrect'}`;
                 const answerHTML = this.generateDiffHtml(res.correctAnswer, res.userAnswer);
-                item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(${res.isCorrect ? '+10' : '0'} XP)</span>`;
+                item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(+${res.xp_earned} XP)</span>`;
                 listEl.appendChild(item);
             });
             this.loadInitialData();
@@ -382,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let html = '<div class="keyboard-row">';
             chars.forEach((char, index) => {
                 html += `<button class="char-btn glow-on-hover">${char}</button>`;
-                if (index === 7) { // Split into two rows
+                if (index === 7) {
                     html += '</div><div class="keyboard-row">';
                 }
             });
