@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
-            }
+            },
+            difficultWords: JSON.parse(localStorage.getItem('difficultWords') || '{}')
         },
 
         elements: {
@@ -22,9 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
             langSwitcher: document.getElementById('lang-switcher'),
             currentLangBtn: document.getElementById('current-lang-btn'),
             langOptions: document.getElementById('lang-options'),
+            themeToggle: document.getElementById('theme-checkbox'),
+            themeSound: document.getElementById('theme-switcher-sound'),
         },
 
         init() {
+            this.initTheme();
             this.addEventListeners();
             this.checkSession();
         },
@@ -43,10 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if ('ontouchstart' in window) {
                         target.classList.add('active-animation');
-                        setTimeout(() => {
-                            this.navigateTo(screenId);
-                            target.classList.remove('active-animation');
-                        }, 300);
+                        setTimeout(() => { this.navigateTo(screenId); target.classList.remove('active-animation'); }, 300);
                     } else {
                         this.navigateTo(screenId);
                     }
@@ -60,12 +61,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (target.matches('.shift-btn')) this.toggleShift();
             });
 
-            this.elements.currentLangBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.elements.langOptions.classList.toggle('visible');
-            });
+            this.elements.currentLangBtn.addEventListener('click', (e) => { e.stopPropagation(); this.elements.langOptions.classList.toggle('visible'); });
+            this.elements.themeToggle.addEventListener('change', () => this.handleThemeChange());
         },
         
+        initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'light') {
+                document.documentElement.classList.add('light-theme');
+                this.elements.themeToggle.checked = true;
+            }
+        },
+
+        handleThemeChange() {
+            if (this.elements.themeToggle.checked) {
+                document.documentElement.classList.add('light-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.remove('light-theme');
+                localStorage.setItem('theme', 'dark');
+            }
+            this.elements.themeSound.currentTime = 0;
+            this.elements.themeSound.play();
+        },
+
         navigateTo(screenId) {
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
@@ -98,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const actions = {
                 'start-random-training': () => { this.state.currentTraining.mode = 'random'; this.navigateTo('direction-selection-screen'); },
                 'start-specific-training': () => { this.state.currentTraining.mode = 'specific'; this.showLectureSelection('training'); },
+                'repeat-difficult': () => { this.startDifficultWordsTraining(); },
                 'show-dictionary': () => this.showLectureSelection('dictionary'),
                 'select-lecture': (ds) => {
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${ds.lecture}"]`);
@@ -117,9 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (this.state.currentTraining.selectedLectures.length > 0) {
                         this.state.currentTraining.mode = 'specific_selected';
                         this.navigateTo('direction-selection-screen');
-                    } else {
-                        alert(this.state.texts[this.state.currentLang].select_at_least_one_lecture);
-                    }
+                    } else { alert(this.state.texts[this.state.currentLang].select_at_least_one_lecture); }
                 },
                 'select-lecture-for-dictionary': (ds) => this.showDictionaryForLecture(ds.lecture),
                 'set-direction': (ds) => {
@@ -218,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.updateHeader();
             this.navigateTo('welcome-screen');
         },
-        
+
         async handleChangePin(e, screen) {
             e.preventDefault();
             const newPin = screen.querySelector('#new-pin').value;
@@ -245,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
             const T = this.state.texts[this.state.currentLang];
-            const wordsToday = this.state.currentTraining.results.length;
+            const wordsToday = this.state.currentTraining.results.filter(r => r.isCorrect).length;
             detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
                 <div class="level-info">${T.level} ${level}</div>
@@ -320,6 +338,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(item);
             });
         },
+        
+        startDifficultWordsTraining() {
+            if (!this.state.currentUser) return;
+            const difficultWordIds = this.state.difficultWords[this.state.currentUser.username] || [];
+            if (difficultWordIds.length === 0) {
+                alert("У вас ще немає складних слів для повторення.");
+                return;
+            }
+            const difficultWords = this.state.words.filter(word => difficultWordIds.includes(word.CZ));
+            this.state.currentTraining.mode = 'difficult';
+            this.startTraining(difficultWords, true);
+        },
 
         startTraining(words, isRandom) {
             if (!words || words.length === 0) { alert("Для цього режиму немає слів."); return; }
@@ -379,8 +409,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.state.currentUser.xp = data.new_xp;
                     this.state.currentUser.streak_count = data.new_streak;
                 }
+                if(this.state.currentTraining.mode === 'difficult') this.removeDifficultWord(wordData.CZ);
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
+                this.addDifficultWord(wordData.CZ);
             }
             
             results.push({
@@ -394,6 +426,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.currentTraining.index++;
                 this.renderCurrentWord();
             }, isCorrect ? 1000 : 2000);
+        },
+        
+        addDifficultWord(wordId) {
+            if(!this.state.currentUser) return;
+            const user = this.state.currentUser.username;
+            if (!this.state.difficultWords[user]) this.state.difficultWords[user] = [];
+            if (!this.state.difficultWords[user].includes(wordId)) this.state.difficultWords[user].push(wordId);
+            localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
+        },
+
+        removeDifficultWord(wordId) {
+            if(!this.state.currentUser) return;
+            const user = this.state.currentUser.username;
+            if (this.state.difficultWords[user]) {
+                this.state.difficultWords[user] = this.state.difficultWords[user].filter(id => id !== wordId);
+                localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
+            }
         },
 
         showResults() {

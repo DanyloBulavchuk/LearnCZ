@@ -8,6 +8,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Immediate script to prevent FOUC (Flash of Unstyled Content)
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'light') {
+                document.documentElement.classList.add('light-theme');
+            }
+        })();
+    </script>
 </head>
 <body>
     <header id="main-header">
@@ -20,114 +29,41 @@
             </div>
         </div>
         <div class="logo" data-screen="main-menu-screen" style="cursor: pointer;">CzechBuddy</div>
-        <nav><button id="profile-button" class="header-button" data-screen="profile-screen" style="display: none;"></button></nav>
+        <nav>
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="theme-checkbox">
+                    <input type="checkbox" id="theme-checkbox" />
+                    <div class="slider round">
+                        <div class="sun-moon">
+                            <svg class="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.106a.75.75 0 010 1.06l-1.591 1.59a.75.75 0 11-1.06-1.06l1.59-1.59a.75.75 0 011.06 0zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.894 17.894a.75.75 0 01-1.06 0l-1.59-1.591a.75.75 0 111.06-1.06l1.59 1.59a.75.75 0 010 1.061zM12 18.75a.75.75 0 01-.75.75v2.25a.75.75 0 011.5 0v-2.25a.75.75 0 01-.75-.75zM5.106 17.894a.75.75 0 010-1.06l1.59-1.59a.75.75 0 111.06 1.06l-1.59 1.59a.75.75 0 01-1.06 0zM4.5 12a.75.75 0 01.75-.75h2.25a.75.75 0 010 1.5H5.25a.75.75 0 01-.75-.75zM6.106 5.106a.75.75 0 011.06 0l1.59 1.591a.75.75 0 01-1.06 1.06L5.106 6.166a.75.75 0 010-1.06z"/></svg>
+                            <svg class="moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 004.463-.949a.75.75 0 01.819.162l.962.962a.75.75 0 01-.162.819A11.25 11.25 0 0112 21a11.25 11.25 0 01-11.25-11.25c0-4.006 2.093-7.533 5.241-9.562l.962.962z" clip-rule="evenodd" /></svg>
+                        </div>
+                    </div>
+                </label>
+            </div>
+            <button id="profile-button" class="header-button" data-screen="profile-screen" style="display: none;"></button>
+        </nav>
     </header>
 
     <main id="app-container"></main>
 
+    <audio id="theme-switcher-sound">
+        <source src="data:audio/mpeg;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA" type="audio/wav">
+    </audio>
     <div id="templates" style="display: none;">
-        <div id="welcome-screen">
-            <h1 class="title" data-i18n="welcome"></h1>
-            <div class="button-group">
-                <button class="glow-on-hover" data-screen="login-screen" data-i18n="login"></button>
-                <button class="glow-on-hover" data-screen="register-screen" data-i18n="register"></button>
-            </div>
-        </div>
-        <div id="login-screen">
-            <h1 class="title" data-i18n="login"></h1>
-            <form id="login-form">
-                <input type="text" id="login-username" data-i18n-placeholder="enter_nickname" required>
-                <input type="password" id="login-pin" data-i18n-placeholder="enter_pin" required pattern="\d{4}">
-                <button type="submit" class="glow-on-hover" data-i18n="login"></button>
-                <button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button>
-            </form>
-        </div>
-        <div id="register-screen">
-            <h1 class="title" data-i18n="register"></h1>
-            <form id="register-form">
-                <input type="text" id="register-username" data-i18n-placeholder="enter_nickname" required minlength="3" maxlength="24">
-                <input type="password" id="register-pin" data-i18n-placeholder="create_pin" required pattern="\d{4}">
-                <button type="submit" class="glow-on-hover" data-i18n="register"></button>
-                <button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button>
-            </form>
-        </div>
-        <div id="main-menu-screen">
-            <h1 class="title" data-i18n="main_menu_title"></h1>
-            <div class="button-group">
-                <button class="glow-on-hover" data-action="start-random-training" data-i18n="random_training"></button>
-                <button class="glow-on-hover" data-action="start-specific-training" data-i18n="specific_training"></button>
-                <button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button>
-            </div>
-        </div>
-        <div id="profile-screen">
-            <h1 class="title" data-i18n="profile_title"></h1>
-            <div class="profile-layout">
-                <div class="panel left-panel">
-                    <h2 data-i18n="leaderboard_title"></h2>
-                    <div id="leaderboard-container" class="scrollable"></div>
-                </div>
-                <div class="panel right-panel">
-                    <div class="shark-image-container"><img src="{{ url_for('static', filename='shark.png') }}" alt="Shark mascot"></div>
-                    <div id="profile-details"></div>
-                    <div class="profile-actions">
-                        <button class="glow-on-hover secondary settings-btn" data-screen="settings-screen">⚙️</button>
-                        <button class="glow-on-hover danger" data-action="logout" data-i18n="logout"></button>
-                    </div>
-                </div>
-            </div>
-            <button data-screen="main-menu-screen" class="glow-on-hover back-button" data-i18n="back_to_menu"></button>
-        </div>
-        <div id="settings-screen">
-             <h1 class="title" data-i18n="settings_title"></h1>
-             <form id="settings-form">
-                <h2 data-i18n="change_pin"></h2>
-                <input type="password" id="new-pin" data-i18n-placeholder="new_pin" required pattern="\d{4}">
-                <button type="submit" class="glow-on-hover" data-i18n="save_changes"></button>
-             </form>
-             <button data-screen="profile-screen" class="glow-on-hover secondary back-button" data-i18n="back"></button>
-        </div>
-        <div id="lecture-selection-screen">
-            <h1 class="title" data-i18n="choose_lecture"></h1>
-            <div id="lecture-buttons-container" class="lecture-grid scrollable"></div>
-            <div id="lecture-actions-container"></div>
-            <button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
-        </div>
-        <div id="direction-selection-screen">
-            <h1 class="title" data-i18n="direction_title"></h1>
-            <div class="button-group">
-                <button class="glow-on-hover" data-action="set-direction" data-direction="cz_to_lang" data-i18n="cz_to_lang"></button>
-                <button class="glow-on-hover" data-action="set-direction" data-direction="lang_to_cz" data-i18n="lang_to_cz"></button>
-            </div>
-            <button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
-        </div>
-        <div id="training-screen">
-            <div class="training-header">
-                <div class="training-progress"></div>
-            </div>
-            <div class="training-word"></div>
-            <form class="training-form">
-                <input type="text" class="training-input" placeholder="Ваша відповідь..." autocomplete="off">
-            </form>
-            <div class="training-feedback"></div>
-            <div id="special-chars-keyboard"></div>
-            <div class="training-buttons">
-                <button class="glow-on-hover training-check-btn" data-i18n="check"></button>
-                <button class="glow-on-hover secondary training-exit-btn" data-action="show-results" data-i18n="finish_training"></button>
-            </div>
-        </div>
-        <div id="results-screen">
-            <h1 class="title" data-i18n="results_title"></h1>
-            <div id="results-summary"></div>
-            <div id="results-list" class="scrollable"></div>
-            <button class="glow-on-hover back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
-        </div>
-        <div id="dictionary-view-screen">
-             <h1 class="title" data-i18n="dictionary"></h1>
-             <div id="dictionary-words-container" class="scrollable dictionary-list"></div>
-             <button type="button" class="glow-on-hover secondary back-button" data-action="show-dictionary" data-i18n="back"></button>
-        </div>
+        <div id="welcome-screen"><h1 class="title" data-i18n="welcome"></h1><div class="button-group"><button class="glow-on-hover" data-screen="login-screen" data-i18n="login"></button><button class="glow-on-hover" data-screen="register-screen" data-i18n="register"></button></div></div>
+        <div id="login-screen"><h1 class="title" data-i18n="login"></h1><form id="login-form"><input type="text" id="login-username" data-i18n-placeholder="enter_nickname" required><input type="password" id="login-pin" data-i18n-placeholder="enter_pin" required pattern="\d{4}"><button type="submit" class="glow-on-hover" data-i18n="login"></button><button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button></form></div>
+        <div id="register-screen"><h1 class="title" data-i18n="register"></h1><form id="register-form"><input type="text" id="register-username" data-i18n-placeholder="enter_nickname" required minlength="3" maxlength="24"><input type="password" id="register-pin" data-i18n-placeholder="create_pin" required pattern="\d{4}"><button type="submit" class="glow-on-hover" data-i18n="register"></button><button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button></form></div>
+        <div id="main-menu-screen"><h1 class="title" data-i18n="main_menu_title"></h1><div class="button-group"><button class="glow-on-hover" data-action="start-random-training" data-i18n="random_training"></button><button class="glow-on-hover" data-action="start-specific-training" data-i18n="specific_training"></button><button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button></div></div>
+        <div id="profile-screen"><h1 class="title" data-i18n="profile_title"></h1><div class="profile-layout"><div class="panel left-panel"><h2 data-i18n="leaderboard_title"></h2><div id="leaderboard-container" class="scrollable"></div></div><div class="panel right-panel"><div class="shark-image-container"><img src="/static/shark.png" alt="Shark mascot"></div><div id="profile-details"></div><div class="profile-actions"><button class="glow-on-hover secondary settings-btn" data-screen="settings-screen">⚙️</button><button class="glow-on-hover danger" data-action="logout" data-i18n="logout"></button></div></div></div><button data-screen="main-menu-screen" class="glow-on-hover back-button" data-i18n="back_to_menu"></button></div>
+        <div id="settings-screen"><h1 class="title" data-i18n="settings_title"></h1><form id="settings-form"><h2 data-i18n="change_pin"></h2><input type="password" id="new-pin" data-i18n-placeholder="new_pin" required pattern="\d{4}"><button type="submit" class="glow-on-hover" data-i18n="save_changes"></button></form><button data-screen="profile-screen" class="glow-on-hover secondary back-button" data-i18n="back"></button></div>
+        <div id="lecture-selection-screen"><h1 class="title" data-i18n="choose_lecture"></h1><div id="lecture-buttons-container" class="lecture-grid scrollable"></div><div id="lecture-actions-container"></div><button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button></div>
+        <div id="direction-selection-screen"><h1 class="title" data-i18n="direction_title"></h1><div class="button-group"><button class="glow-on-hover" data-action="set-direction" data-direction="cz_to_lang" data-i18n="cz_to_lang"></button><button class="glow-on-hover" data-action="set-direction" data-direction="lang_to_cz" data-i18n="lang_to_cz"></button></div><button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button></div>
+        <div id="training-screen"><div class="training-header"><div class="training-progress"></div></div><div class="training-word"></div><form class="training-form"><input type="text" class="training-input" placeholder="Ваша відповідь..." autocomplete="off"></form><div class="training-feedback"></div><div id="special-chars-keyboard"></div><div class="training-buttons"><button class="glow-on-hover training-check-btn" data-i18n="check"></button><button class="glow-on-hover secondary training-exit-btn" data-action="show-results" data-i18n="finish_training"></button></div></div>
+        <div id="results-screen"><h1 class="title" data-i18n="results_title"></h1><div id="results-summary"></div><div id="results-list" class="scrollable"></div><button class="glow-on-hover back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button></div>
+        <div id="dictionary-view-screen"><h1 class="title" data-i18n="dictionary"></h1><div id="dictionary-words-container" class="scrollable dictionary-list"></div><button type="button" class="glow-on-hover secondary back-button" data-action="show-dictionary" data-i18n="back"></button></div>
     </div>
-
+    
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

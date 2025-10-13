@@ -199,7 +199,7 @@ input:focus { outline: none; border-color: var(--success-color); box-shadow: 0 0
 .training-word { font-size: 3.5rem; font-weight: 900; color: #FFD700; text-align: center; }
 .training-input { max-width: 500px; }
 .training-feedback { font-size: 1.5rem; font-weight: bold; min-height: 50px; text-align: center; }
-.training-buttons { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+.training-buttons { display: flex; flex-direction: column; gap: 15px; align-items: center; margin-top: auto; }
 .training-check-btn { min-width: 250px; }
 .training-exit-btn { min-width: 300px; font-size: 20px; padding: 18px; }
 .xp-gain { animation: xp-fly-up 1s ease-out; color: var(--success-color); display: inline-block; }
@@ -209,7 +209,7 @@ input:focus { outline: none; border-color: var(--success-color); box-shadow: 0 0
 }
 
 /* Special Chars Keyboard */
-#special-chars-keyboard { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 20px; }
+#special-chars-keyboard { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 15px; }
 .keyboard-row { display: flex; justify-content: center; gap: 5px; }
 .char-btn, .shift-btn { min-width: 45px; width: 45px; height: 45px; padding: 0; font-size: 20px; background: rgba(255,255,255,0.05); border: none; box-shadow: 0 0 10px rgba(0, 191, 255, 0.2); }
 .shift-btn { min-width: 100px; width: 100px; }
