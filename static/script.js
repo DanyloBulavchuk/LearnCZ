@@ -7,14 +7,12 @@ document.addEventListener('DOMContentLoaded', () => {
             leaderboard: [],
             texts: {},
             currentLang: 'ua',
+            isShiftActive: false,
             currentTraining: {
-                words: [],
-                index: 0,
-                results: [],
-                mode: '',
-                direction: '',
-                selectedLectures: [],
-            }
+                words: [], index: 0, results: [], mode: '',
+                direction: '', selectedLectures: [],
+            },
+            difficultWords: JSON.parse(localStorage.getItem('difficultWords') || '{}')
         },
 
         elements: {
@@ -25,44 +23,85 @@ document.addEventListener('DOMContentLoaded', () => {
             langSwitcher: document.getElementById('lang-switcher'),
             currentLangBtn: document.getElementById('current-lang-btn'),
             langOptions: document.getElementById('lang-options'),
+            themeToggle: document.getElementById('theme-checkbox'),
+            themeSound: document.getElementById('theme-switcher-sound'),
         },
 
         init() {
+            this.initTheme();
             this.addEventListeners();
             this.checkSession();
         },
 
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('[data-screen], [data-action], [data-lang]');
+                const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
+                
                 if (!target) {
                     if (!this.elements.langSwitcher.contains(e.target)) {
                         this.elements.langOptions.classList.remove('visible');
                     }
                     return;
                 }
-                
+
                 if (target.dataset.screen) {
-                    if (target.dataset.screen === 'main-menu-screen' && !this.state.currentUser) return;
-                    this.navigateTo(target.dataset.screen);
+                    const screenId = target.dataset.screen;
+                    // Block navigation to main menu if not logged in
+                    if (screenId === 'main-menu-screen' && !this.state.currentUser) {
+                        return;
+                    }
+                    // Delay navigation on mobile to show animation
+                    if ('ontouchstart' in window) {
+                        target.classList.add('active-animation');
+                        setTimeout(() => {
+                            this.navigateTo(screenId);
+                            target.classList.remove('active-animation');
+                        }, 300);
+                    } else {
+                        this.navigateTo(screenId);
+                    }
                 }
                 else if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
                 else if (target.dataset.lang) {
                     this.setLanguage(target.dataset.lang);
                     this.elements.langOptions.classList.remove('visible');
                 }
+                else if (target.matches('.char-btn')) this.insertChar(target.textContent);
+                else if (target.matches('.shift-btn')) this.toggleShift();
             });
 
             this.elements.currentLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.elements.langOptions.classList.toggle('visible');
             });
+            this.elements.themeToggle.addEventListener('change', () => this.handleThemeChange());
         },
         
+        initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'light') {
+                document.documentElement.classList.add('light-theme');
+                if(this.elements.themeToggle) this.elements.themeToggle.checked = true;
+            }
+        },
+
+        handleThemeChange() {
+            if (this.elements.themeToggle.checked) {
+                document.documentElement.classList.add('light-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.remove('light-theme');
+                localStorage.setItem('theme', 'dark');
+            }
+            if(this.elements.themeSound) {
+                this.elements.themeSound.currentTime = 0;
+                this.elements.themeSound.play();
+            }
+        },
+
         navigateTo(screenId) {
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
-                this.elements.mainHeader.classList.toggle('hidden', ['welcome-screen', 'login-screen', 'register-screen'].includes(screenId));
                 this.elements.appContainer.innerHTML = `<div class="screen" id="${screenId}-active">${template.innerHTML}</div>`;
                 this.onScreenLoad(screenId);
                 this.updateAllTexts();
@@ -74,19 +113,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!activeScreen) return;
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
-                '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen)
+                '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
+                '#settings-form': (e) => this.handleChangePin(e, activeScreen),
+                '.training-form': (e) => { e.preventDefault(); this.checkAnswer(); }
             };
             for (const selector in formActions) {
                 const form = activeScreen.querySelector(selector);
                 if (form) form.addEventListener('submit', formActions[selector]);
             }
+            if (activeScreen.querySelector('.training-check-btn')) activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer());
+            
             if (screenId === 'profile-screen') this.renderProfile();
+            if (screenId === 'training-screen') this.renderKeyboard();
         },
 
         handleAction(action, dataset) {
             const actions = {
                 'start-random-training': () => { this.state.currentTraining.mode = 'random'; this.navigateTo('direction-selection-screen'); },
                 'start-specific-training': () => { this.state.currentTraining.mode = 'specific'; this.showLectureSelection('training'); },
+                'repeat-difficult': () => { this.startDifficultWordsTraining(); },
                 'show-dictionary': () => this.showLectureSelection('dictionary'),
                 'select-lecture': (ds) => {
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${ds.lecture}"]`);
@@ -127,7 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLanguage(lang) {
             this.state.currentLang = lang;
-            this.elements.currentLangBtn.textContent = lang.toUpperCase();
+            const flagClasses = { ua: 'flag-ua', en: 'flag-us', ru: 'flag-ru' };
+            this.elements.currentLangBtn.className = `flag-icon ${flagClasses[lang]}`;
             this.updateAllTexts();
         },
 
@@ -207,6 +253,25 @@ document.addEventListener('DOMContentLoaded', () => {
             this.navigateTo('welcome-screen');
         },
 
+        async handleChangePin(e, screen) {
+            e.preventDefault();
+            const newPin = screen.querySelector('#new-pin').value;
+            if (!/^\d{4}$/.test(newPin)) {
+                alert('PIN-код повинен складатися з 4 цифр.');
+                return;
+            }
+            const response = await fetch('/api/settings/change_pin', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ new_pin: newPin })
+            });
+            if (response.ok) {
+                alert(this.state.texts[this.state.currentLang].pin_changed_success);
+                this.navigateTo('profile-screen');
+            } else {
+                alert('Не вдалося змінити PIN-код.');
+            }
+        },
+
         renderProfile() {
             const detailsContainer = document.getElementById('profile-details');
             if (!detailsContainer || !this.state.currentUser) return;
@@ -214,11 +279,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
             const T = this.state.texts[this.state.currentLang];
+            const wordsToday = this.state.currentTraining.results.filter(r => r.isCorrect).length;
+            
             detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
                 <div class="level-info">${T.level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
-                <div>${progress} / ${needed} XP</div>`;
+                <div>${progress} / ${needed} XP</div>
+                <div class="daily-stats">
+                    <div>${T.words_learned_today}: ${wordsToday}</div>
+                    <div class="streak-display">
+                        <span class="streak-flame">🔥</span>
+                        <span>${this.state.currentUser.streak_count || 0} ${T.daily_streak}</span>
+                    </div>
+                </div>`;
             const leaderboardContainer = document.getElementById('leaderboard-container');
             leaderboardContainer.innerHTML = '';
             (this.state.leaderboard || []).forEach((user, index) => {
@@ -281,6 +355,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(item);
             });
         },
+        
+        startDifficultWordsTraining() {
+            if (!this.state.currentUser) return;
+            const user = this.state.currentUser.username;
+            const difficultWordIds = (this.state.difficultWords[user] || []).map(id => String(id));
+            if (difficultWordIds.length === 0) {
+                alert("У вас ще немає складних слів для повторення.");
+                return;
+            }
+            const difficultWords = this.state.words.filter(word => difficultWordIds.includes(word.CZ));
+            this.state.currentTraining.mode = 'difficult';
+            this.startTraining(difficultWords, true);
+        },
 
         startTraining(words, isRandom) {
             if (!words || words.length === 0) { alert("Для цього режиму немає слів."); return; }
@@ -290,7 +377,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.currentTraining.index = 0;
             this.state.currentTraining.results = [];
             this.navigateTo('training-screen');
-            this.renderCurrentWord();
         },
 
         renderCurrentWord() {

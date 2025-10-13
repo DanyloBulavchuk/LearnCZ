@@ -19,7 +19,7 @@ def get_db_connection():
         return psycopg2.connect(DATABASE_URL)
     except Exception as e:
         print(f"DATABASE CONNECTION ERROR: {e}")
-        return None
+        abort(500, description="Cannot connect to the database.")
 
 def init_db():
     conn = get_db_connection()
@@ -111,7 +111,23 @@ TEXTS = {
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
 TEXTS['en']['cz_to_lang'] = "Czech → English"; TEXTS['en']['lang_to_cz'] = "English → Czech"
 TEXTS['ru']['cz_to_lang'] = "Чешский → Русский"; TEXTS['ru']['lang_to_cz'] = "Русский → Чешский"
+
 RANKS = { 1: ("🥉", "Nováček"), 6: ("🥈", "Učedník"), 16: ("🥇", "Znalec"), 31: ("🏆", "Mistr"), 51: ("💎", "Polyglot") }
+
+def get_rank(level):
+    r = RANKS[1]
+    for l, i in RANKS.items():
+        if level >= l: r = i
+        else: break
+    return r
+
+def xp_to_level(xp):
+    level, startXp, needed = 1, 0, 100
+    while xp >= startXp + needed:
+        startXp += needed
+        level += 1
+        needed = int(100 * (1.2 ** (level - 1)))
+    return level, xp - startXp, needed
 
 def load_all_words():
     all_data = []
@@ -135,6 +151,7 @@ def load_all_words():
 ALL_WORDS = load_all_words()
 AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
 
+# --- Flask Routes ---
 @app.route('/')
 def index(): return render_template('index.html')
 
