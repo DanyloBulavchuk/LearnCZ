@@ -8,16 +8,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# --- App Configuration ---
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_fallback_secret_key_for_dev')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# --- Database Connection ---
 def get_db_connection():
     try:
         return psycopg2.connect(DATABASE_URL)
     except Exception as e:
         print(f"DATABASE CONNECTION ERROR: {e}")
-        abort(500, description="Cannot connect to the database.")
+        return None
 
 def init_db():
     conn = get_db_connection()
@@ -39,12 +41,14 @@ def init_db():
     conn.commit()
     conn.close()
 
+# --- Constants, Ranks, and Localization ---
 WORDS_DIR = 'words_CZ'
 TEXTS = {
     'ua': {
         'welcome': "Ласкаво просимо!", 'login': "Вхід", 'register': "Реєстрація",
         'main_menu_title': "Оберіть режим", 'random_training': "Рандомне навчання",
         'specific_training': "Конкретне навчання", 'dictionary': "Словник", 'logout': "Вийти", 'settings': "Налаштування",
+        'repeat_difficult': "Повторення складних слів",
         'profile_title': "Мій профіль", 'leaderboard_title': "Рейтинг гравців",
         'level': "Рівень", 'total_xp': "Загально", 'back_to_menu': "Повернутися до меню",
         'choose_lecture': "Оберіть лекцію", 'back': "Назад",
@@ -65,6 +69,7 @@ TEXTS = {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
         'main_menu_title': "Select a mode", 'random_training': "Random Training",
         'specific_training': "Specific Training", 'dictionary': "Dictionary", 'logout': "Log Out", 'settings': "Settings",
+        'repeat_difficult': "Repeat Difficult Words",
         'profile_title': "My Profile", 'leaderboard_title': "Player Leaderboard",
         'level': "Level", 'total_xp': "Total", 'back_to_menu': "Return to Menu",
         'choose_lecture': "Select a lecture", 'back': "Back",
@@ -85,6 +90,7 @@ TEXTS = {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
         'main_menu_title': "Выберите режим", 'random_training': "Случайное обучение",
         'specific_training': "Конкретное обучение", 'dictionary': "Словарь", 'logout': "Выйти", 'settings': "Настройки",
+        'repeat_difficult': "Повторение сложных слов",
         'profile_title': "Мой профиль", 'leaderboard_title': "Рейтинг игроков",
         'level': "Уровень", 'total_xp': "Всего", 'back_to_menu': "Вернуться в меню",
         'choose_lecture': "Выберите лекцию", 'back': "Назад",
@@ -172,7 +178,9 @@ def logout():
 def get_session():
     if 'username' in session:
         conn = get_db_connection()
-        if conn is None: return jsonify({"user": None})
+        if conn is None:
+            session.pop('username', None)
+            return jsonify({"user": None})
         with conn.cursor() as cur:
             cur.execute("SELECT xp, streak_count FROM users WHERE username = %s;", (session['username'].lower(),))
             user = cur.fetchone()
@@ -213,8 +221,6 @@ def update_xp():
             new_streak = 1
         elif last_date == yesterday:
             new_streak += 1
-        elif last_date == today:
-            pass
         cur.execute("UPDATE users SET xp = %s, streak_count = %s, last_streak_date = %s WHERE username = %s;", (new_xp, new_streak, today, user_key))
     conn.commit()
     conn.close()
