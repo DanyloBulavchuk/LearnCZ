@@ -1,4 +1,34 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ЗАВДАННЯ 3: Функція для ініціалізації анімації "Magnetic Field"
+    const initMagneticButtons = () => {
+        const magneticButtons = document.querySelectorAll('.magnetic');
+        magneticButtons.forEach(btn => {
+            const particlesField = document.createElement('div');
+            particlesField.className = 'particles-field';
+            
+            for (let i = 0; i < 25; i++) { // Створюємо 25 частинок
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const xStart = (Math.random() - 0.5) * 200; // Початкова позиція X
+                const yStart = (Math.random() - 0.5) * 200; // Початкова позиція Y
+                const xEnd = (Math.random() - 0.5) * 200;   // Кінцева позиція X
+                const yEnd = (Math.random() - 0.5) * 200;   // Кінцева позиція Y
+
+                particle.style.setProperty('--x-start', `${xStart}px`);
+                particle.style.setProperty('--y-start', `${yStart}px`);
+                particle.style.setProperty('--x-end', `${xEnd}px`);
+                particle.style.setProperty('--y-end', `${yEnd}px`);
+
+                particle.style.animationDuration = `${Math.random() * 2 + 1}s`; // Тривалість 1-3с
+                particle.style.animationDelay = `${Math.random() * 0.5}s`; // Затримка до 0.5с
+
+                particlesField.appendChild(particle);
+            }
+            btn.appendChild(particlesField);
+        });
+    };
+
     const app = {
         state: {
             currentUser: null,
@@ -24,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentLangBtn: document.getElementById('current-lang-btn'),
             langOptions: document.getElementById('lang-options'),
             themeToggle: document.getElementById('theme-checkbox'),
-            themeSound: document.getElementById('theme-switcher-sound'),
         },
 
         init() {
@@ -37,30 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
                 
-                if (!target) {
-                    if (!this.elements.langSwitcher.contains(e.target)) {
-                        this.elements.langOptions.classList.remove('visible');
-                    }
-                    return;
+                if (!this.elements.langSwitcher.contains(e.target)) {
+                    this.elements.langOptions.classList.remove('visible');
                 }
+                if (!target) return;
 
-                if (target.dataset.screen) {
-                    const screenId = target.dataset.screen;
-                    // Block navigation to main menu if not logged in
-                    if (screenId === 'main-menu-screen' && !this.state.currentUser) {
-                        return;
-                    }
-                    // Delay navigation on mobile to show animation
-                    if ('ontouchstart' in window) {
-                        target.classList.add('active-animation');
-                        setTimeout(() => {
-                            this.navigateTo(screenId);
-                            target.classList.remove('active-animation');
-                        }, 300);
-                    } else {
-                        this.navigateTo(screenId);
-                    }
-                }
+                if (target.dataset.screen) this.navigateTo(target.dataset.screen);
                 else if (target.dataset.action) this.handleAction(target.dataset.action, target.dataset);
                 else if (target.dataset.lang) {
                     this.setLanguage(target.dataset.lang);
@@ -93,10 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.documentElement.classList.remove('light-theme');
                 localStorage.setItem('theme', 'dark');
             }
-            if(this.elements.themeSound) {
-                this.elements.themeSound.currentTime = 0;
-                this.elements.themeSound.play();
-            }
         },
 
         navigateTo(screenId) {
@@ -124,7 +131,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeScreen.querySelector('.training-check-btn')) activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer());
             
             if (screenId === 'profile-screen') this.renderProfile();
-            if (screenId === 'training-screen') this.renderKeyboard();
+            if (screenId === 'training-screen') {
+                this.renderCurrentWord();
+                this.renderKeyboard();
+            }
+            if (screenId === 'lecture-selection-screen') this.updateAllTexts();
+            if (screenId === 'dictionary-view-screen') this.updateAllTexts();
+            
+            // Ініціалізуємо магнітні кнопки після завантаження нового екрану
+            initMagneticButtons();
         },
 
         handleAction(action, dataset) {
@@ -316,14 +331,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const actionsContainer = document.getElementById('lecture-actions-container');
             container.innerHTML = '';
             actionsContainer.innerHTML = '';
+            
             if (mode === 'training') {
                 const allBtn = document.createElement('button');
                 allBtn.className = 'glow-on-hover';
                 allBtn.dataset.action = 'set-direction';
-                this.state.currentTraining.mode = 'specific_all';
+                allBtn.addEventListener('click', () => {
+                     this.state.currentTraining.mode = 'specific_all';
+                     this.navigateTo('direction-selection-screen');
+                });
                 allBtn.dataset.i18n = 'all_lectures';
                 container.appendChild(allBtn);
             }
+
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
                 button.className = 'glow-on-hover';
@@ -332,6 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.dataset.lectureTitle = lectureNum;
                 container.appendChild(button);
             });
+
             if (mode === 'training') {
                 const startBtn = document.createElement('button');
                 startBtn.className = 'glow-on-hover';
