@@ -63,7 +63,8 @@ TEXTS = {
         'select_at_least_one_lecture': "Будь ласка, оберіть хоча б одну лекцію.",
         'words_learned_today': "Сьогодні вивчено слів", 'daily_streak': "Щоденна серія",
         'settings_title': "Налаштування", 'change_pin': "Змінити PIN-код", 'new_pin': "Новий PIN-код",
-        'save_changes': "Зберегти зміни", 'pin_changed_success': "PIN-код успішно змінено!"
+        'save_changes': "Зберегти зміни", 'pin_changed_success': "PIN-код успішно змінено!",
+        'notebook_lecture': "Мій записник"
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -84,7 +85,8 @@ TEXTS = {
         'select_at_least_one_lecture': "Please select at least one lecture.",
         'words_learned_today': "Words learned today", 'daily_streak': "Daily Streak",
         'settings_title': "Settings", 'change_pin': "Change PIN", 'new_pin': "New PIN",
-        'save_changes': "Save Changes", 'pin_changed_success': "PIN changed successfully!"
+        'save_changes': "Save Changes", 'pin_changed_success': "PIN changed successfully!",
+        'notebook_lecture': "My Notebook"
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -105,7 +107,8 @@ TEXTS = {
         'select_at_least_one_lecture': "Пожалуйста, выберите хотя бы одну лекцию.",
         'words_learned_today': "Слов выучено сегодня", 'daily_streak': "Дневная серия",
         'settings_title': "Настройки", 'change_pin': "Сменить PIN-код", 'new_pin': "Новый PIN-код",
-        'save_changes': "Сохранить изменения", 'pin_changed_success': "PIN-код успешно изменен!"
+        'save_changes': "Сохранить изменения", 'pin_changed_success': "PIN-код успешно изменен!",
+        'notebook_lecture': "Мой блокнот"
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
@@ -131,9 +134,18 @@ def xp_to_level(xp):
 
 def load_all_words():
     all_data = []
-    if not os.path.exists(WORDS_DIR): return []
-    files = sorted([f for f in os.listdir(WORDS_DIR) if f.endswith('.xlsx') and f[:-5].isdigit()], key=lambda x: int(x.split('.')[0]))
-    for filename in files:
+    if not os.path.exists(WORDS_DIR):
+        return []
+
+    all_files = [f for f in os.listdir(WORDS_DIR) if f.endswith('.xlsx')]
+    
+    numeric_files = sorted(
+        [f for f in all_files if f[:-5].isdigit()], 
+        key=lambda x: int(x.split('.')[0])
+    )
+    
+    # Process numeric files
+    for filename in numeric_files:
         try:
             df = pd.read_excel(os.path.join(WORDS_DIR, filename), header=None, engine='openpyxl')
             if df.shape[1] >= 4:
@@ -142,8 +154,26 @@ def load_all_words():
                 df.dropna(subset=['CZ', 'UA'], inplace=True)
                 df['lecture'] = int(filename.split('.')[0])
                 all_data.append(df)
-        except Exception as e: print(f"Error loading {filename}: {e}")
-    if not all_data: return []
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
+
+    # Process 'notebook.xlsx'
+    if 'notebook.xlsx' in all_files:
+        filename = 'notebook.xlsx'
+        try:
+            df = pd.read_excel(os.path.join(WORDS_DIR, filename), header=None, engine='openpyxl')
+            if df.shape[1] >= 4:
+                df = df.iloc[:, :4]
+                df.columns = ['CZ', 'UA', 'RU', 'EN']
+                df.dropna(subset=['CZ', 'UA'], inplace=True)
+                df['lecture'] = 0  # Assign special lecture number 0
+                all_data.append(df)
+        except Exception as e:
+            print(f"Error loading {filename}: {e}")
+
+    if not all_data:
+        return []
+        
     full_df = pd.concat(all_data, ignore_index=True)
     full_df.fillna('', inplace=True)
     return full_df.to_dict('records')
