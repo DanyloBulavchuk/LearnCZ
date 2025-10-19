@@ -73,7 +73,17 @@ html.light-theme #main-header {
     left: 50%;
     transform: translateX(-50%);
     transition: color 0.5s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
+
+.shark-mascot {
+    height: 30px;
+    width: auto;
+    object-fit: contain;
+}
+
 
 #lang-switcher { position: relative; }
 #current-lang-btn {
@@ -144,6 +154,7 @@ html.light-theme .header-button:hover {
 #app-container {
     flex-grow: 1; display: flex; justify-content: center; align-items: center;
     padding: 20px; overflow: hidden; width: 100%;
+    position: relative;
 }
 
 /* ЗАВДАННЯ 3: Анімації для появи та зникнення екранів */
@@ -293,8 +304,7 @@ html.light-theme .panel {
 
 .left-panel { flex: 45; border-right: 1px solid rgba(159, 80, 255, 0.3); min-width: 350px;}
 html.light-theme .left-panel { border-right-color: var(--border-color); }
-.left-panel h2 { text-align: center; margin-bottom: 15px; flex-shrink: 0; }
-.right-panel { flex: 55; align-items: center; justify-content: flex-start; }
+.right-panel { flex: 55; }
 #leaderboard-container { min-height: 0; padding-right: 10px; }
 .leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; }
 .leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
@@ -307,7 +317,7 @@ html.light-theme .leaderboard-item.current-user {
 .lb-name { font-weight: bold; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-xp { color: #FFD700; font-weight: bold; white-space: nowrap; }
 html.light-theme .lb-xp { color: #d69e2e; }
-.shark-image-container { margin-bottom: 15px; }
+.shark-image-container { margin-bottom: 15px; text-align: center; }
 .shark-image-container img { width: 250px; height: 250px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(159, 80, 255, 0.5); }
 html.light-theme .shark-image-container img { box-shadow: 0 10px 20px var(--shadow-color); }
 #profile-details { width: 100%; text-align: center; margin-top: 15px; }
@@ -332,10 +342,12 @@ html.light-theme #profile-details .rank { color: #718096; }
 .xp-bar { width: 100%; height: 15px; background-color: rgba(0,0,0, 0.1); border-radius: 10px; margin-top: 10px; overflow: hidden; }
 html.light-theme .xp-bar { background-color: #e2e8f0; }
 .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--success-color), #2ECC71); border-radius: 10px; transition: width 0.5s ease-in-out; }
-.back-button { margin: 20px auto 0 auto; flex-shrink: 0; }
+.back-button { 
+    margin: 20px auto 10px auto; 
+    flex-shrink: 0; 
+}
 .profile-actions { display: flex; gap: 10px; margin-top: auto; width: 100%; }
 .profile-actions button { flex-grow: 1; min-width: 0; padding: 12px; font-size: 16px; }
-.settings-btn { flex-grow: 0 !important; min-width: 60px !important; font-size: 24px !important; padding: 12px 0 !important; }
 
 /* Lecture & Dictionary Screens */
 .lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 10px; flex-grow: 1; }
@@ -479,10 +491,10 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     #leaderboard-container { max-height: 250px; }
     .shark-image-container img { width: 150px; height: 150px; }
     button, .glow-on-hover { min-width: 250px; }
-    .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: auto; margin-bottom: 10px; }
+    .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; }
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }
-    .logo { font-size: 20px; }
+    .logo { font-size: 20px; position: static; transform: none;}
     .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
     .shift-btn { width: 80px; }
 }
