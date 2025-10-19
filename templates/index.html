@@ -26,7 +26,6 @@
                 <div class="flag-icon flag-ru" data-lang="ru"></div>
             </div>
         </div>
-        <!-- ЗАВДАННЯ 7: Додано data-screen для переходу в головне меню -->
         <div class="logo" data-screen="main-menu-screen" style="cursor: pointer;">CzechBuddy</div>
         <nav>
              <div class="theme-switch-wrapper">
@@ -42,6 +41,12 @@
     </header>
 
     <main id="app-container"></main>
+
+    <!-- Глобальні елементи для музики та ефектів -->
+    <audio id="background-music" loop>
+        <source src="/static/song.mp3" type="audio/mpeg">
+    </audio>
+    <div id="emerald-rain-container"></div>
 
     <div id="templates" style="display: none;">
         <div id="welcome-screen">
@@ -78,7 +83,10 @@
                 <button class="glow-on-hover" data-action="start-random-training" data-i18n="random_training"></button>
                 <button class="glow-on-hover" data-action="start-specific-training" data-i18n="specific_training"></button>
                 <button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button>
-                <!-- ЗАВДАННЯ 4: Видалено кнопку "Повторення складних слів" -->
+            </div>
+            <!-- Нова кнопка-емеральд -->
+            <div id="emerald-music-button">
+                <img src="/static/emerald.png" alt="Play Music">
             </div>
         </div>
 
@@ -146,7 +154,6 @@
             </form>
             <div class="training-feedback"></div>
             <div id="special-chars-keyboard"></div>
-             <!-- ЗАВДАННЯ 2: Кнопка "Завершити" повернута вниз -->
             <div class="training-buttons">
                 <button class="glow-on-hover training-check-btn" data-i18n="check"></button>
                 <button class="glow-on-hover secondary training-exit-btn" data-action="finish-training" data-i18n="finish_training"></button>

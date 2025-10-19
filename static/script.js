@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
             isShiftActive: false,
             viewMode: null, // 'dictionary' or 'training'
             selectedLectureForView: null,
-            isCheckingAnswer: false, // Flag to prevent double clicks
+            isCheckingAnswer: false,
+            isMusicPlaying: false,
+            emeraldRainInterval: null,
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
@@ -26,6 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentLangBtn: document.getElementById('current-lang-btn'),
             langOptions: document.getElementById('lang-options'),
             themeToggle: document.getElementById('theme-checkbox'),
+            musicPlayer: document.getElementById('background-music'),
+            emeraldRainContainer: document.getElementById('emerald-rain-container'),
         },
 
         init() {
@@ -36,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
+                const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn, #emerald-music-button');
                 
                 if (!target) {
                     if (!this.elements.langSwitcher.contains(e.target)) {
@@ -46,7 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const dataset = target.dataset;
-                if (dataset.screen) this.navigateTo(dataset.screen);
+                if (target.id === 'emerald-music-button') this.toggleMusic();
+                else if (dataset.screen) this.navigateTo(dataset.screen);
                 else if (dataset.action) this.handleAction(dataset.action, dataset);
                 else if (dataset.lang) {
                     this.setLanguage(dataset.lang);
@@ -439,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            this.state.isCheckingAnswer = false; // Allow checking
+            this.state.isCheckingAnswer = false;
 
             const T = this.state.texts[this.state.currentLang];
             const { index, words, direction } = this.state.currentTraining;
@@ -459,8 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async checkAnswer() {
-            // TASK 1: Fixed word skipping
-            if (this.state.isCheckingAnswer) return; // Block repeated clicks
+            if (this.state.isCheckingAnswer) return;
             this.state.isCheckingAnswer = true;
 
             const screen = document.getElementById('training-screen-active');
@@ -473,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const userAnswer = inputEl.value.trim();
             if (userAnswer === '') {
                 alert(T.field_cannot_be_empty);
-                this.state.isCheckingAnswer = false; // Unlock if answer is empty
+                this.state.isCheckingAnswer = false;
                 return;
             }
             
@@ -510,11 +514,10 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 this.state.currentTraining.index++;
                 this.renderCurrentWord();
-            }, isCorrect ? 500 : 1000);
+            }, isCorrect ? 1200 : 2000);
         },
         
         renderResults() {
-            // TASK 3: Restored results display
             const summaryEl = document.getElementById('results-summary');
             const listEl = document.getElementById('results-list');
             if (!summaryEl || !listEl) return;
@@ -596,14 +599,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let level = 1, startXp = 0, needed = 100;
             while (xp >= startXp + needed) {
                 startXp += needed; level++;
-                needed = Math.floor(100 * (1.2 ** (level - 1)));
+                needed = Math.floor(100 * (1.1 ** (level - 1)));
             }
             return { level, progress: xp - startXp, needed };
         },
 
         getRank(level) {
-            const RANKS = { 1: "🥉", 6: "🥈", 16: "🥇", 31: "🏆", 51: "💎" };
-            const NAMES = { 1: "Nováček", 6: "Učedník", 16: "Znalec", 31: "Mistr", 51: "Polyglot" };
+            const RANKS = { 1: "🥉", 5: "🥈", 10: "🥇", 20: "🏆", 30: "💎" };
+            const NAMES = { 1: "Nováček", 5: "Učedník", 10: "Znalec", 20: "Mistr", 30: "Polyglot" };
             let rankEmoji = "🥉", rankName = "Nováček";
             for (const lvl in RANKS) {
                 if (level >= parseInt(lvl, 10)) {
@@ -612,6 +615,53 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             return { emoji: rankEmoji, name: rankName };
+        },
+
+        // --- EMERALD MUSIC AND RAIN FUNCTIONS ---
+        toggleMusic() {
+            this.state.isMusicPlaying = !this.state.isMusicPlaying;
+            const emeraldButton = document.querySelector('#emerald-music-button');
+
+            if (this.state.isMusicPlaying) {
+                this.elements.musicPlayer.play();
+                this.startEmeraldRain();
+                if (emeraldButton) emeraldButton.classList.add('playing');
+            } else {
+                this.elements.musicPlayer.pause();
+                this.stopEmeraldRain();
+                if (emeraldButton) emeraldButton.classList.remove('playing');
+            }
+        },
+
+        startEmeraldRain() {
+            if (this.state.emeraldRainInterval) return;
+            this.state.emeraldRainInterval = setInterval(() => {
+                const emerald = document.createElement('div');
+                emerald.classList.add('falling-emerald');
+                
+                const size = Math.random() * 8 + 8; // 8px to 16px
+                const duration = Math.random() * 5 + 5; // 5s to 10s
+                
+                emerald.style.width = `${size}px`;
+                emerald.style.height = `${size}px`;
+                emerald.style.left = `${Math.random() * 100}vw`;
+                emerald.style.animationDuration = `${duration}s`;
+                emerald.style.opacity = Math.random() * 0.5 + 0.3; // 0.3 to 0.8
+                
+                this.elements.emeraldRainContainer.appendChild(emerald);
+
+                emerald.addEventListener('animationend', () => {
+                    emerald.remove();
+                });
+            }, 200); // Create a new emerald every 200ms
+        },
+
+        stopEmeraldRain() {
+            clearInterval(this.state.emeraldRainInterval);
+            this.state.emeraldRainInterval = null;
+            // Allow existing emeralds to finish falling, but stop creating new ones.
+            // For immediate removal:
+            // this.elements.emeraldRainContainer.innerHTML = '';
         }
     };
 

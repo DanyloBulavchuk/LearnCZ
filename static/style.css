@@ -10,18 +10,17 @@
     --font-family: 'Montserrat', sans-serif;
 }
 
-/* ЗАВДАННЯ 6: Денна тема зроблена значно темнішою */
 html.light-theme {
-    --bg-color: #d1d5db; /* cool-gray-300 */
-    --text-color: #1f2937; /* cool-gray-800 */
-    --accent-color: #8b5cf6; /* violet-500 */
-    --success-color: #10b981; /* emerald-500 */
-    --danger-color: #ef4444; /* red-500 */
-    --info-color: #3b82f6; /* blue-500 */
-    --panel-bg: #f9fafb; /* cool-gray-50 */
+    --bg-color: #d1d5db;
+    --text-color: #1f2937;
+    --accent-color: #8b5cf6;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --info-color: #3b82f6;
+    --panel-bg: #f9fafb;
     --shadow-color: rgba(107, 114, 128, 0.15);
-    --border-color: #9ca3af; /* cool-gray-400 */
-    --button-bg: #e5e7eb; /* cool-gray-200 */
+    --border-color: #9ca3af;
+    --button-bg: #e5e7eb;
     --button-text-color: #1f2937;
     --button-hover-bg: #d1d5db;
 }
@@ -205,7 +204,6 @@ html.light-theme input:focus {
 
 .scrollable { overflow-y: auto; }
 
-/* ЗАВДАННЯ 5 & 8 & 9: Виправлено підсвічування кнопок */
 .glow-on-hover {
     padding: 18px 35px;
     color: var(--text-color);
@@ -213,7 +211,7 @@ html.light-theme input:focus {
     position: relative;
     z-index: 0;
     border-radius: 12px;
-    overflow: hidden; /* Запобігає виходу градієнту за межі */
+    overflow: hidden;
 }
 .glow-on-hover:before {
     content: '';
@@ -237,13 +235,12 @@ html.light-theme input:focus {
     position: absolute;
     width: calc(100% - 4px);
     height: calc(100% - 4px);
-    background: var(--bg-color); /* Фон кнопки відповідає фону сайту */
+    background: var(--bg-color);
     left: 2px;
     top: 2px;
     border-radius: 10px;
     transition: background .3s ease;
 }
-/* Створюємо ефект фону панелі при наведенні */
 html:not(.light-theme) .glow-on-hover:hover:after {
     background: rgba(159, 80, 255, 0.1);
 }
@@ -252,7 +249,6 @@ html:not(.light-theme) .glow-on-hover:hover:after {
     50% { background-position: 400% 0; }
     100% { background-position: 0 0; }
 }
-/* Стилі для денної теми */
 html.light-theme .glow-on-hover:after { background: var(--panel-bg); }
 html.light-theme .glow-on-hover:hover:after { background: var(--button-hover-bg); }
 html.light-theme .glow-on-hover { color: var(--text-color); }
@@ -451,6 +447,68 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-correct { color: var(--success-color); }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
+/* --- EMERALD BUTTON AND RAIN EFFECT --- */
+#emerald-music-button {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 100px;
+    cursor: pointer;
+    transition: transform 0.3s ease, filter 0.5s ease;
+    z-index: 10;
+}
+#emerald-music-button:hover {
+    transform: translateX(-50%) scale(1.1);
+}
+#emerald-music-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 15px #059669);
+    transition: filter 0.5s ease;
+}
+#emerald-music-button.playing {
+    animation: pulse 2s infinite;
+}
+#emerald-music-button.playing img {
+    filter: drop-shadow(0 0 25px #10b981);
+}
+@keyframes pulse {
+    0% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.05); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+
+#emerald-rain-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 9999;
+}
+.falling-emerald {
+    position: absolute;
+    top: -20px;
+    width: 12px;
+    height: 12px;
+    background-image: url('/static/emerald.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    animation: fall linear forwards;
+}
+@keyframes fall {
+    to {
+        transform: translateY(105vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+
 /* Mobile Adaptivity */
 @media (max-width: 768px) {
     .title { font-size: 1.8rem; margin-bottom: 20px; }
@@ -467,5 +525,6 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     .logo { font-size: 20px; position: static; transform: none;}
     .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
     .shift-btn { width: 80px; }
+    #emerald-music-button { width: 80px; height: 80px; bottom: 16px;}
 }
 
