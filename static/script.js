@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
     const app = {
-        // ... state and elements remain the same ...
         state: {
             currentUser: null,
             words: [],
@@ -9,14 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
             texts: {},
             currentLang: 'ua',
             isShiftActive: false,
-            // Додаємо нові поля для керування станом
             viewMode: null, // 'dictionary' or 'training'
             selectedLectureForView: null,
+            isCheckingAnswer: false, // Flag to prevent double clicks
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
             },
-            difficultWords: JSON.parse(localStorage.getItem('difficultWords') || '{}')
         },
 
         elements: {
@@ -36,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.checkSession();
         },
         
-        // ... addEventListeners and initTheme remain the same ...
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn');
@@ -84,13 +81,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        // --- НОВА, ВИПРАВЛЕНА ЛОГІКА НАВІГАЦІЇ ---
         navigateTo(screenId) {
             const oldScreen = this.elements.appContainer.querySelector('.screen');
             if (oldScreen) {
                 oldScreen.classList.remove('entering');
                 oldScreen.classList.add('exiting');
-                // Видаляємо старий екран після завершення анімації
                 oldScreen.addEventListener('animationend', () => oldScreen.remove(), { once: true });
             }
 
@@ -102,22 +97,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 newScreen.innerHTML = template.innerHTML;
                 this.elements.appContainer.appendChild(newScreen);
                 
-                // Викликаємо onScreenLoad ПІСЛЯ додавання нового екрану
                 this.onScreenLoad(screenId);
             }
         },
 
         onScreenLoad(screenId) {
-            this.updateAllTexts(); // Оновлюємо текст одразу
+            this.updateAllTexts(); 
             const activeScreen = document.getElementById(`${screenId}-active`);
             if (!activeScreen) return;
             
-            // Прив'язка подій до форм
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
                 '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
                 '#settings-form': (e) => this.handleChangePin(e, activeScreen),
-                '.training-form': (e) => { e.preventDefault(); this.checkAnswer(); }
+                '.training-form': (e) => { 
+                    e.preventDefault(); 
+                    this.checkAnswer(); 
+                }
             };
             for (const selector in formActions) {
                 const form = activeScreen.querySelector(selector);
@@ -127,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer());
             }
 
-            // Централізований виклик функцій для відображення контенту
             switch (screenId) {
                 case 'profile-screen':
                     this.renderProfile();
@@ -148,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         
-        // ... handleAction, setLanguage, updateAllTexts ...
         handleAction(action, dataset) {
             const actions = {
                 'start-random-training': () => {
@@ -156,16 +150,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.navigateTo('direction-selection-screen');
                 },
                 'start-specific-training': () => {
-                    this.state.viewMode = 'training'; // Встановлюємо режим
+                    this.state.viewMode = 'training';
                     this.navigateTo('lecture-selection-screen');
                 },
                 'show-dictionary': () => {
-                    this.state.viewMode = 'dictionary'; // Встановлюємо режим
+                    this.state.viewMode = 'dictionary';
                     this.navigateTo('lecture-selection-screen');
                 },
-                'repeat-difficult': () => this.startDifficultWordsTraining(),
                 'select-lecture': (ds) => {
-                     // Логіка для вибору/скасування вибору лекцій
                     const lectureNum = parseInt(ds.lecture, 10);
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${lectureNum}"]`);
                     if (!btn) return;
@@ -198,6 +190,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 'finish-training': () => this.navigateTo('results-screen'),
                 'logout': () => this.handleLogout(),
+                'back-to-dict-select': () => {
+                    this.state.viewMode = 'dictionary';
+                    this.navigateTo('lecture-selection-screen');
+                },
+                'back-to-train-select': () => {
+                    this.state.viewMode = 'training';
+                    this.navigateTo('lecture-selection-screen');
+                }
             };
             if (actions[action]) actions[action](dataset);
         },
@@ -226,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
         
-        // ... checkSession, loadInitialData, updateHeader and auth handlers ...
         async checkSession() {
             try {
                 await this.loadInitialData();
@@ -312,8 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         
-        // --- ОНОВЛЕНІ ФУНКЦІЇ ВІДОБРАЖЕННЯ ---
-        
         renderProfile() {
             const detailsContainer = document.getElementById('profile-details');
             if (!detailsContainer || !this.state.currentUser) return;
@@ -321,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
             const T = this.state.texts[this.state.currentLang];
-            const wordsToday = this.state.currentTraining.results.filter(r => r.isCorrect).length;
+            const wordsToday = this.state.currentTraining.results.length > 0 ? this.state.currentTraining.results.filter(r => r.isCorrect).length : 0;
             
             detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
@@ -353,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         renderLectureSelection() {
-            this.state.currentTraining.selectedLectures = []; // Скидаємо стан
+            this.state.currentTraining.selectedLectures = []; 
             const container = document.getElementById('lecture-buttons-container');
             const actionsContainer = document.getElementById('lecture-actions-container');
             container.innerHTML = '';
@@ -370,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (this.state.viewMode === 'training') {
                 const startBtn = document.createElement('button');
-                startBtn.className = 'start-training-btn';
+                startBtn.className = 'glow-on-hover start-training-btn';
                 startBtn.dataset.action = 'start-selected-lectures-training';
                 startBtn.dataset.i18n = 'start_training';
                 actionsContainer.appendChild(startBtn);
@@ -383,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('dict-search-input');
             if (!container || !searchInput) return;
 
-            container.innerHTML = ''; // Очищуємо контейнер
+            container.innerHTML = '';
             const lectureNum = this.state.selectedLectureForView;
             if (lectureNum === null) return;
 
@@ -395,13 +392,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordList.forEach((word, index) => {
                     const item = document.createElement('div');
                     item.className = 'dict-item';
-                    // Тепер слово відображається з дужками
                     item.innerHTML = `<b>${index + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                     container.appendChild(item);
                 });
             };
 
-            renderWords(words); // Перше відображення
+            renderWords(words);
 
             searchInput.addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase();
@@ -412,21 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderWords(filteredWords);
             });
         },
-        
-        startDifficultWordsTraining() {
-            if (!this.state.currentUser) return;
-            const user = this.state.currentUser.username;
-            const difficultWordIds = (this.state.difficultWords[user] || []).map(id => String(id));
-            if (difficultWordIds.length === 0) {
-                alert("У вас ще немає складних слів для повторення.");
-                return;
-            }
-            const difficultWords = this.state.words.filter(word => difficultWordIds.includes(word.CZ));
-            this.state.currentTraining.mode = 'difficult';
-            this.state.currentTraining.words = difficultWords;
-            this.state.currentTraining.direction = 'cz_to_lang'; // Припустимо, що завжди в одному напрямку
-            this.startTraining();
-        },
 
         startTraining() {
             let wordsToTrain = [];
@@ -436,10 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 wordsToTrain = [...this.state.words];
             } else if (mode === 'specific_selected') {
                 wordsToTrain = this.state.words.filter(w => selectedLectures.includes(w.lecture));
-            } else if (mode === 'difficult') {
-                const user = this.state.currentUser.username;
-                const difficultWordIds = this.state.difficultWords[user] || [];
-                wordsToTrain = this.state.words.filter(w => difficultWordIds.includes(w.CZ));
             }
 
             if (wordsToTrain.length === 0) {
@@ -447,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            wordsToTrain.sort(() => Math.random() - 0.5); // Завжди перемішуємо
+            wordsToTrain.sort(() => Math.random() - 0.5);
             this.state.currentTraining.words = wordsToTrain;
             this.state.currentTraining.index = 0;
             this.state.currentTraining.results = [];
@@ -462,6 +439,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            this.state.isCheckingAnswer = false; // Allow checking
+
             const T = this.state.texts[this.state.currentLang];
             const { index, words, direction } = this.state.currentTraining;
             const wordData = words[index];
@@ -469,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const langKey = this.state.currentLang.toUpperCase();
             
             const questionWordRaw = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
-            const questionWord = questionWordRaw.replace(/\s*\(.*?\)\s*/g, '').trim(); // Видаляємо дужки
+            const questionWord = questionWordRaw.replace(/\s*\(.*?\)\s*/g, '').trim();
             screen.querySelector('.training-word').textContent = questionWord;
 
             const inputEl = screen.querySelector('.training-input');
@@ -480,6 +459,10 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async checkAnswer() {
+            // TASK 1: Fixed word skipping
+            if (this.state.isCheckingAnswer) return; // Block repeated clicks
+            this.state.isCheckingAnswer = true;
+
             const screen = document.getElementById('training-screen-active');
             const { index, words, direction, results } = this.state.currentTraining;
             const wordData = words[index];
@@ -490,11 +473,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const userAnswer = inputEl.value.trim();
             if (userAnswer === '') {
                 alert(T.field_cannot_be_empty);
+                this.state.isCheckingAnswer = false; // Unlock if answer is empty
                 return;
             }
             
             const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
-            const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, ''); // Видаляємо дужки
+            const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
             const correctAnswers = correctAnswersRaw.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s);
             const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
             
@@ -511,10 +495,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.state.currentUser.xp = data.new_xp;
                     this.state.currentUser.streak_count = data.new_streak;
                 }
-                if(this.state.currentTraining.mode === 'difficult') this.removeDifficultWord(wordData.CZ);
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
-                this.addDifficultWord(wordData.CZ);
             }
             
             results.push({
@@ -524,36 +506,26 @@ document.addEventListener('DOMContentLoaded', () => {
             
             feedbackEl.style.color = isCorrect ? 'var(--success-color)' : 'var(--danger-color)';
             inputEl.disabled = true;
+
             setTimeout(() => {
                 this.state.currentTraining.index++;
                 this.renderCurrentWord();
-            }, isCorrect ? 1000 : 2000);
+            }, isCorrect ? 1200 : 2000);
         },
         
-        // ... add/remove difficult words functions ...
-        addDifficultWord(wordId) {
-            if(!this.state.currentUser) return;
-            const user = this.state.currentUser.username;
-            if (!this.state.difficultWords[user]) this.state.difficultWords[user] = [];
-            if (!this.state.difficultWords[user].includes(wordId)) this.state.difficultWords[user].push(wordId);
-            localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
-        },
-
-        removeDifficultWord(wordId) {
-            if(!this.state.currentUser) return;
-            const user = this.state.currentUser.username;
-            if (this.state.difficultWords[user]) {
-                this.state.difficultWords[user] = this.state.difficultWords[user].filter(id => id !== wordId);
-                localStorage.setItem('difficultWords', JSON.stringify(this.state.difficultWords));
-            }
-        },
-
         renderResults() {
+            // TASK 3: Restored results display
             const summaryEl = document.getElementById('results-summary');
             const listEl = document.getElementById('results-list');
             if (!summaryEl || !listEl) return;
 
             const { results } = this.state.currentTraining;
+            if (!results || results.length === 0) {
+                 summaryEl.innerHTML = "Ви не відповіли на жодне слово.";
+                 listEl.innerHTML = '';
+                 return;
+            }
+            
             const correctCount = results.filter(r => r.isCorrect).length;
             const totalXpEarned = results.reduce((sum, res) => sum + (res.xp_earned || 0), 0);
 
@@ -566,7 +538,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(+${res.xp_earned || 0} XP)</span>`;
                 listEl.appendChild(item);
             });
-            this.loadInitialData(); // Оновлюємо дані для профілю
+            
+            this.loadInitialData();
         },
         
         generateDiffHtml(correct, user) {
