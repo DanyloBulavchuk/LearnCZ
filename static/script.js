@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.checkSession();
         },
         
-        addEventListeners() {
+            addEventListeners() {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn, #emerald-music-button');
                 
@@ -60,6 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (target.matches('.char-btn')) this.insertChar(target.textContent);
                 else if (target.matches('.shift-btn')) this.toggleShift();
             });
+
+            // --- НОВИЙ ОБРОБНИК ПОДІЙ ---
+            // Додаємо слухача для події 'input' (рух повзунка)
+            document.body.addEventListener('input', (e) => {
+                const target = e.target;
+                if (target.id === 'volume-slider') {
+                    this.setVolume(target.value);
+                }
+            });
+            // --- КІНЕЦЬ НОВОГО КОДУ ---
 
             this.elements.currentLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -621,17 +631,31 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleMusic() {
             this.state.isMusicPlaying = !this.state.isMusicPlaying;
             const emeraldButton = document.querySelector('#emerald-music-button');
+            // --- ЗМІНА: Отримуємо повзунок ---
+            const volumeSlider = document.getElementById('volume-slider');
 
             if (this.state.isMusicPlaying) {
                 this.elements.musicPlayer.play();
                 this.startEmeraldRain();
                 if (emeraldButton) emeraldButton.classList.add('playing');
+                // --- ЗМІНА: Показываємо повзунок ---
+                if (volumeSlider) {
+                    volumeSlider.classList.add('visible');
+                    // Встановлюємо гучність музики відповідно до поточного значення повзунка
+                    this.setVolume(volumeSlider.value); 
+                }
             } else {
                 this.elements.musicPlayer.pause();
                 this.elements.musicPlayer.currentTime = 0; // Reset music to the beginning
                 this.stopEmeraldRain();
                 if (emeraldButton) emeraldButton.classList.remove('playing');
+                // --- ЗМІНА: Приховуємо повзунок ---
+                if (volumeSlider) volumeSlider.classList.remove('visible');
             }
+        },
+
+        setVolume(volume) {
+            this.elements.musicPlayer.volume = volume;
         },
 
         startEmeraldRain() {
@@ -656,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     emerald.remove();
                 }, duration * 1000);
 
-            }, 300); // Create a new emerald every 300ms for a lighter effect
+            }, 240); // Змінено з 300 на 240 для +25% емеральдів
         },
 
         stopEmeraldRain() {

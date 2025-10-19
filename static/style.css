@@ -526,3 +526,20 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     #emerald-music-button { width: 90px; height: 90px; bottom: 48px;}
 }
 
+#volume-slider {
+    display: none; /* Сховано за замовчуванням */
+    position: absolute;
+    /* Розміщуємо трохи вище кнопки-емеральда */
+    bottom: 165px; /* (120px висота кнопки + 32px відступ + 13px пробіл) */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    z-index: 11; /* Щоб був вище кнопки */
+    cursor: pointer;
+    /* Задаємо колір повзунка, щоб відповідав темі */
+    accent-color: var(--accent-color);
+}
+
+#volume-slider.visible {
+    display: block; /* Робимо видимим, коли музика грає */
+}
