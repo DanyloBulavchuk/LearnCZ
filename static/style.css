@@ -450,11 +450,11 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 /* --- EMERALD BUTTON AND RAIN EFFECT --- */
 #emerald-music-button {
     position: absolute;
-    bottom: 24px;
+    bottom: 32px;
     left: 50%;
     transform: translateX(-50%);
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     cursor: pointer;
     transition: transform 0.3s ease, filter 0.5s ease;
     z-index: 10;
@@ -466,19 +466,18 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: drop-shadow(0 0 15px #059669);
+    filter: drop-shadow(0 0 15px #059669) drop-shadow(0 0 25px #34d399);
     transition: filter 0.5s ease;
 }
 #emerald-music-button.playing {
-    animation: pulse 2s infinite;
+    animation: pulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 #emerald-music-button.playing img {
-    filter: drop-shadow(0 0 25px #10b981);
+    filter: drop-shadow(0 0 25px #10b981) drop-shadow(0 0 40px #6ee7b7);
 }
 @keyframes pulse {
-    0% { transform: translateX(-50%) scale(1); }
+    0%, 100% { transform: translateX(-50%) scale(1); }
     50% { transform: translateX(-50%) scale(1.05); }
-    100% { transform: translateX(-50%) scale(1); }
 }
 
 #emerald-rain-container {
@@ -493,13 +492,12 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 }
 .falling-emerald {
     position: absolute;
-    top: -20px;
-    width: 12px;
-    height: 12px;
+    top: -30px; /* Start off-screen */
     background-image: url('/static/emerald.png');
     background-size: contain;
     background-repeat: no-repeat;
     animation: fall linear forwards;
+    will-change: transform, opacity;
 }
 @keyframes fall {
     to {
@@ -525,6 +523,6 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     .logo { font-size: 20px; position: static; transform: none;}
     .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
     .shift-btn { width: 80px; }
-    #emerald-music-button { width: 80px; height: 80px; bottom: 16px;}
+    #emerald-music-button { width: 90px; height: 90px; bottom: 48px;}
 }
 

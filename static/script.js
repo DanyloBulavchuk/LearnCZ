@@ -599,14 +599,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let level = 1, startXp = 0, needed = 100;
             while (xp >= startXp + needed) {
                 startXp += needed; level++;
-                needed = Math.floor(100 * (1.1 ** (level - 1)));
+                needed = Math.floor(100 * (1.2 ** (level - 1)));
             }
             return { level, progress: xp - startXp, needed };
         },
 
         getRank(level) {
-            const RANKS = { 1: "🥉", 5: "🥈", 10: "🥇", 20: "🏆", 30: "💎" };
-            const NAMES = { 1: "Nováček", 5: "Učedník", 10: "Znalec", 20: "Mistr", 30: "Polyglot" };
+            const RANKS = { 1: "🥉", 6: "🥈", 16: "🥇", 31: "🏆", 51: "💎" };
+            const NAMES = { 1: "Nováček", 6: "Učedník", 16: "Znalec", 31: "Mistr", 51: "Polyglot" };
             let rankEmoji = "🥉", rankName = "Nováček";
             for (const lvl in RANKS) {
                 if (level >= parseInt(lvl, 10)) {
@@ -628,6 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (emeraldButton) emeraldButton.classList.add('playing');
             } else {
                 this.elements.musicPlayer.pause();
+                this.elements.musicPlayer.currentTime = 0; // Reset music to the beginning
                 this.stopEmeraldRain();
                 if (emeraldButton) emeraldButton.classList.remove('playing');
             }
@@ -639,29 +640,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const emerald = document.createElement('div');
                 emerald.classList.add('falling-emerald');
                 
-                const size = Math.random() * 8 + 8; // 8px to 16px
-                const duration = Math.random() * 5 + 5; // 5s to 10s
+                const size = Math.random() * 10 + 10; // 10px to 20px
+                const duration = Math.random() * 5 + 7; // 7s to 12s
                 
                 emerald.style.width = `${size}px`;
                 emerald.style.height = `${size}px`;
                 emerald.style.left = `${Math.random() * 100}vw`;
                 emerald.style.animationDuration = `${duration}s`;
-                emerald.style.opacity = Math.random() * 0.5 + 0.3; // 0.3 to 0.8
+                emerald.style.opacity = Math.random() * 0.4 + 0.4; // 0.4 to 0.8
                 
                 this.elements.emeraldRainContainer.appendChild(emerald);
 
-                emerald.addEventListener('animationend', () => {
+                // Self-destruct after animation
+                setTimeout(() => {
                     emerald.remove();
-                });
-            }, 200); // Create a new emerald every 200ms
+                }, duration * 1000);
+
+            }, 300); // Create a new emerald every 300ms for a lighter effect
         },
 
         stopEmeraldRain() {
             clearInterval(this.state.emeraldRainInterval);
             this.state.emeraldRainInterval = null;
-            // Allow existing emeralds to finish falling, but stop creating new ones.
-            // For immediate removal:
-            // this.elements.emeraldRainContainer.innerHTML = '';
+            // Clear all falling emeralds immediately
+            this.elements.emeraldRainContainer.innerHTML = '';
         }
     };
 
