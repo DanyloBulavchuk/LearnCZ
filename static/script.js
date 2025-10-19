@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 this.state.currentTraining.index++;
                 this.renderCurrentWord();
-            }, isCorrect ? 1200 : 2000);
+            }, isCorrect ? 500 : 1000);
         },
         
         renderResults() {
