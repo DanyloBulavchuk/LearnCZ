@@ -115,7 +115,6 @@ html.light-theme #lang-options { background-color: #fff; border-color: var(--bor
     background-size: cover;
     background-position: center;
 }
-/* ЗАВДАННЯ 1: Виправлено пошкоджений base64 для прапора України */
 .flag-ua { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MDAgNjAwIj48cmVjdCBmaWxsPSIjMDA1N0I3IiB3aWR0aD0iOTAwIiBoZWlnaHQ9IjMwMCIvPjxyZWN0IGZpbGw9IiNGRkQ3MDAiIHk9IjMwMCIgd2lkdGg9IjkwMCIgaGVpZ2h0PSIzMDAiLz48L3N2Zz4='); }
 .flag-us { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3NjAgNDAwIj48cGF0aCBmaWxsPSIjQjIyMjM0IiBkPSJNMCAwIGg3NjB2NDAwSDB6Ii8+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgNTZoNzYwdjU2SDB6bTAgMTEyaDc2MHY1Nkgwem0wIDExMmg3NjB2NTZIMHoiLz48cGF0aCBmaWxsPSIjM0M2QjZFIiBkPSJNMCAwaDM4MHYyMjRIMHoiLz48L3N2Zz4='); }
 .flag-ru { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MDAgNjAwIj48cmVjdCBmaWxsPSIjZmZmIiB3aWR0aD0iOTAwIiBoZWlnaHQ9IjYwMCIvPjxyZWN0IGZpbGw9IiMwMDM5QTYiIHk9IjIwMCIgd2lkdGg9IjkwMCIgaGVpZ2h0PSIyMDAiLz48cmVjdCBmaWxsPSIjRDUyQjFFIiB5PSI0MDAiIHdpZHRoPSI5MDAiIGhlaWdodD0iMjAwIi8+PC9zdmc+'); }
@@ -134,6 +133,13 @@ html.light-theme .header-button {
     box-shadow: none;
     border: 1px solid var(--border-color);
 }
+.header-button:hover {
+    background-color: rgba(159, 80, 255, 0.3);
+}
+html.light-theme .header-button:hover {
+    background-color: var(--button-hover-bg);
+}
+
 
 #app-container {
     flex-grow: 1; display: flex; justify-content: center; align-items: center;
@@ -158,6 +164,9 @@ html.light-theme .header-button {
 }
 
 .button-group { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.button-group .glow-on-hover {
+    min-width: 320px;
+}
 
 button {
     font-family: var(--font-family); 
@@ -191,14 +200,12 @@ html.light-theme input:focus {
 
 .scrollable { overflow-y: auto; }
 
-/* ЗАВДАННЯ 5: Нові стилі для анімації "Glow on Hover" */
 .glow-on-hover {
     padding: 18px 35px;
-    min-width: 320px;
     border: none;
     outline: none;
     color: var(--text-color);
-    background: var(--panel-bg);
+    background: transparent;
     cursor: pointer;
     position: relative;
     z-index: 0;
@@ -230,11 +237,15 @@ html.light-theme input:focus {
     position: absolute;
     width: 100%;
     height: 100%;
-    background: var(--bg-color);
+    background: var(--panel-bg);
     left: 0;
     top: 0;
     border-radius: 12px;
 }
+html:not(.light-theme) .glow-on-hover:hover:after {
+    background: rgba(159, 80, 255, 0.1);
+}
+
 
 @keyframes glowing {
     0% { background-position: 0 0; }
@@ -253,65 +264,6 @@ button.danger { background: transparent; }
 html.light-theme button.danger:after { background: #fee2e2; }
 html.light-theme button.danger { color: #b91c1c; }
 html.light-theme button.danger:hover:after { background-color: #fecaca; }
-
-/* ЗАВДАННЯ 3: Нові стилі для анімації "Magnetic Field" */
-.magnetic {
-    position: relative;
-    padding: 10px 18px;
-    font-size: 16px;
-    color: var(--text-color);
-    background: #2d2d2d;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    overflow: visible; /* Changed from hidden */
-    transition: all 0.4s ease;
-    z-index: 1;
-}
-
-html.light-theme .magnetic {
-    background-color: var(--button-bg);
-    color: var(--button-text-color);
-    border: 1px solid var(--border-color);
-}
-.magnetic.danger {
-    background: rgba(231, 76, 60, 0.2);
-}
-html.light-theme .magnetic.danger {
-    background-color: #fee2e2;
-    color: #b91c1c;
-}
-
-.particles-field {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    inset: -150%; /* Increased area */
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.particle {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    background: var(--accent-color);
-    border-radius: 50%;
-    animation-name: particleFloat;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-}
-html.light-theme .particle { background: var(--accent-color); }
-
-.magnetic:hover .particles-field { opacity: 1; }
-
-@keyframes particleFloat {
-    0% { transform: translate(var(--x-start), var(--y-start)) scale(0); }
-    50% { transform: translate(var(--x-end), var(--y-end)) scale(1); }
-    100% { transform: translate(var(--x-start), var(--y-start)) scale(0); }
-}
-
 
 /* Profile Screen */
 #profile-screen { height: 100%; }
@@ -362,14 +314,44 @@ html.light-theme .xp-bar { background-color: #e5e7eb; }
 .back-button { margin: 20px auto 0 auto; flex-shrink: 0; }
 .profile-actions { display: flex; gap: 10px; margin-top: auto; width: 100%; }
 .profile-actions button { flex-grow: 1; min-width: 0; padding: 12px; font-size: 16px; }
-.settings-btn { flex-grow: 0; min-width: 60px; font-size: 24px !important; }
+.settings-btn { flex-grow: 0 !important; min-width: 60px !important; font-size: 24px !important; padding: 12px 0 !important; }
 
 /* Lecture & Dictionary Screens */
 .lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 10px; flex-grow: 1; }
 .lecture-grid button { width: 100%; min-width: 0; padding: 25px; }
 .lecture-grid button.selected::before { opacity: 1; background: linear-gradient(45deg, #48ff00, #00ffd5, #48ff00); }
 
-#lecture-actions-container { text-align: center; margin-top: 20px; }
+/* Стилі для контейнера та анімованої кнопки */
+#lecture-actions-container {
+    text-align: center;
+    margin-top: 20px;
+    padding-bottom: 10px;
+}
+.start-training-btn {
+    min-width: 320px;
+    color: #fff;
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(270deg, var(--accent-color), var(--success-color), var(--info-color), var(--accent-color));
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
+    box-shadow: 0 0 25px rgba(159, 80, 255, 0.6);
+    border: none;
+}
+.start-training-btn:hover {
+    box-shadow: 0 0 35px var(--shadow-color);
+}
+.start-training-btn::before, .start-training-btn::after {
+    display: none; /* Вимикаємо ефекти від .glow-on-hover */
+}
+
+@keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+
 .dictionary-list { display: flex; flex-direction: column; gap: 8px; }
 .dict-item { background: var(--panel-bg); padding: 12px 18px; border-radius: 8px; box-shadow: 0 5px 15px var(--shadow-color); transition: all 0.5s ease; }
 html.light-theme .dict-item { border: 1px solid var(--border-color); }
@@ -427,10 +409,6 @@ html.light-theme .training-word { color: var(--accent-color); }
     background-color: #3C3B52;
     transition: background-color 0.4s ease;
     border-radius: 34px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 7px;
 }
 .sun-moon {
     width: 26px;
@@ -447,38 +425,9 @@ html.light-theme .training-word { color: var(--accent-color); }
 input:checked + .slider .sun-moon {
     transform: translateX(30px);
 }
-/* ЗАВДАННЯ 2: Оновлені стилі для іконок всередині перемикача */
-.slider svg {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    z-index: 0;
-}
-.slider .sun {
-    left: 7px;
-    color: #f39c12;
-    opacity: 0;
-    transform: translateY(-50%) rotate(90deg) scale(0.5);
-}
-.slider .moon {
-    right: 7px;
-    color: #f1c40f;
-    opacity: 1;
-    transform: translateY(-50%) rotate(0deg) scale(1);
-}
 input:checked + .slider {
     background-color: var(--button-bg);
 }
-input:checked + .slider .sun {
-    opacity: 1;
-    transform: translateY(-50%) rotate(0deg) scale(1);
-}
-input:checked + .slider .moon {
-    opacity: 0;
-    transform: translateY(-50%) rotate(-90deg) scale(0.5);
-}
-
 
 /* Results Screen */
 #results-screen { gap: 15px; }
@@ -509,3 +458,4 @@ html.light-theme .result-item.incorrect { background-color: #fee2e2; }
     .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
     .shift-btn { width: 80px; }
 }
+

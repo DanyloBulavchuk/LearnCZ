@@ -1,34 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ЗАВДАННЯ 3: Функція для ініціалізації анімації "Magnetic Field"
-    const initMagneticButtons = () => {
-        const magneticButtons = document.querySelectorAll('.magnetic');
-        magneticButtons.forEach(btn => {
-            const particlesField = document.createElement('div');
-            particlesField.className = 'particles-field';
-            
-            for (let i = 0; i < 25; i++) { // Створюємо 25 частинок
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                
-                const xStart = (Math.random() - 0.5) * 200; // Початкова позиція X
-                const yStart = (Math.random() - 0.5) * 200; // Початкова позиція Y
-                const xEnd = (Math.random() - 0.5) * 200;   // Кінцева позиція X
-                const yEnd = (Math.random() - 0.5) * 200;   // Кінцева позиція Y
-
-                particle.style.setProperty('--x-start', `${xStart}px`);
-                particle.style.setProperty('--y-start', `${yStart}px`);
-                particle.style.setProperty('--x-end', `${xEnd}px`);
-                particle.style.setProperty('--y-end', `${yEnd}px`);
-
-                particle.style.animationDuration = `${Math.random() * 2 + 1}s`; // Тривалість 1-3с
-                particle.style.animationDelay = `${Math.random() * 0.5}s`; // Затримка до 0.5с
-
-                particlesField.appendChild(particle);
-            }
-            btn.appendChild(particlesField);
-        });
-    };
-
     const app = {
         state: {
             currentUser: null,
@@ -135,11 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.renderCurrentWord();
                 this.renderKeyboard();
             }
-            if (screenId === 'lecture-selection-screen') this.updateAllTexts();
-            if (screenId === 'dictionary-view-screen') this.updateAllTexts();
-            
-            // Ініціалізуємо магнітні кнопки після завантаження нового екрану
-            initMagneticButtons();
         },
 
         handleAction(action, dataset) {
@@ -335,7 +300,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mode === 'training') {
                 const allBtn = document.createElement('button');
                 allBtn.className = 'glow-on-hover';
-                allBtn.dataset.action = 'set-direction';
                 allBtn.addEventListener('click', () => {
                      this.state.currentTraining.mode = 'specific_all';
                      this.navigateTo('direction-selection-screen');
@@ -355,7 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (mode === 'training') {
                 const startBtn = document.createElement('button');
-                startBtn.className = 'glow-on-hover';
+                // ЗАВДАННЯ 2: Додано спеціальний клас для кнопки
+                startBtn.className = 'glow-on-hover start-training-btn';
                 startBtn.dataset.action = 'start-selected-lectures-training';
                 startBtn.dataset.i18n = 'start_training';
                 actionsContainer.appendChild(startBtn);
@@ -372,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             words.forEach((word, index) => {
                 const item = document.createElement('div');
                 item.className = 'dict-item';
+                // Тут слова відображаються повністю, з дужками
                 item.innerHTML = `<b>${index + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                 container.appendChild(item);
             });
@@ -410,7 +376,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const wordData = words[index];
             screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
             const langKey = this.state.currentLang.toUpperCase();
-            screen.querySelector('.training-word').textContent = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
+            
+            // ЗАВДАННЯ 1: Ігнорування дужок для слова, що відображається у тесті
+            const questionWord = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
+            screen.querySelector('.training-word').textContent = questionWord.replace(/\s*\(.*?\)\s*/g, '').trim();
+
             const inputEl = screen.querySelector('.training-input');
             inputEl.value = ''; inputEl.disabled = false; inputEl.focus();
             screen.querySelector('.training-feedback').innerHTML = '';
@@ -429,9 +399,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(T.field_cannot_be_empty);
                 return;
             }
+            
+            // ЗАВДАННЯ 1: Ігнорування дужок при перевірці відповіді
             const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
-            const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
+            const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '').trim();
             const correctAnswers = correctAnswersRaw.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+            
             const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
             
             let xp_earned = 0;
@@ -496,8 +469,10 @@ document.addEventListener('DOMContentLoaded', () => {
             results.forEach((res, index) => {
                 const item = document.createElement('div');
                 item.className = `result-item ${res.isCorrect ? 'correct' : 'incorrect'}`;
+                // Використовуємо оригінальне питання з дужками для відображення
+                const originalQuestion = res.question.replace(/\s*\(.*?\)\s*/g, '').trim();
                 const answerHTML = this.generateDiffHtml(res.correctAnswer, res.userAnswer);
-                item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(+${res.xp_earned} XP)</span>`;
+                item.innerHTML = `<b>${index + 1}.</b> ${originalQuestion} - ${answerHTML} <span>(+${res.xp_earned} XP)</span>`;
                 listEl.appendChild(item);
             });
             this.loadInitialData();
@@ -576,3 +551,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     app.init();
 });
+
