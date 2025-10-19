@@ -1,155 +1,171 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ua">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CzechBuddy</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- ЗАВДАННЯ 5: Додано легший шрифт Montserrat wght@400 -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script>
-        // Негайний скрипт для уникнення "миготіння" теми при завантаженні
-        (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
-            if (theme === 'light') {
-                document.documentElement.classList.add('light-theme');
-            }
-        })();
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
     <header id="main-header">
-        <div id="lang-switcher">
-            <div id="current-lang-btn" class="flag-icon"></div>
-            <div id="lang-options">
-                <div data-lang="ua" class="flag-icon flag-ua"></div>
-                <div data-lang="en" class="flag-icon flag-us"></div>
-                <div data-lang="ru" class="flag-icon flag-ru"></div>
-            </div>
-        </div>
-        <div class="logo" data-screen="main-menu-screen" style="cursor: pointer;">CzechBuddy</div>
         <nav>
-             <div class="theme-switch-wrapper">
+            <div class="theme-switch-wrapper">
                 <label class="theme-switch" for="theme-checkbox">
                     <input type="checkbox" id="theme-checkbox" />
-                    <div class="slider">
+                    <div class="slider round">
                         <div class="sun-moon"></div>
                     </div>
                 </label>
             </div>
+            <div id="lang-switcher">
+                <div id="current-lang-btn" class="flag-icon flag-ua"></div>
+                <div id="lang-options">
+                    <div class="flag-icon flag-ua" data-lang="ua"></div>
+                    <div class="flag-icon flag-us" data-lang="en"></div>
+                    <div class="flag-icon flag-ru" data-lang="ru"></div>
+                </div>
+            </div>
+        </nav>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='shark.png') }}" alt="Shark Mascot" class="shark-mascot">
+            CzechBuddy
+        </div>
+        <nav>
             <button id="profile-button" class="header-button" data-screen="profile-screen" style="display: none;"></button>
         </nav>
     </header>
 
-    <main id="app-container"></main>
+    <div id="app-container">
+        <!-- Content will be loaded here --></div>
 
     <div id="templates" style="display: none;">
-        <div id="welcome-screen">
+        <!-- Welcome Screen --><div id="welcome-screen">
             <h1 class="title" data-i18n="welcome"></h1>
             <div class="button-group">
                 <button class="glow-on-hover" data-screen="login-screen" data-i18n="login"></button>
                 <button class="glow-on-hover" data-screen="register-screen" data-i18n="register"></button>
             </div>
         </div>
-        <div id="login-screen">
+
+        <!-- Login Screen --><div id="login-screen">
             <h1 class="title" data-i18n="login"></h1>
             <form id="login-form">
                 <input type="text" id="login-username" data-i18n-placeholder="enter_nickname" required>
-                <input type="password" id="login-pin" data-i18n-placeholder="enter_pin" required pattern="\d{4}">
+                <input type="password" id="login-pin" data-i18n-placeholder="enter_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
                 <button type="submit" class="glow-on-hover" data-i18n="login"></button>
-                <button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button>
             </form>
+            <button class="glow-on-hover secondary back-button" data-screen="welcome-screen" data-i18n="back"></button>
         </div>
-        <div id="register-screen">
+
+        <!-- Register Screen --><div id="register-screen">
             <h1 class="title" data-i18n="register"></h1>
             <form id="register-form">
-                <input type="text" id="register-username" data-i18n-placeholder="enter_nickname" required minlength="3" maxlength="24">
-                <input type="password" id="register-pin" data-i18n-placeholder="create_pin" required pattern="\d{4}">
+                <input type="text" id="register-username" data-i18n-placeholder="enter_nickname" required>
+                <input type="password" id="register-pin" data-i18n-placeholder="create_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
                 <button type="submit" class="glow-on-hover" data-i18n="register"></button>
-                <button type="button" class="glow-on-hover secondary" data-screen="welcome-screen" data-i18n="back"></button>
             </form>
+            <button class="glow-on-hover secondary back-button" data-screen="welcome-screen" data-i18n="back"></button>
         </div>
-        <div id="main-menu-screen">
+
+        <!-- Main Menu Screen --><div id="main-menu-screen">
             <h1 class="title" data-i18n="main_menu_title"></h1>
             <div class="button-group">
                 <button class="glow-on-hover" data-action="start-random-training" data-i18n="random_training"></button>
                 <button class="glow-on-hover" data-action="start-specific-training" data-i18n="specific_training"></button>
+                <button class="glow-on-hover" data-action="repeat-difficult" data-i18n="repeat_difficult"></button>
                 <button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button>
+                <button class="glow-on-hover secondary" data-action="logout" data-i18n="logout"></button>
             </div>
         </div>
-        <div id="profile-screen">
+
+        <!-- Profile Screen --><div id="profile-screen">
             <h1 class="title" data-i18n="profile_title"></h1>
-            <div class="profile-layout">
+            <div class="profile-layout scrollable">
                 <div class="panel left-panel">
-                    <h2 data-i18n="leaderboard_title"></h2>
-                    <div id="leaderboard-container" class="scrollable"></div>
-                </div>
-                <div class="panel right-panel">
-                    <div class="shark-image-container"><img src="/static/shark.jpg" alt="Shark mascot"></div>
-                    <div id="profile-details"></div>
+                    <div class="shark-image-container">
+                        <img src="{{ url_for('static', filename='shark.png') }}" alt="User's Shark">
+                    </div>
+                    <div id="profile-details">
+                        <!-- Profile details will be rendered here by JS --></div>
                     <div class="profile-actions">
-                        <button class="glow-on-hover secondary settings-btn" data-screen="settings-screen">⚙️</button>
+                        <button class="glow-on-hover" data-screen="settings-screen" data-i18n="settings"></button>
                         <button class="glow-on-hover danger" data-action="logout" data-i18n="logout"></button>
                     </div>
                 </div>
+                <div class="panel right-panel">
+                    <h2 class="title" data-i18n="leaderboard_title"></h2>
+                    <div id="leaderboard-container" class="scrollable">
+                        <!-- Leaderboard items will be rendered here by JS --></div>
+                </div>
             </div>
-            <button data-screen="main-menu-screen" class="glow-on-hover back-button" data-i18n="back_to_menu"></button>
+            <button class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
         </div>
-        <div id="settings-screen">
-             <h1 class="title" data-i18n="settings_title"></h1>
-             <form id="settings-form">
+
+        <!-- Settings Screen --><div id="settings-screen">
+            <h1 class="title" data-i18n="settings_title"></h1>
+            <form id="settings-form">
                 <h2 data-i18n="change_pin"></h2>
-                <input type="password" id="new-pin" data-i18n-placeholder="new_pin" required pattern="\d{4}">
+                <input type="password" id="new-pin" data-i18n-placeholder="new_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
                 <button type="submit" class="glow-on-hover" data-i18n="save_changes"></button>
-             </form>
-             <button data-screen="profile-screen" class="glow-on-hover secondary back-button" data-i18n="back"></button>
+            </form>
+            <button class="glow-on-hover secondary back-button" data-screen="profile-screen" data-i18n="back"></button>
         </div>
-        <div id="lecture-selection-screen">
+
+        <!-- Lecture Selection Screen --><div id="lecture-selection-screen">
             <h1 class="title" data-i18n="choose_lecture"></h1>
-            <div id="lecture-buttons-container" class="lecture-grid scrollable"></div>
-            <div id="lecture-actions-container"></div>
-            <button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
+            <div id="lecture-buttons-container" class="lecture-grid scrollable">
+                <!-- Lecture buttons will be rendered here by JS --></div>
+            <div id="lecture-actions-container">
+                <!-- Actions like 'Start Training' will appear here --></div>
+            <button class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
-        <div id="direction-selection-screen">
+        
+        <!-- Dictionary View Screen --><div id="dictionary-view-screen">
+            <h1 class="title" data-i18n="dictionary"></h1>
+            <input type="text" id="dict-search-input" data-i18n-placeholder="search_word" class="training-input">
+            <div id="dictionary-words-container" class="scrollable">
+                <!-- Dictionary words will be rendered here by JS --></div>
+            <button class="glow-on-hover secondary back-button" data-action="show-dictionary" data-i18n="back"></button>
+        </div>
+
+        <!-- Direction Selection Screen --><div id="direction-selection-screen">
             <h1 class="title" data-i18n="direction_title"></h1>
             <div class="button-group">
                 <button class="glow-on-hover" data-action="set-direction" data-direction="cz_to_lang" data-i18n="cz_to_lang"></button>
                 <button class="glow-on-hover" data-action="set-direction" data-direction="lang_to_cz" data-i18n="lang_to_cz"></button>
             </div>
-            <button type="button" class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
+            <button class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
-        <div id="training-screen">
+
+        <!-- Training Screen --><div id="training-screen">
             <div class="training-header">
-                <div class="training-progress"></div>
+                <span class="training-progress"></span>
+                <button class="glow-on-hover secondary" data-screen="main-menu-screen" data-i18n="finish_training"></button>
             </div>
-            <div class="training-word"></div>
+            <h2 class="training-word"></h2>
             <form class="training-form">
-                <input type="text" class="training-input" placeholder="Ваша відповідь..." autocomplete="off">
+                <input type="text" class="training-input" required>
+                <div id="special-chars-keyboard"></div>
+                <div class="training-feedback"></div>
+                <div class="training-buttons">
+                    <button type="submit" class="glow-on-hover training-check-btn" data-i18n="check"></button>
+                </div>
             </form>
-            <div class="training-feedback"></div>
-            <div id="special-chars-keyboard"></div>
-            <div class="training-buttons">
-                <button class="glow-on-hover training-check-btn" data-i18n="check"></button>
-                <button class="glow-on-hover secondary training-exit-btn" data-action="show-results" data-i18n="finish_training"></button>
-            </div>
         </div>
-        <div id="results-screen">
+
+        <!-- Results Screen --><div id="results-screen">
             <h1 class="title" data-i18n="results_title"></h1>
             <div id="results-summary"></div>
-            <div id="results-list" class="scrollable"></div>
-            <button class="glow-on-hover back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
-        </div>
-        <div id="dictionary-view-screen">
-             <h1 class="title" data-i18n="dictionary"></h1>
-             <!-- ЗАВДАННЯ 7: Додано поле пошуку для словника -->
-             <input type="text" id="dict-search-input" data-i18n-placeholder="search_word" autocomplete="off">
-             <div id="dictionary-words-container" class="scrollable dictionary-list"></div>
-             <button type="button" class="glow-on-hover secondary back-button" data-action="show-dictionary" data-i18n="back"></button>
+            <div id="results-list" class="scrollable">
+                <!-- Results items will be rendered here by JS --></div>
+            <div class="button-group">
+                <button class="glow-on-hover" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
+                <button class="glow-on-hover" data-action="repeat-last-training" data-i18n="repeat_difficult" style="display: none;"></button>
+            </div>
         </div>
     </div>
-    
+
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
