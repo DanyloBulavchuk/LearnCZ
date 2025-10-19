@@ -76,12 +76,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
+        // ЗАВДАННЯ 3: Оновлена функція навігації з плавною анімацією
         navigateTo(screenId) {
+            const oldScreen = this.elements.appContainer.querySelector('.screen');
+            if (oldScreen) {
+                oldScreen.classList.add('exiting');
+                oldScreen.addEventListener('animationend', () => {
+                    oldScreen.remove();
+                }, { once: true });
+            }
+
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
-                this.elements.appContainer.innerHTML = `<div class="screen" id="${screenId}-active">${template.innerHTML}</div>`;
-                this.onScreenLoad(screenId);
-                this.updateAllTexts();
+                const newScreen = document.createElement('div');
+                newScreen.className = 'screen entering';
+                newScreen.id = `${screenId}-active`;
+                newScreen.innerHTML = template.innerHTML;
+                
+                setTimeout(() => {
+                    this.elements.appContainer.appendChild(newScreen);
+                    this.onScreenLoad(screenId);
+                    this.updateAllTexts();
+                }, oldScreen ? 150 : 0);
             }
         },
 
@@ -105,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.renderCurrentWord();
                 this.renderKeyboard();
             }
+            if(screenId === 'dictionary-view-screen') this.initDictionaryFilter();
         },
 
         handleAction(action, dataset) {
@@ -313,13 +330,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.className = 'glow-on-hover';
                 button.dataset.action = mode === 'training' ? 'select-lecture' : 'select-lecture-for-dictionary';
                 button.dataset.lecture = lectureNum;
-                button.dataset.lectureTitle = lectureNum;
+                
+                if (lectureNum === 0) {
+                    button.dataset.i18n = 'notebook_lecture';
+                } else {
+                    button.dataset.lectureTitle = lectureNum;
+                }
+                
                 container.appendChild(button);
             });
 
             if (mode === 'training') {
                 const startBtn = document.createElement('button');
-                // ЗАВДАННЯ 2: Додано спеціальний клас для кнопки
                 startBtn.className = 'glow-on-hover start-training-btn';
                 startBtn.dataset.action = 'start-selected-lectures-training';
                 startBtn.dataset.i18n = 'start_training';
@@ -337,9 +359,28 @@ document.addEventListener('DOMContentLoaded', () => {
             words.forEach((word, index) => {
                 const item = document.createElement('div');
                 item.className = 'dict-item';
-                // Тут слова відображаються повністю, з дужками
                 item.innerHTML = `<b>${index + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                 container.appendChild(item);
+            });
+        },
+
+        // ЗАВДАННЯ 7: Нова функція для ініціалізації фільтра
+        initDictionaryFilter() {
+            const searchInput = document.getElementById('dict-search-input');
+            const wordsContainer = document.getElementById('dictionary-words-container');
+            if (!searchInput || !wordsContainer) return;
+
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const allWords = wordsContainer.querySelectorAll('.dict-item');
+                allWords.forEach(item => {
+                    const wordText = item.textContent.toLowerCase();
+                    if (wordText.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
             });
         },
         
@@ -377,7 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
             screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
             const langKey = this.state.currentLang.toUpperCase();
             
-            // ЗАВДАННЯ 1: Ігнорування дужок для слова, що відображається у тесті
             const questionWord = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
             screen.querySelector('.training-word').textContent = questionWord.replace(/\s*\(.*?\)\s*/g, '').trim();
 
@@ -400,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            // ЗАВДАННЯ 1: Ігнорування дужок при перевірці відповіді
             const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
             const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '').trim();
             const correctAnswers = correctAnswersRaw.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
@@ -469,7 +508,6 @@ document.addEventListener('DOMContentLoaded', () => {
             results.forEach((res, index) => {
                 const item = document.createElement('div');
                 item.className = `result-item ${res.isCorrect ? 'correct' : 'incorrect'}`;
-                // Використовуємо оригінальне питання з дужками для відображення
                 const originalQuestion = res.question.replace(/\s*\(.*?\)\s*/g, '').trim();
                 const answerHTML = this.generateDiffHtml(res.correctAnswer, res.userAnswer);
                 item.innerHTML = `<b>${index + 1}.</b> ${originalQuestion} - ${answerHTML} <span>(+${res.xp_earned} XP)</span>`;

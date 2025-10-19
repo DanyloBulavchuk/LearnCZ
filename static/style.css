@@ -5,24 +5,28 @@
     --success-color: #39FF14;
     --danger-color: #E74C3C;
     --info-color: #00BFFF;
-    --panel-bg: rgba(255, 255, 255, 0.02);
-    --shadow-color: rgba(159, 80, 255, 0.4);
+    /* ЗАВДАННЯ 1: Змінено суцільний колір на градієнт */
+    --panel-bg: radial-gradient(circle, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%);
+    /* ЗАВДАННЯ 6: Тінь зроблена м'якшою (зменшена прозорість) */
+    --shadow-color: rgba(159, 80, 255, 0.25);
+    /* ЗАВДАННЯ 5: Встановлено основний шрифт */
     --font-family: 'Montserrat', sans-serif;
 }
 
+/* ЗАВДАННЯ 8: Зроблено темніший денний режим */
 html.light-theme {
-    --bg-color: #f9f9fb;
-    --text-color: #1a1a1a;
-    --accent-color: #2563eb;
-    --success-color: #16a34a; 
-    --danger-color: #dc2626; 
-    --info-color: #0284c7;
-    --panel-bg: #ffffff;
-    --shadow-color: rgba(100, 116, 139, 0.12);
-    --border-color: #e0e0e0;
-    --button-bg: #e7f1ff;
-    --button-text-color: #1d4ed8;
-    --button-hover-bg: #dbeafe;
+    --bg-color: #e2e8f0; /* Світло-сірий */
+    --text-color: #2d3748; /* Темно-сірий текст */
+    --accent-color: #6b46c1; /* Більш глибокий фіолетовий */
+    --success-color: #38a169; 
+    --danger-color: #c53030;
+    --info-color: #2b6cb0;
+    --panel-bg: #f7fafc; /* Дуже світло-сірий */
+    --shadow-color: rgba(100, 116, 139, 0.1);
+    --border-color: #cbd5e1; /* Сірий бордер */
+    --button-bg: #e9d8fd;
+    --button-text-color: #553c9a;
+    --button-hover-bg: #d6bcfa;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,10 +45,7 @@ body {
 html:not(.light-theme) body {
     background: radial-gradient(ellipse at center, #191622 0%, #0D0C1D 100%);
 }
-
-html.light-theme body {
-    background: var(--bg-color);
-}
+html.light-theme body { background: var(--bg-color); }
 
 #main-header {
     display: flex;
@@ -60,7 +61,7 @@ html.light-theme body {
     z-index: 100;
 }
 html.light-theme #main-header {
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(247, 250, 252, 0.7);
     border-bottom-color: var(--border-color);
 }
 
@@ -140,27 +141,41 @@ html.light-theme .header-button:hover {
     background-color: var(--button-hover-bg);
 }
 
-
 #app-container {
     flex-grow: 1; display: flex; justify-content: center; align-items: center;
     padding: 20px; overflow: hidden; width: 100%;
 }
 
+/* ЗАВДАННЯ 3: Анімації для появи та зникнення екранів */
 .screen {
     width: 100%; max-width: 1000px; margin: 0 auto;
-    animation: slideInUp 0.5s ease-out;
     display: flex; flex-direction: column; height: 100%;
+    position: absolute;
+}
+.screen.entering {
+    animation: fadeIn 0.5s 0.2s ease-out forwards;
+}
+.screen.exiting {
+    animation: fadeOut 0.3s ease-out forwards;
 }
 
-@keyframes slideInUp {
-    from { opacity: 0; transform: translateY(20px); }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-15px); }
 }
 
 .title {
     font-size: 2.5rem; font-weight: 900; color: var(--accent-color);
     text-align: center; margin-bottom: 30px; flex-shrink: 0;
-    transition: color 0.5s ease;
+    transition: color 0.5s ease, text-shadow 0.5s ease;
+}
+/* ЗАВДАННЯ 2: Неоновий ефект для темної теми */
+html:not(.light-theme) .title {
+    text-shadow: 0 0 8px var(--shadow-color);
 }
 
 .button-group { display: flex; flex-direction: column; align-items: center; gap: 20px; }
@@ -195,7 +210,7 @@ html.light-theme input {
 }
 input:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 10px var(--shadow-color); }
 html.light-theme input:focus {
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.2);
 }
 
 .scrollable { overflow-y: auto; }
@@ -211,7 +226,6 @@ html.light-theme input:focus {
     z-index: 0;
     border-radius: 12px;
 }
-
 .glow-on-hover:before {
     content: '';
     background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
@@ -228,9 +242,7 @@ html.light-theme input:focus {
     transition: opacity .3s ease-in-out;
     border-radius: 12px;
 }
-
 .glow-on-hover:hover:before { opacity: 1; }
-
 .glow-on-hover:after {
     z-index: -1;
     content: '';
@@ -241,38 +253,38 @@ html.light-theme input:focus {
     left: 0;
     top: 0;
     border-radius: 12px;
+    transition: background .3s ease;
 }
 html:not(.light-theme) .glow-on-hover:hover:after {
     background: rgba(159, 80, 255, 0.1);
 }
-
-
 @keyframes glowing {
     0% { background-position: 0 0; }
     50% { background-position: 400% 0; }
     100% { background-position: 0 0; }
 }
 
-html.light-theme .glow-on-hover:after { background: #fff; }
+html.light-theme .glow-on-hover:after { background: var(--panel-bg); }
+html.light-theme .glow-on-hover:hover:after { background: var(--button-hover-bg); }
 html.light-theme .glow-on-hover { color: var(--button-text-color); }
-
 button.secondary { background: transparent; }
 html.light-theme button.secondary:after { background: var(--button-bg); }
 html.light-theme button.secondary:hover:after { background: var(--button-hover-bg); }
-
 button.danger { background: transparent; }
-html.light-theme button.danger:after { background: #fee2e2; }
-html.light-theme button.danger { color: #b91c1c; }
-html.light-theme button.danger:hover:after { background-color: #fecaca; }
+html.light-theme button.danger:after { background: #fecaca; }
+html.light-theme button.danger { color: #9b2c2c; }
+html.light-theme button.danger:hover:after { background-color: #fca5a5; }
 
 /* Profile Screen */
 #profile-screen { height: 100%; }
 .profile-layout { display: flex; flex-grow: 1; gap: 20px; min-height: 0; }
 .panel {
-    padding: 25px; background: var(--panel-bg);
+    padding: 25px; 
+    background: var(--panel-bg);
     border-radius: 15px; height: 100%; display: flex; flex-direction: column;
-    box-shadow: 0 10px 30px var(--shadow-color);
-    transition: background-color 0.5s ease, box-shadow 0.5s ease;
+    /* ЗАВДАННЯ 6: М'якша тінь */
+    box-shadow: 0 15px 40px var(--shadow-color);
+    transition: background 0.5s ease, box-shadow 0.5s ease;
 }
 html.light-theme .panel {
     border: 1px solid var(--border-color);
@@ -287,21 +299,30 @@ html.light-theme .left-panel { border-right-color: var(--border-color); }
 .leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; }
 .leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
 html.light-theme .leaderboard-item.current-user {
-    background-color: #dcfce7;
+    background-color: #c6f6d5;
     box-shadow: none;
 }
-.lb-pos { min-width: 35px; opacity: 0.7; }
+.lb-pos { min-width: 35px; opacity: 0.7; font-weight: 400; }
 .lb-rank { font-size: 20px; min-width: 40px; text-align: center; }
 .lb-name { font-weight: bold; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-xp { color: #FFD700; font-weight: bold; white-space: nowrap; }
-html.light-theme .lb-xp { color: #f59e0b; }
+html.light-theme .lb-xp { color: #d69e2e; }
 .shark-image-container { margin-bottom: 15px; }
 .shark-image-container img { width: 250px; height: 250px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(159, 80, 255, 0.5); }
 html.light-theme .shark-image-container img { box-shadow: 0 10px 20px var(--shadow-color); }
 #profile-details { width: 100%; text-align: center; margin-top: 15px; }
-#profile-details .username { font-size: 3rem; font-weight: 900; }
+#profile-details .username { 
+    font-size: 3rem; font-weight: 900; 
+    transition: text-shadow .5s ease;
+}
+/* ЗАВДАННЯ 2: Неоновий ефект для нікнейму */
+html:not(.light-theme) #profile-details .username {
+    text-shadow: 0 0 12px var(--shadow-color);
+}
+/* ЗАВДАННЯ 5: Ієрархія шрифтів */
+#profile-details .rank, #profile-details .level-info, .daily-stats { font-weight: 400; }
 #profile-details .rank { font-size: 1.2rem; color: #AAAAAA; margin-bottom: 25px; }
-html.light-theme #profile-details .rank { color: #555555; }
+html.light-theme #profile-details .rank { color: #718096; }
 #profile-details .rank .emoji { font-size: 1.5rem; }
 #profile-details .level-info { font-size: 1.2rem; }
 .daily-stats { margin-top: 30px; display: flex; flex-direction: column; gap: 10px; align-items: center; font-size: 1.1rem; }
@@ -309,7 +330,7 @@ html.light-theme #profile-details .rank { color: #555555; }
 .streak-flame { font-size: 30px; animation: flame-pulse 2s infinite; }
 @keyframes flame-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
 .xp-bar { width: 100%; height: 15px; background-color: rgba(0,0,0, 0.1); border-radius: 10px; margin-top: 10px; overflow: hidden; }
-html.light-theme .xp-bar { background-color: #e5e7eb; }
+html.light-theme .xp-bar { background-color: #e2e8f0; }
 .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--success-color), #2ECC71); border-radius: 10px; transition: width 0.5s ease-in-out; }
 .back-button { margin: 20px auto 0 auto; flex-shrink: 0; }
 .profile-actions { display: flex; gap: 10px; margin-top: auto; width: 100%; }
@@ -321,7 +342,6 @@ html.light-theme .xp-bar { background-color: #e5e7eb; }
 .lecture-grid button { width: 100%; min-width: 0; padding: 25px; }
 .lecture-grid button.selected::before { opacity: 1; background: linear-gradient(45deg, #48ff00, #00ffd5, #48ff00); }
 
-/* Стилі для контейнера та анімованої кнопки */
 #lecture-actions-container {
     text-align: center;
     margin-top: 20px;
@@ -342,15 +362,20 @@ html.light-theme .xp-bar { background-color: #e5e7eb; }
     box-shadow: 0 0 35px var(--shadow-color);
 }
 .start-training-btn::before, .start-training-btn::after {
-    display: none; /* Вимикаємо ефекти від .glow-on-hover */
+    display: none;
 }
-
 @keyframes gradient-animation {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
 
+/* ЗАВДАННЯ 7: Стилі для поля пошуку */
+#dict-search-input {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 20px;
+}
 
 .dictionary-list { display: flex; flex-direction: column; gap: 8px; }
 .dict-item { background: var(--panel-bg); padding: 12px 18px; border-radius: 8px; box-shadow: 0 5px 15px var(--shadow-color); transition: all 0.5s ease; }
@@ -362,9 +387,14 @@ html.light-theme .dict-item b { color: #777; }
 /* Training Screen */
 #training-screen { align-items: center; justify-content: center; gap: 15px; }
 .training-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 600px; }
-.training-progress { font-size: 1.2rem; opacity: 0.8; }
+.training-progress { font-size: 1.2rem; opacity: 0.8; font-weight: 400; }
 .training-word { font-size: 3.5rem; font-weight: 900; color: #FFD700; text-align: center; }
 html.light-theme .training-word { color: var(--accent-color); }
+/* ЗАВДАННЯ 2: Неоновий ефект для слова у тесті */
+html:not(.light-theme) .training-word {
+    text-shadow: 0 0 10px #ffd700a1;
+}
+
 .training-input { max-width: 500px; }
 .training-feedback { font-size: 1.5rem; font-weight: bold; min-height: 50px; text-align: center; }
 .training-buttons { display: flex; flex-direction: column; gap: 15px; align-items: center; margin-top: 20px; }
@@ -376,12 +406,10 @@ html.light-theme .training-word { color: var(--accent-color); }
     to { transform: translateY(-60px) scale(1.5); opacity: 0; }
 }
 
-/* Special Chars Keyboard */
 #special-chars-keyboard { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 20px; }
 .keyboard-row { display: flex; justify-content: center; gap: 5px; }
 .char-btn, .shift-btn { min-width: 45px; width: 45px; height: 45px; padding: 0; font-size: 20px; }
 .shift-btn { min-width: 100px; width: 100px; }
-
 
 /* Theme Switcher */
 .theme-switch-wrapper {
@@ -436,8 +464,8 @@ input:checked + .slider {
 .result-item { padding: 8px; border-radius: 5px; font-size: 0.9rem; }
 .result-item.correct { background-color: rgba(57, 255, 20, 0.1); }
 .result-item.incorrect { background-color: rgba(231, 76, 60, 0.1); }
-html.light-theme .result-item.correct { background-color: #dcfce7; }
-html.light-theme .result-item.incorrect { background-color: #fee2e2; }
+html.light-theme .result-item.correct { background-color: #c6f6d5; }
+html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-correct { color: var(--success-color); }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 

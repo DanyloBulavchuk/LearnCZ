@@ -6,6 +6,7 @@
     <title>CzechBuddy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- ЗАВДАННЯ 5: Додано легший шрифт Montserrat wght@400 -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script>
@@ -34,12 +35,10 @@
                 <label class="theme-switch" for="theme-checkbox">
                     <input type="checkbox" id="theme-checkbox" />
                     <div class="slider">
-                        <!-- Іконки сонця та місяця видалено -->
                         <div class="sun-moon"></div>
                     </div>
                 </label>
             </div>
-            <!-- Клас "magnetic" видалено -->
             <button id="profile-button" class="header-button" data-screen="profile-screen" style="display: none;"></button>
         </nav>
     </header>
@@ -88,11 +87,9 @@
                     <div id="leaderboard-container" class="scrollable"></div>
                 </div>
                 <div class="panel right-panel">
-                    <!-- ВИПРАВЛЕННЯ: Змінено шлях до зображення для надійності -->
-                    <div class="shark-image-container"><img src="/static/shark.png" alt="Shark mascot"></div>
+                    <div class="shark-image-container"><img src="/static/shark.jpg" alt="Shark mascot"></div>
                     <div id="profile-details"></div>
                     <div class="profile-actions">
-                         <!-- Клас "magnetic" видалено, повернуто "glow-on-hover" -->
                         <button class="glow-on-hover secondary settings-btn" data-screen="settings-screen">⚙️</button>
                         <button class="glow-on-hover danger" data-action="logout" data-i18n="logout"></button>
                     </div>
@@ -146,6 +143,8 @@
         </div>
         <div id="dictionary-view-screen">
              <h1 class="title" data-i18n="dictionary"></h1>
+             <!-- ЗАВДАННЯ 7: Додано поле пошуку для словника -->
+             <input type="text" id="dict-search-input" data-i18n-placeholder="search_word" autocomplete="off">
              <div id="dictionary-words-container" class="scrollable dictionary-list"></div>
              <button type="button" class="glow-on-hover secondary back-button" data-action="show-dictionary" data-i18n="back"></button>
         </div>
