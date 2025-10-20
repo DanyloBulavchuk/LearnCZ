@@ -132,7 +132,6 @@ html.light-theme #lang-options { background-color: #fff; border-color: var(--bor
     filter: none; /* Завжди кольорова тут */
     margin-top: 5px; /* Невеликий відступ зверху */
 }
-#redstone-easter-egg.found { /* Додатковий стиль для знайденої, якщо знадобиться */ }
 #redstone-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -354,8 +353,8 @@ html.light-theme .left-panel { border-right-color: var(--border-color); }
 .right-panel { flex: 55; }
 #leaderboard-container { min-height: 0; padding-right: 10px; }
 .leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; cursor: pointer; }
-.leaderboard-item:hover:not(.current-user) { background-color: rgba(159, 80, 255, 0.1); }
-.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); cursor: default; }
+.leaderboard-item:hover:not(.current-user) { background-color: rgba(159, 80, 255, 0.1); } /* Ефект наведення тільки на чужі */
+.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); cursor: default; } /* Забороняємо курсор на собі */
 html.light-theme .leaderboard-item.current-user {
     background-color: #c6f6d5;
     box-shadow: none;
@@ -564,18 +563,18 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     align-items: center;
     justify-content: flex-start; /* Вирівнювання по верху */
     padding-top: 20px;
-    gap: 25px; /* Відстань між елементами */
+    gap: 30px; /* Збільшили відстань між елементами */
     display: flex;
     flex-direction: column;
 }
 #settings-screen > h1,
-#settings-screen > h2 { /* Тепер h2 не потрібен для статі */
+#settings-screen > form > h2 { /* Застосовуємо тільки до h2 в формі */
     margin-bottom: 0;
 }
 #settings-screen > form,
 #settings-screen > #gender-slider-container,
 #settings-screen > #volume-slider-container, /* Додано контейнер повзунка */
-#settings-screen > #stop-music-button,
+/* #settings-screen > #stop-music-button, Видалено */
 #settings-screen > .back-button,
 #settings-screen > #gold-easter-egg {
     width: 100%;
@@ -659,7 +658,6 @@ html.light-theme .slider-track {
     filter: none; /* Завжди кольорова тут */
     margin: 0 auto; /* Центрування без зайвих відступів */
 }
-#gold-easter-egg.found { }
 #gold-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -709,7 +707,6 @@ html.light-theme .dict-item b { color: #777; }
     transition: transform 0.2s, filter 0.3s;
     filter: none; /* Завжди кольорова тут */
 }
-#lazurit-easter-egg.found { }
 #lazurit-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -799,21 +796,25 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
 /* --- MUSIC, EASTER EGGS, PARTICLES --- */
-/* Стилі для повзунка гучності в налаштуваннях */
+/* Повзунок гучності тепер позиціонується всередині #settings-screen */
 #volume-slider-container {
     width: 100%;
     max-width: 350px;
-    display: none; /* Ховаємо за замовчуванням, JS покаже якщо треба */
-    margin-top: 10px; /* Додаємо невеликий відступ зверху */
+    /* display: none; Видалено - завжди видимий */
+    margin-top: 10px;
 }
 #volume-slider-settings {
     width: 100%;
+    max-width: 300px; /* Зробили трохи коротшим */
+    display: block; /* Щоб margin: auto працював */
+    margin: 0 auto; /* Центруємо сам повзунок */
     cursor: pointer;
     -webkit-appearance: none;
     appearance: none;
     background: transparent;
-    height: 20px; /* Загальна висота для клікабельності */
+    height: 20px;
 }
+/* ... (решта стилів для ::-webkit-slider-runnable-track, ::-webkit-slider-thumb, ::-moz-range-track, ::-moz-range-thumb як були раніше) ... */
 #volume-slider-settings::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
@@ -951,7 +952,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 @media (max-width: 768px) {
     .title { font-size: 1.8rem; margin-bottom: 20px; }
     #profile-screen, #view-profile-screen { justify-content: flex-start; }
-    .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 70px; /* Запас для кнопки Назад */}
+    .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 20px; /* Зменшили запас */}
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; max-height: 40vh; /* Обмеження висоти рейтингу */ }
     html.light-theme .left-panel { border-bottom-color: var(--border-color); }
     #leaderboard-container { max-height: none; /* Видаляємо попереднє обмеження */}
@@ -976,7 +977,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 
     /* Гарантуємо, що кнопка Назад видима */
     /* Видаляємо margin-top: auto для всіх кнопок "Назад" на мобільних */
-    .right-panel .back-button,
+    /* #profile-screen .back-button Видалено */
     #settings-screen .back-button,
     #results-screen .back-button,
     .view-profile-actions {

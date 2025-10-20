@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         init() {
             this.initTheme(); // Застосовуємо тему
+            this.loadVolume(); // Завантажуємо гучність
             this.addEventListeners();
             this.checkSession();
         },
@@ -90,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isProfileIcon = target.closest('#easter-egg-icons');
                     const isFound = target.classList.contains('found');
                     if (isProfileIcon && !isFound) {
-                        return;
+                        return; // Не запускати музику для не знайдених пасхалок у профілі
                     }
                     this.playMusic(dataset.egg);
                 }
@@ -104,9 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.body.addEventListener('input', (e) => {
                 const target = e.target;
-                 // Тепер шукаємо повзунок у поточному екрані
-                 if (target.id === 'volume-slider-settings' || target.id === 'volume-slider') {
+                 // Обробляємо повзунок гучності тільки в налаштуваннях
+                 if (target.id === 'volume-slider-settings') {
                     this.setVolume(target.value);
+                    this.saveVolume(target.value); // Зберігаємо гучність
                  }
              });
 
@@ -200,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const clickActions = {
                  '.training-check-btn': () => this.checkAnswer(),
-                 '#stop-music-button': () => this.stopAllMusic(),
+                 // '#stop-music-button': () => this.stopAllMusic(), Видалено
                  '#back-to-my-profile-btn': () => this.navigateTo('profile-screen')
             };
             for (const selector in clickActions) {
@@ -646,13 +648,14 @@ document.addEventListener('DOMContentLoaded', () => {
              const container = document.getElementById('volume-slider-container');
              if (!container) return;
 
-             // Показуємо контейнер тільки якщо грає музика
-             container.style.display = this.state.isMusicPlaying ? 'block' : 'none';
+             // Завжди показуємо контейнер
+             container.style.display = 'block';
 
-             const currentVolume = this.state.currentMusicPlayer ? this.state.currentMusicPlayer.volume : 1;
+             // Беремо збережену гучність або 1 за замовчуванням
+             const savedVolume = parseFloat(localStorage.getItem('volumeLevel') || '1');
 
              container.innerHTML = `
-                 <input type="range" id="volume-slider-settings" min="0" max="1" step="0.01" value="${currentVolume}">
+                 <input type="range" id="volume-slider-settings" min="0" max="1" step="0.01" value="${savedVolume}">
              `;
          },
 
@@ -961,35 +964,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const newPlayer = this.elements.audio[eggName];
             if (!newPlayer) return;
 
-            // Якщо натиснуто на ту саму пасхалку, що грає - зупиняємо
             if (this.state.currentMusicPlayer === newPlayer && this.state.isMusicPlaying) {
                 this.stopAllMusic();
                 return;
             }
 
-            // Зупиняємо попередню музику та ефекти
             this.stopAllMusic();
 
             this.state.currentMusicPlayer = newPlayer;
-            // Знаходимо повзунок у налаштуваннях
-            const settingsSlider = document.getElementById('volume-slider-settings');
-            this.state.currentMusicPlayer.volume = settingsSlider ? settingsSlider.value : 1; // Беремо значення звідти
+            const savedVolume = parseFloat(localStorage.getItem('volumeLevel') || '1');
+            this.state.currentMusicPlayer.volume = savedVolume;
             this.state.currentMusicPlayer.play();
             this.state.isMusicPlaying = true;
             this.state.currentParticleType = eggName;
 
             const musicBtn = document.getElementById('music-control-button');
             if (musicBtn) {
-                 // Оновлюємо стан кнопки лише якщо це емеральд або діамант
                 const currentEggType = musicBtn.dataset.egg;
                  musicBtn.classList.toggle('playing', eggName === currentEggType);
             }
 
-             // Оновлюємо стан повзунка в налаштуваннях, якщо вони відкриті
+             // Оновлюємо повзунок в налаштуваннях, якщо він видимий
              if (document.getElementById('settings-screen-active')) {
                  this.renderVolumeSlider();
              }
-
 
             this.startParticleRain(eggName);
 
@@ -1017,10 +1015,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 musicBtn.classList.remove('playing');
             }
 
-             // Ховаємо повзунок у налаштуваннях, якщо вони відкриті
+             // Оновлюємо (ховаємо) повзунок в налаштуваннях, якщо вони відкриті
              if (document.getElementById('settings-screen-active')) {
-                const sliderContainer = document.getElementById('volume-slider-container');
-                if (sliderContainer) sliderContainer.style.display = 'none';
+                 this.renderVolumeSlider(); // Перерендеримо, він сам сховається
              }
 
             this.stopParticleRain();
@@ -1041,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         updateEasterEggIcon(eggName) {
-             const currentScreen = document.querySelector('.screen');
+             const currentScreen = document.querySelector('.screen.entering'); // Шукаємо активний екран
              if (currentScreen) {
                  const profileIcon = currentScreen.querySelector(`#easter-egg-icons .easter-egg-icon[data-egg="${eggName}"]`);
                   if (profileIcon) {
@@ -1049,24 +1046,30 @@ document.addEventListener('DOMContentLoaded', () => {
                   }
              }
 
+             // Оновлюємо іконку в місці її знаходження, якщо вона видима
              const specificIcon = document.querySelector(`[data-egg="${eggName}"]:not(.easter-egg-icon)`);
-              if (specificIcon) {
+              if (specificIcon && specificIcon.offsetParent !== null) { // Перевірка видимості
                  specificIcon.classList.add('found');
              }
         },
 
 
-
+        // Встановлюємо гучність для ВСІХ аудіо елементів
         setVolume(volume) {
-            // Оновлюємо гучність поточного плеєра
-            if (this.state.currentMusicPlayer) {
-                this.state.currentMusicPlayer.volume = volume;
+            for (const key in this.elements.audio) {
+                this.elements.audio[key].volume = volume;
             }
-             // Також оновлюємо значення іншого повзунка (якщо він існує), щоб вони були синхронізовані
-             const settingsSlider = document.getElementById('volume-slider-settings');
-             if (settingsSlider && settingsSlider.value !== volume) {
-                 settingsSlider.value = volume;
-             }
+        },
+
+        // Зберігаємо гучність в localStorage
+        saveVolume(volume) {
+            localStorage.setItem('volumeLevel', volume);
+        },
+
+        // Завантажуємо гучність з localStorage
+        loadVolume() {
+            const savedVolume = localStorage.getItem('volumeLevel') || '1'; // 1 - за замовчуванням
+            this.setVolume(savedVolume);
         },
 
         startParticleRain(particleName) {
