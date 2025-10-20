@@ -23,6 +23,7 @@
                 <div class="flag-icon flag-ua" data-lang="ua"></div>
                 <div class="flag-icon flag-us" data-lang="en"></div>
                 <div class="flag-icon flag-ru" data-lang="ru"></div>
+                <div id="redstone-easter-egg" data-egg="redstone"></div>
             </div>
         </div>
         <div class="logo" data-screen="main-menu-screen" style="cursor: pointer;">CzechBuddy</div>
@@ -41,10 +42,13 @@
 
     <main id="app-container"></main>
 
-    <audio id="background-music" loop>
-        <source src="/static/song.mp3" type="audio/mpeg">
-    </audio>
-    <div id="emerald-rain-container"></div>
+    <audio id="music-emerald" loop src="/static/emerald.mp3" type="audio/mpeg"></audio>
+    <audio id="music-diamond" loop src="/static/diamond.mp3" type="audio/mpeg"></audio>
+    <audio id="music-gold" loop src="/static/gold.mp3" type="audio/mpeg"></audio>
+    <audio id="music-lazurit" loop src="/static/lazurit.mp3" type="audio/mpeg"></audio>
+    <audio id="music-redstone" loop src="/static/redstone.mp3" type="audio/mpeg"></audio>
+    
+    <div id="particle-rain-container"></div>
 
     <div id="templates" style="display: none;">
         <div id="welcome-screen">
@@ -85,8 +89,9 @@
             
             <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
             
-            <div id="emerald-music-button">
-                <img src="/static/emerald.png" alt="Play Music">
+            <div id="music-control-button" data-egg="emerald">
+                <img src="/static/emerald.png" alt="Play Emerald Music" class="emerald">
+                <img src="/static/diamond.png" alt="Play Diamond Music" class="diamond">
             </div>
         </div>
 
@@ -103,13 +108,25 @@
                         <div id="avatar-image-wrapper">
                         </div>
                         <div id="avatar-controls">
-                            <button class="avatar-arrow" data-action="prev-avatar">◀️</button>
+                            <button class="avatar-arrow" data-action="prev-avatar"></button>
                             <span id="avatar-name"></span>
-                            <button class="avatar-arrow" data-action="next-avatar">▶️</button>
+                            <button class="avatar-arrow" data-action="next-avatar"></button>
                         </div>
                     </div>
 
                     <div id="profile-details"></div>
+                    
+                    <div id="easter-egg-container">
+                        <h3 data-i18n="easter_eggs_title"></h3>
+                        <div id="easter-egg-icons">
+                            <div class="easter-egg-icon" data-egg="emerald"></div>
+                            <div class="easter-egg-icon" data-egg="gold"></div>
+                            <div class="easter-egg-icon" data-egg="lazurit"></div>
+                            <div class="easter-egg-icon" data-egg="redstone"></div>
+                            <div class="easter-egg-icon" data-egg="diamond"></div>
+                        </div>
+                    </div>
+
                     <div class="profile-actions">
                         <button class="glow-on-hover secondary" data-screen="settings-screen" data-i18n="settings"></button>
                         <button class="glow-on-hover danger" data-action="logout" data-i18n="logout"></button>
@@ -132,8 +149,14 @@
              <h2 data-i18n="select_gender"></h2>
              <div id="gender-slider-container">
              </div>
+             
+             <div class="settings-divider"></div>
+             
+             <button id="stop-music-button" class="glow-on-hover danger" data-i18n="stop_music_button_text"></button>
 
              <button class="glow-on-hover secondary back-button" data-screen="profile-screen" data-i18n="back"></button>
+             
+             <div id="gold-easter-egg" data-egg="gold"></div>
         </div>
 
         <div id="lecture-selection-screen">

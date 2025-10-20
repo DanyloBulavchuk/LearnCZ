@@ -32,16 +32,18 @@ def init_db():
                 original_case VARCHAR(255) NOT NULL,
                 pin VARCHAR(4) NOT NULL,
                 xp INTEGER DEFAULT 0,
-                streak_count INTEGER DEFAULT 0,
-                last_streak_date DATE,
                 gender VARCHAR(1) DEFAULT 'N',
-                avatar VARCHAR(255)
+                avatar VARCHAR(255),
+                found_easter_eggs TEXT DEFAULT '[]'
             );
         """)
         
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(1) DEFAULT 'N';")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS found_easter_eggs TEXT DEFAULT '[]';")
+            cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS streak_count;")
+            cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS last_streak_date;")
         except psycopg2.Error as e:
             print(f"Помилка при оновленні таблиці: {e}")
             conn.rollback()
@@ -71,12 +73,12 @@ TEXTS = {
         'start_training': "Пройти навчання",
         'field_cannot_be_empty': "Поле не може бути порожнім.",
         'select_at_least_one_lecture': "Будь ласка, оберіть хоча б одну лекцію.",
-        'words_learned_today': "Сьогодні вивчено слів", 'daily_streak': "Щоденна серія",
         'settings_title': "Налаштування", 'change_pin': "Змінити PIN-код", 'new_pin': "Новий PIN-код",
         'save_changes': "Зберегти зміни", 'pin_changed_success': "PIN-код успішно змінено!",
         'notebook_lecture': "Мій записник",
         'select_gender': "Оберіть вашу стать", 'gender_female': "Ж", 'gender_male': "Ч",
-        'choose_avatar': "Оберіть аватарку", 'avatar_unavailable': "Аватар недоступний"
+        'choose_avatar': "Оберіть аватарку", 'avatar_unavailable': "Аватар недоступний",
+        'stop_music_button_text': "ЗУПИНИТИ МУЗИКУ", 'easter_eggs_title': "Пасхалки"
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -95,12 +97,12 @@ TEXTS = {
         'start_training': "Start Training",
         'field_cannot_be_empty': "The field cannot be empty.",
         'select_at_least_one_lecture': "Please select at least one lecture.",
-        'words_learned_today': "Words learned today", 'daily_streak': "Daily Streak",
         'settings_title': "Settings", 'change_pin': "Change PIN", 'new_pin': "New PIN",
         'save_changes': "Save Changes", 'pin_changed_success': "PIN changed successfully!",
         'notebook_lecture': "My Notebook",
         'select_gender': "Select your gender", 'gender_female': "F", 'gender_male': "M",
-        'choose_avatar': "Choose an avatar", 'avatar_unavailable': "Avatar unavailable"
+        'choose_avatar': "Choose an avatar", 'avatar_unavailable': "Avatar unavailable",
+        'stop_music_button_text': "STOP MUSIC", 'easter_eggs_title': "Easter Eggs"
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -119,34 +121,18 @@ TEXTS = {
         'start_training': "Пройти обучение",
         'field_cannot_be_empty': "Поле не может быть пустым.",
         'select_at_least_one_lecture': "Пожалуйста, выберите хотя бы одну лекцию.",
-        'words_learned_today': "Слов выучено сегодня", 'daily_streak': "Дневная серия",
         'settings_title': "Настройки", 'change_pin': "Сменить PIN-код", 'new_pin': "Новый PIN-код",
         'save_changes': "Сохранить изменения", 'pin_changed_success': "PIN-код успешно изменен!",
         'notebook_lecture': "Мой блокнот",
         'select_gender': "Выберите ваш пол", 'gender_female': "Ж", 'gender_male': "М",
-        'choose_avatar': "Выберите аватар", 'avatar_unavailable': "Аватар недоступен"
+        'choose_avatar': "Выберите аватар", 'avatar_unavailable': "Аватар недоступен",
+        'stop_music_button_text': "ОСТАНОВИТЬ МУЗЫКУ", 'easter_eggs_title': "Пасхалки"
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
 TEXTS['en']['cz_to_lang'] = "Czech → English"; TEXTS['en']['lang_to_cz'] = "English → Czech"
 TEXTS['ru']['cz_to_lang'] = "Чешский → Русский"; TEXTS['ru']['lang_to_cz'] = "Русский → Чешский"
 
-RANKS = { 1: ("🥉", "Nováček"), 6: ("🥈", "Učedník"), 16: ("🥇", "Znalec"), 31: ("🏆", "Mistr"), 51: ("💎", "Polyglot") }
-
-def get_rank(level):
-    r = RANKS[1]
-    for l, i in RANKS.items():
-        if level >= l: r = i
-        else: break
-    return r
-
-def xp_to_level(xp):
-    level, startXp, needed = 1, 0, 100
-    while xp >= startXp + needed:
-        startXp += needed
-        level += 1
-        needed = int(100 * (1.2 ** (level - 1)))
-    return level, xp - startXp, needed
 
 def load_all_words():
     all_data = []
@@ -200,9 +186,9 @@ def load_avatars():
         return avatars
         
     for f in os.listdir(AVATARS_DIR):
-        if f.startswith('M_') and f.endswith('.png'):
+        if f.startswith('M_') and (f.endswith('.png') or f.endswith('.jpg')):
             avatars['M'].append(f)
-        elif f.startswith('F_') and f.endswith('.png'):
+        elif f.startswith('F_') and (f.endswith('.png') or f.endswith('.jpg')):
             avatars['F'].append(f)
     avatars['M'].sort()
     avatars['F'].sort()
@@ -229,11 +215,11 @@ def register():
     with conn.cursor() as cur:
         cur.execute("SELECT id FROM users WHERE username = %s;", (username.lower(),))
         if cur.fetchone(): abort(409)
-        cur.execute("INSERT INTO users (username, original_case, pin, xp, gender) VALUES (%s, %s, %s, %s, 'N');", (username.lower(), username, pin, 0))
+        cur.execute("INSERT INTO users (username, original_case, pin, xp, gender, found_easter_eggs) VALUES (%s, %s, %s, %s, 'N', '[]');", (username.lower(), username, pin, 0))
     conn.commit()
     conn.close()
     session['username'] = username
-    return jsonify({"user": {"username": username, "xp": 0, "gender": "N", "avatar": None}})
+    return jsonify({"user": {"username": username, "xp": 0, "gender": "N", "avatar": None, "found_easter_eggs": "[]"}})
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -242,7 +228,7 @@ def login():
     conn = get_db_connection()
     if conn is None: abort(500)
     with conn.cursor() as cur:
-        cur.execute("SELECT original_case, pin, xp, streak_count, gender, avatar FROM users WHERE username = %s;", (username.lower(),))
+        cur.execute("SELECT original_case, pin, xp, gender, avatar, found_easter_eggs FROM users WHERE username = %s;", (username.lower(),))
         user = cur.fetchone()
     conn.close()
     if user and user[1] == pin:
@@ -250,9 +236,9 @@ def login():
         return jsonify({"user": {
             "username": user[0], 
             "xp": user[2], 
-            "streak_count": user[3],
-            "gender": user[4],
-            "avatar": user[5]
+            "gender": user[3],
+            "avatar": user[4],
+            "found_easter_eggs": user[5]
         }})
     abort(401)
 
@@ -269,16 +255,16 @@ def get_session():
             session.pop('username', None)
             return jsonify({"user": None})
         with conn.cursor() as cur:
-            cur.execute("SELECT xp, streak_count, gender, avatar FROM users WHERE username = %s;", (session['username'].lower(),))
+            cur.execute("SELECT xp, gender, avatar, found_easter_eggs FROM users WHERE username = %s;", (session['username'].lower(),))
             user = cur.fetchone()
         conn.close()
         if user:
             return jsonify({"user": {
                 "username": session['username'], 
                 "xp": user[0], 
-                "streak_count": user[1],
-                "gender": user[2],
-                "avatar": user[3]
+                "gender": user[1],
+                "avatar": user[2],
+                "found_easter_eggs": user[3]
             }})
         else:
             session.pop('username', None)
@@ -323,20 +309,13 @@ def update_xp():
     if conn is None: abort(500)
     with conn.cursor() as cur:
         user_key = session['username'].lower()
-        today = date.today()
-        yesterday = today - timedelta(days=1)
-        cur.execute("SELECT xp, streak_count, last_streak_date FROM users WHERE username = %s;", (user_key,))
+        cur.execute("SELECT xp FROM users WHERE username = %s;", (user_key,))
         user = cur.fetchone()
         new_xp = user[0] + xp_to_add
-        new_streak, last_date = user[1], user[2]
-        if last_date is None or last_date < yesterday:
-            new_streak = 1
-        elif last_date == yesterday:
-            new_streak += 1
-        cur.execute("UPDATE users SET xp = %s, streak_count = %s, last_streak_date = %s WHERE username = %s;", (new_xp, new_streak, today, user_key))
+        cur.execute("UPDATE users SET xp = %s WHERE username = %s;", (new_xp, user_key))
     conn.commit()
     conn.close()
-    return jsonify({"new_xp": new_xp, "new_streak": new_streak})
+    return jsonify({"new_xp": new_xp})
     
 @app.route('/api/settings/change_pin', methods=['POST'])
 def change_pin():
@@ -366,6 +345,22 @@ def save_avatar_settings():
             cur.execute("UPDATE users SET gender = %s WHERE username = %s;", (gender, user_key))
         if avatar is not None:
             cur.execute("UPDATE users SET avatar = %s WHERE username = %s;", (avatar, user_key))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+@app.route('/api/settings/save_easter_eggs', methods=['POST'])
+def save_easter_eggs():
+    if 'username' not in session: abort(401)
+    data = request.json
+    eggs_list = data.get('eggs', [])
+    eggs_json_string = json.dumps(eggs_list)
+    user_key = session['username'].lower()
+    
+    conn = get_db_connection()
+    if conn is None: abort(500)
+    with conn.cursor() as cur:
+        cur.execute("UPDATE users SET found_easter_eggs = %s WHERE username = %s;", (eggs_json_string, user_key))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})

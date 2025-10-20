@@ -13,10 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
             viewMode: null,
             selectedLectureForView: null,
             isCheckingAnswer: false,
+            
             isMusicPlaying: false,
+            currentMusicPlayer: null,
+            currentParticleType: null,
+
             isRaining: false,
-            lastEmeraldTimestamp: 0,
+            lastParticleTimestamp: 0,
             animationFrameId: null,
+            
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
@@ -32,9 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
             currentLangBtn: document.getElementById('current-lang-btn'),
             langOptions: document.getElementById('lang-options'),
             themeToggle: document.getElementById('theme-checkbox'),
-            musicPlayer: document.getElementById('background-music'),
-            emeraldRainContainer: document.getElementById('emerald-rain-container'),
+            particleRainContainer: document.getElementById('particle-rain-container'),
             volumeSlider: document.getElementById('volume-slider'),
+            
+            audio: {
+                emerald: document.getElementById('music-emerald'),
+                diamond: document.getElementById('music-diamond'),
+                gold: document.getElementById('music-gold'),
+                lazurit: document.getElementById('music-lazurit'),
+                redstone: document.getElementById('music-redstone'),
+            }
         },
 
         init() {
@@ -45,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn, #emerald-music-button');
+                const target = e.target.closest('[data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn');
                 
                 if (!target) {
                     if (!this.elements.langSwitcher.contains(e.target)) {
@@ -55,12 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const dataset = target.dataset;
-                if (target.id === 'emerald-music-button') this.toggleMusic();
-                else if (dataset.screen) this.navigateTo(dataset.screen);
+                if (dataset.screen) this.navigateTo(dataset.screen);
                 else if (dataset.action) this.handleAction(dataset.action, dataset);
                 else if (dataset.lang) {
                     this.setLanguage(dataset.lang);
                     this.elements.langOptions.classList.remove('visible');
+                }
+                else if (dataset.egg) {
+                    e.stopPropagation();
+                    this.playMusic(dataset.egg);
                 }
                 else if (target.matches('.char-btn')) this.insertChar(target.textContent);
                 else if (target.matches('.shift-btn')) this.toggleShift();
@@ -94,15 +109,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.documentElement.classList.add('light-theme');
                 if(this.elements.themeToggle) this.elements.themeToggle.checked = true;
             }
+            this.updateMusicButtonForTheme(savedTheme === 'light');
         },
 
         handleThemeChange() {
-            if (this.elements.themeToggle.checked) {
-                document.documentElement.classList.add('light-theme');
-                localStorage.setItem('theme', 'light');
-            } else {
-                document.documentElement.classList.remove('light-theme');
-                localStorage.setItem('theme', 'dark');
+            const isLight = this.elements.themeToggle.checked;
+            document.documentElement.classList.toggle('light-theme', isLight);
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            this.updateMusicButtonForTheme(isLight);
+        },
+        
+        updateMusicButtonForTheme(isLight) {
+            const musicBtn = document.getElementById('music-control-button');
+            if (musicBtn) {
+                musicBtn.dataset.egg = isLight ? 'diamond' : 'emerald';
             }
         },
 
@@ -112,6 +132,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 oldScreen.classList.remove('entering');
                 oldScreen.classList.add('exiting');
                 oldScreen.addEventListener('animationend', () => oldScreen.remove(), { once: true });
+            }
+
+            if (screenId !== 'main-menu-screen') {
+                this.elements.volumeSlider.classList.remove('visible');
             }
 
             const template = this.elements.templates.querySelector(`#${screenId}`);
@@ -144,14 +168,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const form = activeScreen.querySelector(selector);
                 if (form) form.addEventListener('submit', formActions[selector]);
             }
-             if (activeScreen.querySelector('.training-check-btn')) {
-                activeScreen.querySelector('.training-check-btn').addEventListener('click', () => this.checkAnswer());
+            
+            const clickActions = {
+                 '.training-check-btn': () => this.checkAnswer(),
+                 '#stop-music-button': () => this.stopAllMusic(),
+            };
+            for (const selector in clickActions) {
+                 const btn = activeScreen.querySelector(selector);
+                 if (btn) btn.addEventListener('click', clickActions[selector]);
             }
 
             switch (screenId) {
+                case 'main-menu-screen':
+                    this.updateMusicButtonForTheme(localStorage.getItem('theme') === 'light');
+                    if (this.state.isMusicPlaying) {
+                        this.elements.volumeSlider.classList.add('visible');
+                    }
+                    break;
                 case 'profile-screen':
                     this.renderProfile();
                     this.renderAvatarUI();
+                    this.renderEasterEggs();
                     break;
                 case 'settings-screen':
                     this.renderGenderSlider();
@@ -161,6 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'dictionary-view-screen':
                     this.renderDictionary();
+                    if (this.state.selectedLectureForView === 0) {
+                        this.renderLazuritEasterEgg();
+                    }
                     break;
                 case 'training-screen':
                     this.renderCurrentWord();
@@ -266,6 +306,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch('/api/session');
                 const data = await response.json();
                 this.state.currentUser = data.user || null;
+                if (this.state.currentUser) {
+                    this.state.currentUser.found_easter_eggs = JSON.parse(this.state.currentUser.found_easter_eggs || '[]');
+                }
             } catch (e) { this.state.currentUser = null; } 
             finally {
                 this.updateHeader();
@@ -334,6 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
                 this.state.currentUser = data.user;
+                this.state.currentUser.found_easter_eggs = JSON.parse(this.state.currentUser.found_easter_eggs || '[]');
                 this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert('Неправильний нікнейм або PIN-код.'); }
         },
@@ -347,12 +391,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
                 this.state.currentUser = data.user;
+                this.state.currentUser.found_easter_eggs = [];
                 this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert(`Помилка реєстрації: ${await response.text()}`); }
         },
         
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
+            this.stopAllMusic();
             this.state.currentUser = null;
             this.state.loadedWords = {};
             this.updateHeader();
@@ -385,20 +431,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const { level, progress, needed } = this.xpToLevel(xp);
             const { emoji, name } = this.getRank(level);
             const T = this.state.texts[this.state.currentLang];
-            const wordsToday = this.state.currentTraining.results.length > 0 ? this.state.currentTraining.results.filter(r => r.isCorrect).length : 0;
             
             detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
-                <div class.rank"><span class="emoji">${emoji}</span> ${name}</div>
+                <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
                 <div class="level-info">${T.level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
-                <div>${progress} / ${needed} XP</div>
-                <div class="daily-stats">
-                    <div>${T.words_learned_today}: ${wordsToday}</div>
-                    <div class="streak-display">
-                        <span class="streak-flame">🔥</span>
-                        <span>${this.state.currentUser.streak_count || 0} ${T.daily_streak}</span>
-                    </div>
-                </div>`;
+                <div>${progress} / ${needed} XP</div>`;
             
             const leaderboardContainer = document.getElementById('leaderboard-container');
             leaderboardContainer.innerHTML = '';
@@ -413,6 +451,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="lb-name">${user.username}</span>
                     <span class="lb-xp">(${user.xp} XP)</span>`;
                 leaderboardContainer.appendChild(item);
+            });
+        },
+
+        renderEasterEggs() {
+            const container = document.getElementById('easter-egg-icons');
+            if (!container || !this.state.currentUser) return;
+            
+            const foundEggs = this.state.currentUser.found_easter_eggs || [];
+            container.querySelectorAll('.easter-egg-icon').forEach(icon => {
+                if (foundEggs.includes(icon.dataset.egg)) {
+                    icon.classList.add('found');
+                }
             });
         },
         
@@ -512,6 +562,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('profile-screen-active')) {
                 this.renderAvatarUI();
             }
+        },
+
+        renderLazuritEasterEgg() {
+            const container = document.getElementById('dictionary-words-container');
+            if (!container) return;
+            
+            const T = this.state.texts[this.state.currentLang];
+            const found = this.state.currentUser.found_easter_eggs.includes('lazurit');
+            
+            const eggEl = document.createElement('div');
+            eggEl.id = 'lazurit-easter-egg';
+            eggEl.dataset.egg = 'lazurit';
+            if (found) eggEl.classList.add('found');
+            
+            container.insertAdjacentElement('afterend', eggEl);
         },
         
         renderLectureSelection() {
@@ -660,7 +725,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(response.ok) {
                     const data = await response.json();
                     this.state.currentUser.xp = data.new_xp;
-                    this.state.currentUser.streak_count = data.new_streak;
                 }
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
@@ -780,75 +844,124 @@ document.addEventListener('DOMContentLoaded', () => {
             return { emoji: rankEmoji, name: rankName };
         },
 
-        toggleMusic() {
-            this.state.isMusicPlaying = !this.state.isMusicPlaying;
-            const emeraldButton = document.querySelector('#emerald-music-button');
+        playMusic(eggName) {
+            const newPlayer = this.elements.audio[eggName];
+            if (!newPlayer) return;
 
-            if (this.state.isMusicPlaying) {
-                this.elements.musicPlayer.play();
-                this.startEmeraldRain();
-                if (emeraldButton) emeraldButton.classList.add('playing');
-                if (this.elements.volumeSlider) {
-                    this.elements.volumeSlider.classList.add('visible');
-                    this.setVolume(this.elements.volumeSlider.value);
-                }
-            } else {
-                this.elements.musicPlayer.pause();
-                this.elements.musicPlayer.currentTime = 0;
-                this.stopEmeraldRain();
-                if (emeraldButton) emeraldButton.classList.remove('playing');
-                if (this.elements.volumeSlider) this.elements.volumeSlider.classList.remove('visible');
+            this.stopAllMusic();
+
+            this.state.currentMusicPlayer = newPlayer;
+            this.state.currentMusicPlayer.volume = this.elements.volumeSlider.value;
+            this.state.currentMusicPlayer.play();
+            this.state.isMusicPlaying = true;
+            this.state.currentParticleType = eggName;
+
+            const musicBtn = document.getElementById('music-control-button');
+            if (musicBtn) {
+                musicBtn.classList.add('playing');
+            }
+            
+            if (document.getElementById('main-menu-screen-active')) {
+                this.elements.volumeSlider.classList.add('visible');
+            }
+
+            this.startParticleRain(eggName);
+            
+            if (!this.state.currentUser.found_easter_eggs.includes(eggName)) {
+                this.state.currentUser.found_easter_eggs.push(eggName);
+                this.updateEasterEggIcon(eggName);
+                this.saveFoundEasterEggs();
             }
         },
+
+        stopAllMusic() {
+            if (!this.state.isMusicPlaying && !this.state.isRaining) return;
+
+            for (const key in this.elements.audio) {
+                this.elements.audio[key].pause();
+                this.elements.audio[key].currentTime = 0;
+            }
+
+            this.state.isMusicPlaying = false;
+            this.state.currentMusicPlayer = null;
+            
+            const musicBtn = document.getElementById('music-control-button');
+            if (musicBtn) {
+                musicBtn.classList.remove('playing');
+            }
+            
+            this.elements.volumeSlider.classList.remove('visible');
+            this.stopParticleRain();
+        },
         
-        setVolume(volume) {
-            this.elements.musicPlayer.volume = volume;
+        async saveFoundEasterEggs() {
+            await fetch('/api/settings/save_easter_eggs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ eggs: this.state.currentUser.found_easter_eggs })
+            });
+        },
+        
+        updateEasterEggIcon(eggName) {
+            const icon = document.querySelector(`.easter-egg-icon[data-egg="${eggName}"]`);
+            if (icon) {
+                icon.classList.add('found');
+            }
         },
 
-        startEmeraldRain() {
-            if (this.state.isRaining) return;
+        setVolume(volume) {
+            if (this.state.currentMusicPlayer) {
+                this.state.currentMusicPlayer.volume = volume;
+            }
+        },
+
+        startParticleRain(particleName) {
+            if (this.state.isRaining) this.stopParticleRain();
             this.state.isRaining = true;
-            this.state.lastEmeraldTimestamp = 0;
-            this.state.animationFrameId = requestAnimationFrame(this.emeraldRainLoop.bind(this));
+            this.state.lastParticleTimestamp = 0;
+            this.state.currentParticleType = particleName;
+            this.state.animationFrameId = requestAnimationFrame(this.particleRainLoop.bind(this));
         },
         
-        emeraldRainLoop(timestamp) {
+        particleRainLoop(timestamp) {
             if (!this.state.isRaining) return;
 
-            const EMERALD_INTERVAL = 240;
-            if (timestamp - this.state.lastEmeraldTimestamp > EMERALD_INTERVAL) {
-                this.state.lastEmeraldTimestamp = timestamp;
+            const PARTICLE_INTERVAL = 240;
+            if (timestamp - this.state.lastParticleTimestamp > PARTICLE_INTERVAL) {
+                this.state.lastParticleTimestamp = timestamp;
                 
-                const emerald = document.createElement('div');
-                emerald.classList.add('falling-emerald');
+                const particle = document.createElement('div');
+                particle.classList.add('falling-particle');
+                particle.style.backgroundImage = `url('/static/${this.state.currentParticleType}.png')`;
                 
                 const size = Math.random() * 10 + 10;
                 const duration = Math.random() * 5 + 7;
                 
-                emerald.style.width = `${size}px`;
-                emerald.style.height = `${size}px`;
-                emerald.style.left = `${Math.random() * 100}vw`;
-                emerald.style.animationDuration = `${duration}s`;
-                emerald.style.opacity = Math.random() * 0.4 + 0.4;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.opacity = Math.random() * 0.4 + 0.4;
                 
-                this.elements.emeraldRainContainer.appendChild(emerald);
+                this.elements.particleRainContainer.appendChild(particle);
 
                 setTimeout(() => {
-                    emerald.remove();
+                    particle.remove();
                 }, duration * 1000);
             }
             
-            this.state.animationFrameId = requestAnimationFrame(this.emeraldRainLoop.bind(this));
+            this.state.animationFrameId = requestAnimationFrame(this.particleRainLoop.bind(this));
         },
 
-        stopEmeraldRain() {
+        stopParticleRain() {
             this.state.isRaining = false;
+            this.state.currentParticleType = null;
             if (this.state.animationFrameId) {
                 cancelAnimationFrame(this.state.animationFrameId);
                 this.state.animationFrameId = null;
             }
             
-            this.elements.emeraldRainContainer.querySelectorAll('.falling-emerald').forEach(el => {
+            this.elements.particleRainContainer.querySelectorAll('.falling-particle').forEach(el => {
                 el.style.transition = 'opacity 0.5s ease-out';
                 el.style.opacity = '0';
                 setTimeout(() => el.remove(), 500);
