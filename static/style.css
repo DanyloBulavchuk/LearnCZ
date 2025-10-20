@@ -354,8 +354,8 @@ html.light-theme .left-panel { border-right-color: var(--border-color); }
 .right-panel { flex: 55; }
 #leaderboard-container { min-height: 0; padding-right: 10px; }
 .leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; cursor: pointer; }
-.leaderboard-item:hover:not(.current-user) { background-color: rgba(159, 80, 255, 0.1); } /* Ефект наведення тільки на чужі */
-.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); cursor: default; } /* Забороняємо курсор на собі */
+.leaderboard-item:hover:not(.current-user) { background-color: rgba(159, 80, 255, 0.1); }
+.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); cursor: default; }
 html.light-theme .leaderboard-item.current-user {
     background-color: #c6f6d5;
     box-shadow: none;
@@ -564,12 +564,12 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     align-items: center;
     justify-content: flex-start; /* Вирівнювання по верху */
     padding-top: 20px;
-    gap: 25px; /* Збільшили відстань між елементами */
+    gap: 25px; /* Відстань між елементами */
     display: flex;
     flex-direction: column;
 }
 #settings-screen > h1,
-#settings-screen > h2 {
+#settings-screen > h2 { /* Тепер h2 не потрібен для статі */
     margin-bottom: 0;
 }
 #settings-screen > form,
@@ -579,10 +579,10 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 #settings-screen > .back-button,
 #settings-screen > #gold-easter-egg {
     width: 100%;
-    max-width: 350px;
+    max-width: 350px; /* Обмеження ширини для центрування */
 }
 #settings-screen > .back-button {
-    margin-top: auto;
+    margin-top: auto; /* Притискаємо кнопку назад до низу */
     margin-bottom: 10px;
 }
 
@@ -799,11 +799,12 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
 /* --- MUSIC, EASTER EGGS, PARTICLES --- */
-/* Повзунок гучності тепер позиціонується всередині #settings-screen */
+/* Стилі для повзунка гучності в налаштуваннях */
 #volume-slider-container {
     width: 100%;
     max-width: 350px;
     display: none; /* Ховаємо за замовчуванням, JS покаже якщо треба */
+    margin-top: 10px; /* Додаємо невеликий відступ зверху */
 }
 #volume-slider-settings {
     width: 100%;
@@ -813,7 +814,6 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     background: transparent;
     height: 20px; /* Загальна висота для клікабельності */
 }
-/* ... (решта стилів для ::-webkit-slider-runnable-track, ::-webkit-slider-thumb, ::-moz-range-track, ::-moz-range-thumb як були раніше) ... */
 #volume-slider-settings::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
@@ -830,7 +830,7 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     background: var(--accent-color);
     box-shadow: 0 0 10px var(--accent-color), 0 0 15px var(--shadow-color);
     cursor: pointer;
-    margin-top: -8px;
+    margin-top: -8px; /* Центрування відносно доріжки */
     transition: transform 0.2s ease;
 }
 #volume-slider-settings::-webkit-slider-thumb:hover {
@@ -975,15 +975,17 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     /* Видаляємо позиціонування глобального повзунка */
 
     /* Гарантуємо, що кнопка Назад видима */
-    .right-panel .back-button, /* Не застосовуємо margin-top: auto */
+    /* Видаляємо margin-top: auto для всіх кнопок "Назад" на мобільних */
+    .right-panel .back-button,
     #settings-screen .back-button,
     #results-screen .back-button,
     .view-profile-actions {
         margin-top: 20px; /* Фіксований відступ зверху */
         position: relative;
         z-index: 1;
+        margin-bottom: 10px; /* Додаємо відступ знизу для всіх */
     }
-    .view-profile-actions { margin-bottom: 10px; }
+     .view-profile-actions { margin-bottom: 10px; }
 }
 
 @media (max-width: 480px) {
