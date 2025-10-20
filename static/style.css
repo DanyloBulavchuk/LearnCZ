@@ -799,14 +799,15 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 /* Повзунок гучності тепер позиціонується всередині #settings-screen */
 #volume-slider-container {
     width: 100%;
-    max-width: 350px;
-    /* display: none; Видалено - завжди видимий */
+    /* max-width: 350px; Змінено на: */
+    max-width: 300px; /* Тепер ширина контейнера = ширині повзунка */
+    display: block; /* Залишаємо видимим за замовчуванням */
     margin-top: 10px;
 }
 #volume-slider-settings {
     width: 100%;
-    max-width: 300px; /* Зробили трохи коротшим */
-    display: block; /* Щоб margin: auto працював */
+    /* max-width: 300px; Видалено - успадковує від контейнера */
+    display: block;
     margin: 0 auto; /* Центруємо сам повзунок */
     cursor: pointer;
     -webkit-appearance: none;
