@@ -132,6 +132,7 @@ html.light-theme #lang-options { background-color: #fff; border-color: var(--bor
     filter: none; /* Завжди кольорова тут */
     margin-top: 5px; /* Невеликий відступ зверху */
 }
+#redstone-easter-egg.found { /* Додатковий стиль для знайденої, якщо знадобиться */ }
 #redstone-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -260,7 +261,6 @@ html.light-theme input:focus {
     width: 100%; /* Займає всю ширину батьківського елемента */
     max-width: 350px; /* Обмежуємо максимальну ширину */
 }
-/* ... (решта стилів .glow-on-hover) ... */
 .glow-on-hover:before {
     content: '';
     background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
@@ -330,7 +330,6 @@ html.light-theme .start-training-btn { color: #fff !important; }
 
 #profile-screen, #view-profile-screen { height: 100%; }
 .profile-layout { display: flex; flex-grow: 1; gap: 20px; min-height: 0; }
-/* Стилі для приховування лівої панелі при перегляді */
 .profile-layout.view-only .left-panel {
     display: none;
 }
@@ -355,13 +354,13 @@ html.light-theme .left-panel { border-right-color: var(--border-color); }
 .right-panel { flex: 55; }
 #leaderboard-container { min-height: 0; padding-right: 10px; }
 .leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; cursor: pointer; }
-.leaderboard-item:hover { background-color: rgba(159, 80, 255, 0.1); }
-.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
+.leaderboard-item:hover:not(.current-user) { background-color: rgba(159, 80, 255, 0.1); } /* Ефект наведення тільки на чужі */
+.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); cursor: default; } /* Забороняємо курсор на собі */
 html.light-theme .leaderboard-item.current-user {
     background-color: #c6f6d5;
     box-shadow: none;
 }
-html.light-theme .leaderboard-item:hover { background-color: #e2e8f0; }
+html.light-theme .leaderboard-item:hover:not(.current-user) { background-color: #e2e8f0; }
 
 .lb-pos { min-width: 35px; opacity: 0.7; font-weight: 400; }
 .lb-rank { font-size: 20px; min-width: 40px; text-align: center; }
@@ -505,10 +504,16 @@ html.light-theme #profile-details .rank, html.light-theme #profile-details-view 
     filter: grayscale(1); /* Чорно-білі за замовчуванням */
     opacity: 0.7;
     transition: all 0.3s ease;
-    cursor: pointer; /* Додаємо курсор */
+    cursor: pointer;
 }
 .easter-egg-icon:hover {
     opacity: 1;
+}
+.easter-egg-icon:not(.found) {
+    cursor: default; /* Забороняємо курсор для не знайдених */
+}
+.easter-egg-icon:not(.found):hover {
+    opacity: 0.7; /* Забороняємо ефект наведення для не знайдених */
 }
 .easter-egg-icon.found {
     filter: grayscale(0); /* Стають кольоровими, коли знайдені */
@@ -559,44 +564,39 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     align-items: center;
     justify-content: flex-start; /* Вирівнювання по верху */
     padding-top: 20px;
-    gap: 20px; /* Відстань між елементами */
-    display: flex; /* Додано */
-    flex-direction: column; /* Додано */
+    gap: 25px; /* Збільшили відстань між елементами */
+    display: flex;
+    flex-direction: column;
 }
 #settings-screen > h1,
 #settings-screen > h2 {
-    margin-bottom: 0; /* Прибираємо стандартний відступ заголовків */
+    margin-bottom: 0;
 }
 #settings-screen > form,
 #settings-screen > #gender-slider-container,
+#settings-screen > #volume-slider-container, /* Додано контейнер повзунка */
 #settings-screen > #stop-music-button,
 #settings-screen > .back-button,
 #settings-screen > #gold-easter-egg {
     width: 100%;
-    max-width: 350px; /* Обмеження ширини для центрування */
+    max-width: 350px;
 }
 #settings-screen > .back-button {
-    margin-top: auto; /* Притискаємо кнопку назад до низу */
+    margin-top: auto;
     margin-bottom: 10px;
 }
 
 
-.settings-divider {
-    height: 1px;
-    width: 80%;
-    max-width: 350px;
-    background-color: rgba(159, 80, 255, 0.3);
-    margin: 10px 0; /* Зменшили відступи */
+.settings-divider { /* Цей клас більше не використовується в HTML */
+    display: none;
 }
-html.light-theme .settings-divider {
-    background-color: var(--border-color);
-}
+
 #gender-slider-container {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 15px;
-    margin-top: 0; /* Прибираємо відступ */
+    margin-top: 0;
 }
 .gender-label {
     font-size: 1.5rem;
@@ -659,7 +659,7 @@ html.light-theme .slider-track {
     filter: none; /* Завжди кольорова тут */
     margin: 0 auto; /* Центрування без зайвих відступів */
 }
-
+#gold-easter-egg.found { }
 #gold-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -709,6 +709,7 @@ html.light-theme .dict-item b { color: #777; }
     transition: transform 0.2s, filter 0.3s;
     filter: none; /* Завжди кольорова тут */
 }
+#lazurit-easter-egg.found { }
 #lazurit-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -798,36 +799,29 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
 /* --- MUSIC, EASTER EGGS, PARTICLES --- */
-#volume-slider {
-    position: fixed; /* Фіксоване позиціонування відносно вікна */
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) scale(0.9);
-    width: 200px;
-    z-index: 999; /* Вище, ніж particle container */
+/* Повзунок гучності тепер позиціонується всередині #settings-screen */
+#volume-slider-container {
+    width: 100%;
+    max-width: 350px;
+    display: none; /* Ховаємо за замовчуванням, JS покаже якщо треба */
+}
+#volume-slider-settings {
+    width: 100%;
     cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    pointer-events: none;
     -webkit-appearance: none;
     appearance: none;
     background: transparent;
-    height: 20px;
+    height: 20px; /* Загальна висота для клікабельності */
 }
-#volume-slider.visible {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-    pointer-events: auto;
-}
-/* ... (решта стилів #volume-slider) ... */
-#volume-slider::-webkit-slider-runnable-track {
+/* ... (решта стилів для ::-webkit-slider-runnable-track, ::-webkit-slider-thumb, ::-moz-range-track, ::-moz-range-thumb як були раніше) ... */
+#volume-slider-settings::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
     background: rgba(0,0,0,0.3);
     border-radius: 3px;
     border: 1px solid var(--accent-color);
 }
-#volume-slider::-webkit-slider-thumb {
+#volume-slider-settings::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 20px;
@@ -839,17 +833,17 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     margin-top: -8px;
     transition: transform 0.2s ease;
 }
-#volume-slider::-webkit-slider-thumb:hover {
+#volume-slider-settings::-webkit-slider-thumb:hover {
     transform: scale(1.15);
 }
-#volume-slider::-moz-range-track {
+#volume-slider-settings::-moz-range-track {
     width: 100%;
     height: 6px;
     background: rgba(0,0,0,0.3);
     border-radius: 3px;
     border: 1px solid var(--accent-color);
 }
-#volume-slider::-moz-range-thumb {
+#volume-slider-settings::-moz-range-thumb {
     width: 18px;
     height: 18px;
     border-radius: 50%;
@@ -859,21 +853,22 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     border: none;
     transition: transform 0.2s ease;
 }
-#volume-slider::-moz-range-thumb:hover {
+#volume-slider-settings::-moz-range-thumb:hover {
     transform: scale(1.15);
 }
-html.light-theme #volume-slider::-webkit-slider-runnable-track {
+html.light-theme #volume-slider-settings::-webkit-slider-runnable-track {
     background: rgba(255,255,255,0.5);
     border: 1px solid var(--border-color);
 }
-html.light-theme #volume-slider::-moz-range-track {
+html.light-theme #volume-slider-settings::-moz-range-track {
     background: rgba(255,255,255,0.5);
     border: 1px solid var(--border-color);
 }
-html.light-theme #volume-slider::-webkit-slider-thumb,
-html.light-theme #volume-slider::-moz-range-thumb {
+html.light-theme #volume-slider-settings::-webkit-slider-thumb,
+html.light-theme #volume-slider-settings::-moz-range-thumb {
     box-shadow: 0 0 10px var(--accent-color);
 }
+
 
 #music-control-button {
     position: absolute;
@@ -908,13 +903,13 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 #music-control-button.playing img.emerald {
     filter: drop-shadow(0 0 25px #10b981) drop-shadow(0 0 40px #6ee7b7);
 }
-#music-control-button img.emerald:not(.playing) { /* Додано :not(.playing) */
+#music-control-button img.emerald:not(.playing) {
     filter: drop-shadow(0 0 15px #059669) drop-shadow(0 0 25px #34d399);
 }
 #music-control-button.playing img.diamond {
     filter: drop-shadow(0 0 25px #00BFFF) drop-shadow(0 0 40px #77ddff);
 }
-#music-control-button img.diamond:not(.playing) { /* Додано :not(.playing) */
+#music-control-button img.diamond:not(.playing) {
     filter: drop-shadow(0 0 15px #00BFFF) drop-shadow(0 0 25px #77ddff);
 }
 
@@ -957,9 +952,9 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .title { font-size: 1.8rem; margin-bottom: 20px; }
     #profile-screen, #view-profile-screen { justify-content: flex-start; }
     .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 70px; /* Запас для кнопки Назад */}
-    .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; }
+    .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; max-height: 40vh; /* Обмеження висоти рейтингу */ }
     html.light-theme .left-panel { border-bottom-color: var(--border-color); }
-    #leaderboard-container { max-height: 250px; }
+    #leaderboard-container { max-height: none; /* Видаляємо попереднє обмеження */}
 
     #avatar-image-wrapper, #avatar-image-wrapper-view { width: 150px; height: 150px; font-size: 1rem; }
     #avatar-controls { max-width: 250px; }
@@ -977,21 +972,18 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
          height: 90px;
          bottom: 70px; /* Підняли вище */
     }
-    #volume-slider {
-         bottom: 170px; /* Також підняли */
-         width: 180px;
-    }
+    /* Видаляємо позиціонування глобального повзунка */
 
     /* Гарантуємо, що кнопка Назад видима */
-    .right-panel .back-button,
+    .right-panel .back-button, /* Не застосовуємо margin-top: auto */
     #settings-screen .back-button,
     #results-screen .back-button,
     .view-profile-actions {
-        margin-top: auto; /* Залишаємо притиснення до низу */
-        position: relative; /* Щоб z-index працював, якщо буде потрібно */
-        z-index: 1; /* На випадок перекриття */
+        margin-top: 20px; /* Фіксований відступ зверху */
+        position: relative;
+        z-index: 1;
     }
-     .view-profile-actions { margin-bottom: 10px; } /* Додатковий відступ для кнопок перегляду */
+    .view-profile-actions { margin-bottom: 10px; }
 }
 
 @media (max-width: 480px) {

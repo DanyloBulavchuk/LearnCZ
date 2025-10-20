@@ -278,7 +278,7 @@ def get_session():
             return jsonify({"user": None})
     return jsonify({"user": None})
 
-# Новий ендпоінт для отримання публічних даних користувача
+# Ендпоінт для отримання публічних даних користувача
 @app.route('/api/user/<username>')
 def get_user_profile(username):
     conn = get_db_connection()
@@ -379,8 +379,6 @@ def save_avatar_settings():
         if gender is not None:
             cur.execute("UPDATE users SET gender = %s WHERE username = %s;", (gender, user_key))
         if avatar is not None:
-            # Перевірка безпеки: чи існує такий аватар для цієї статі
-            # Треба отримати стать з БД, якщо вона не передана, або використовувати поточну
             current_gender = gender
             if current_gender is None:
                  cur.execute("SELECT gender FROM users WHERE username = %s;", (user_key,))
@@ -404,7 +402,6 @@ def save_easter_eggs():
     if not isinstance(eggs_list, list) or not all(isinstance(egg, str) for egg in eggs_list):
         abort(400, description="Invalid data format for easter eggs.")
 
-    # Додаткова перевірка: чи всі яйця з дозволеного списку?
     allowed_eggs = ["emerald", "diamond", "gold", "lazurit", "redstone"]
     valid_eggs = [egg for egg in eggs_list if egg in allowed_eggs]
 
@@ -423,4 +420,5 @@ with app.app_context():
     init_db()
 
 if __name__ == '__main__':
-    app.run()
+    # Встановлюємо debug=False для продакшену
+    app.run(debug=False)

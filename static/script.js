@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
             langOptions: document.getElementById('lang-options'),
             themeToggle: document.getElementById('theme-checkbox'),
             particleRainContainer: document.getElementById('particle-rain-container'),
-            volumeSlider: document.getElementById('volume-slider'),
+            // volumeSlider тепер не глобальний елемент
+            // volumeSlider: document.getElementById('volume-slider'),
 
             audio: {
                 emerald: document.getElementById('music-emerald'),
@@ -51,14 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         init() {
-            this.initTheme();
+            this.initTheme(); // Застосовуємо тему
             this.addEventListeners();
             this.checkSession();
         },
 
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
-                // Додаємо .leaderboard-item до селектора
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn, .leaderboard-item');
 
                 if (!target) {
@@ -70,9 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const dataset = target.dataset;
 
-                // Перевірка, чи не натиснуто на неактивну кнопку профілю
                 if (target === this.elements.profileButton && target.disabled) {
                    return;
+                }
+
+                // Блокуємо клік на себе в рейтингу
+                if (target.matches('.leaderboard-item') && target.classList.contains('current-user')) {
+                    return; // Нічого не робити при кліку на себе
                 }
 
                 if (dataset.screen) this.navigateTo(dataset.screen);
@@ -83,32 +87,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 else if (dataset.egg) {
                     e.stopPropagation();
-                     // Додаємо перевірку, чи клік був на іконці в профілі і чи вона не знайдена
                     const isProfileIcon = target.closest('#easter-egg-icons');
                     const isFound = target.classList.contains('found');
                     if (isProfileIcon && !isFound) {
-                        return; // Не запускати музику для не знайдених пасхалок у профілі
+                        return;
                     }
                     this.playMusic(dataset.egg);
                 }
                 else if (target.matches('.char-btn')) this.insertChar(target.textContent);
                 else if (target.matches('.shift-btn')) this.toggleShift();
-                // Обробник кліку на елемент рейтингу
+                // Обробник кліку на іншого користувача в рейтингу
                 else if (target.matches('.leaderboard-item') && target.dataset.username) {
-                   if (target.dataset.username !== this.state.currentUser.username) {
-                       this.handleViewUserProfile(target.dataset.username);
-                   } else {
-                       this.navigateTo('profile-screen'); // Якщо клікнули на себе, просто переходимо у свій профіль
-                   }
+                   this.handleViewUserProfile(target.dataset.username);
                 }
             });
 
             document.body.addEventListener('input', (e) => {
                 const target = e.target;
-                if (target.id === 'volume-slider') {
+                 // Тепер шукаємо повзунок у поточному екрані
+                 if (target.id === 'volume-slider-settings' || target.id === 'volume-slider') {
                     this.setVolume(target.value);
-                }
-            });
+                 }
+             });
+
 
             document.body.addEventListener('change', (e) => {
                 const target = e.target;
@@ -125,13 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
+        // Завжди встановлюємо темну тему при завантаженні
         initTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            if (savedTheme === 'light') {
-                document.documentElement.classList.add('light-theme');
-                if(this.elements.themeToggle) this.elements.themeToggle.checked = true;
+            document.documentElement.classList.remove('light-theme');
+            localStorage.setItem('theme', 'dark'); // Записуємо 'dark' в localStorage
+            if (this.elements.themeToggle) {
+                this.elements.themeToggle.checked = false; // Перемикач у стан "вимкнено"
             }
-            this.updateMusicButtonForTheme(savedTheme === 'light');
+            this.updateMusicButtonForTheme(false); // Оновлюємо кнопку для темної теми
         },
 
         handleThemeChange() {
@@ -149,15 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         navigateTo(screenId) {
-            // Вимикаємо кнопку профілю, якщо переходимо на екран профілю
             if (this.elements.profileButton) {
                 this.elements.profileButton.disabled = (screenId === 'profile-screen' || screenId === 'view-profile-screen');
             }
-             // Скидаємо перегляд іншого користувача при переході кудись
             if (screenId !== 'view-profile-screen') {
                 this.state.viewingUser = null;
             }
-
 
             const oldScreen = this.elements.appContainer.querySelector('.screen');
             if (oldScreen) {
@@ -166,13 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 oldScreen.addEventListener('animationend', () => oldScreen.remove(), { once: true });
             }
 
-            // Ховаємо повзунок гучності на всіх екранах, крім головного
-            if (screenId !== 'main-menu-screen' && this.state.isMusicPlaying) {
-                 this.elements.volumeSlider.classList.remove('visible');
-            } else if (screenId === 'main-menu-screen' && this.state.isMusicPlaying) {
-                 this.elements.volumeSlider.classList.add('visible'); // Показуємо знову на головному
-            }
-
+            // Видаляємо логіку глобального повзунка звідси
 
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
@@ -208,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const clickActions = {
                  '.training-check-btn': () => this.checkAnswer(),
                  '#stop-music-button': () => this.stopAllMusic(),
-                 // Кнопка повернення до свого профілю
                  '#back-to-my-profile-btn': () => this.navigateTo('profile-screen')
             };
             for (const selector in clickActions) {
@@ -219,17 +211,16 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (screenId) {
                 case 'main-menu-screen':
                     this.updateMusicButtonForTheme(localStorage.getItem('theme') === 'light');
-                    if (this.state.isMusicPlaying) {
-                        this.elements.volumeSlider.classList.add('visible');
-                    }
+                    // Видаляємо логіку повзунка звідси
                     break;
                 case 'profile-screen':
-                    this.renderProfile(this.state.currentUser); // Рендеримо свій профіль
-                    this.renderAvatarUI(this.state.currentUser, false); // false = не readonly
+                    this.renderProfile(this.state.currentUser);
+                    this.renderAvatarUI(this.state.currentUser, false);
                     this.renderEasterEggs(this.state.currentUser);
                     break;
                 case 'settings-screen':
                     this.renderGenderSlider();
+                    this.renderVolumeSlider(); // Рендеримо повзунок тут
                     break;
                 case 'lecture-selection-screen':
                     this.renderLectureSelection();
@@ -247,13 +238,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'results-screen':
                     this.renderResults();
                     break;
-                 case 'view-profile-screen': // Новий кейс для перегляду
+                 case 'view-profile-screen':
                      if (this.state.viewingUser) {
-                         this.renderProfile(this.state.viewingUser, true); // true = режим перегляду
-                         this.renderAvatarUI(this.state.viewingUser, true); // true = readonly
+                         this.renderProfile(this.state.viewingUser, true);
+                         this.renderAvatarUI(this.state.viewingUser, true);
                          this.renderEasterEggs(this.state.viewingUser);
                      } else {
-                         this.navigateTo('main-menu-screen'); // Якщо дані не завантажились, повертаємось
+                         this.navigateTo('main-menu-screen');
                      }
                     break;
             }
@@ -320,15 +311,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (actions[action]) actions[action](dataset);
         },
 
-        // Функція для отримання та відображення профілю іншого користувача
         async handleViewUserProfile(username) {
             try {
                 const response = await fetch(`/api/user/${username}`);
                 if (response.ok) {
                     const userData = await response.json();
                     userData.found_easter_eggs = JSON.parse(userData.found_easter_eggs || '[]');
-                    this.state.viewingUser = userData; // Зберігаємо дані користувача
-                    this.navigateTo('view-profile-screen'); // Переходимо на новий екран
+                    this.state.viewingUser = userData;
+                    this.navigateTo('view-profile-screen');
                 } else {
                     console.error('Failed to load user profile:', await response.text());
                     alert('Не вдалося завантажити профіль користувача.');
@@ -346,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.updateAllTexts();
             if (document.getElementById('settings-screen-active')) {
                 this.renderGenderSlider();
+                this.renderVolumeSlider(); // Оновлюємо повзунок при зміні мови
             }
         },
 
@@ -395,7 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async loadWordsForLectures(lectureIds) {
-            // Перетворюємо всі ID на числа, крім 'random'
             const numericLectureIds = lectureIds.filter(id => id !== 'random').map(id => parseInt(id, 10));
             const hasRandom = lectureIds.includes('random');
 
@@ -417,13 +407,12 @@ document.addEventListener('DOMContentLoaded', () => {
                          this.state.loadedWords['random'] = words;
                      } else {
                          lecturesToFetch.forEach(id => {
-                              // Зберігаємо слова за їх числовим ID
                              this.state.loadedWords[id] = words.filter(w => w.lecture === id);
                          });
                      }
                 } catch (error) {
                      console.error("Помилка завантаження слів:", error);
-                     return []; // Повертаємо пустий масив у разі помилки
+                     return [];
                 }
             }
 
@@ -446,7 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 this.elements.profileButton.style.display = 'none';
             }
-             // Оновлюємо стан кнопки профілю
             const currentScreenId = this.elements.appContainer.querySelector('.screen')?.id;
             this.elements.profileButton.disabled = (currentScreenId === 'profile-screen-active' || currentScreenId === 'view-profile-screen-active');
         },
@@ -507,18 +495,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-         // Оновлена функція рендерингу профілю
         renderProfile(userData, isViewing = false) {
              const screen = document.getElementById(isViewing ? 'view-profile-screen-active' : 'profile-screen-active');
              if (!screen) return;
-             const detailsContainer = screen.querySelector('#profile-details-view') || screen.querySelector('#profile-details'); // Використовуємо різні ID
-             const leaderboardContainer = screen.querySelector('#leaderboard-container'); // Тільки для свого профілю
+             const detailsContainer = screen.querySelector(isViewing ? '#profile-details-view' : '#profile-details');
+             const leaderboardContainer = screen.querySelector('#leaderboard-container');
 
              if (!detailsContainer || !userData) return;
 
-             // Приховуємо рейтинг, якщо переглядаємо чужий профіль
              if (isViewing && leaderboardContainer) {
-                  leaderboardContainer.closest('.left-panel')?.remove(); // Видаляємо всю ліву панель
+                  leaderboardContainer.closest('.left-panel')?.remove();
              }
 
              const xp = userData.xp;
@@ -532,15 +518,14 @@ document.addEventListener('DOMContentLoaded', () => {
                  <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
                  <div>${progress} / ${needed} XP</div>`;
 
-             // Рендеримо рейтинг тільки у своєму профілі
              if (!isViewing && leaderboardContainer && this.state.currentUser) {
-                  leaderboardContainer.innerHTML = ''; // Очищаємо перед рендерингом
+                  leaderboardContainer.innerHTML = '';
                   (this.state.leaderboard || []).forEach((user, index) => {
                        const userLevel = this.xpToLevel(user.xp).level;
                        const userRank = this.getRank(userLevel);
                        const item = document.createElement('div');
                        item.className = 'leaderboard-item';
-                       item.dataset.username = user.username; // Додаємо data-username
+                       item.dataset.username = user.username;
                        if (user.username === this.state.currentUser.username) {
                             item.classList.add('current-user');
                        }
@@ -554,7 +539,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
 
-        // Оновлена функція рендерингу пасхалок
         renderEasterEggs(userData) {
              const screen = document.getElementById(this.state.viewingUser ? 'view-profile-screen-active' : 'profile-screen-active');
              if (!screen) return;
@@ -568,25 +552,23 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
 
-        // Оновлена функція рендерингу аватара
         renderAvatarUI(userData, isReadonly = false) {
              const screen = document.getElementById(isReadonly ? 'view-profile-screen-active' : 'profile-screen-active');
              if (!screen) return;
-             const wrapper = screen.querySelector('#avatar-image-wrapper-view') || screen.querySelector('#avatar-image-wrapper');
-             const controls = screen.querySelector('#avatar-controls-view') || screen.querySelector('#avatar-controls');
-             const nameEl = screen.querySelector('#avatar-name-view') || screen.querySelector('#avatar-name');
+             const wrapper = screen.querySelector(isReadonly ? '#avatar-image-wrapper-view' : '#avatar-image-wrapper');
+             const controls = screen.querySelector(isReadonly ? '#avatar-controls-view' : '#avatar-controls');
+             const nameEl = screen.querySelector(isReadonly ? '#avatar-name-view' : '#avatar-name');
 
              if (!wrapper || !userData) return;
 
              const T = this.state.texts[this.state.currentLang];
              const { gender, avatar } = userData;
 
-             // Приховуємо кнопки зміни аватара у режимі перегляду
              if (controls) {
                   controls.style.display = isReadonly ? 'none' : 'flex';
              }
              if (nameEl) {
-                 nameEl.style.display = isReadonly ? 'none' : 'block'; // Ховаємо назву файлу
+                 nameEl.style.display = isReadonly ? 'none' : 'block';
              }
 
 
@@ -607,7 +589,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
              if (controls) controls.classList.remove('hidden');
 
-             // Встановлюємо індекс лише для свого профілю
              if (!isReadonly && this.state.currentUser && userData.username === this.state.currentUser.username) {
                  this.state.currentAvatarIndex = avatarList.indexOf(avatar);
              }
@@ -618,7 +599,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         async handleAvatarChange(direction) {
-            // Забороняємо зміну, якщо переглядаємо чужий профіль (хоча кнопок і не має бути видно)
             if (this.state.viewingUser) return;
 
             const { gender } = this.state.currentUser;
@@ -633,7 +613,6 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.currentAvatarIndex = newIndex;
             this.state.currentUser.avatar = newAvatar;
 
-            // Перерендеримо UI аватара для поточного користувача
             this.renderAvatarUI(this.state.currentUser, false);
 
             await fetch('/api/settings/save_avatar', {
@@ -662,6 +641,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
+         // Рендеримо повзунок гучності на екрані налаштувань
+         renderVolumeSlider() {
+             const container = document.getElementById('volume-slider-container');
+             if (!container) return;
+
+             // Показуємо контейнер тільки якщо грає музика
+             container.style.display = this.state.isMusicPlaying ? 'block' : 'none';
+
+             const currentVolume = this.state.currentMusicPlayer ? this.state.currentMusicPlayer.volume : 1;
+
+             container.innerHTML = `
+                 <input type="range" id="volume-slider-settings" min="0" max="1" step="0.01" value="${currentVolume}">
+             `;
+         },
+
+
         async handleGenderChange(gender) {
             this.state.currentUser.gender = gender;
             this.state.currentAvatarIndex = 0;
@@ -686,7 +681,6 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '';
 
             const T = this.state.texts[this.state.currentLang];
-            // Перевіряємо знайдені пасхалки поточного користувача
             const found = this.state.currentUser && this.state.currentUser.found_easter_eggs.includes('lazurit');
 
             const eggEl = document.createElement('div');
@@ -888,7 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 listEl.appendChild(item);
             });
 
-            this.loadInitialData(); // Перезавантажуємо дані, щоб оновити XP у хедері, якщо потрібно
+            this.loadInitialData();
         },
 
         generateDiffHtml(correct, user) {
@@ -977,7 +971,9 @@ document.addEventListener('DOMContentLoaded', () => {
             this.stopAllMusic();
 
             this.state.currentMusicPlayer = newPlayer;
-            this.state.currentMusicPlayer.volume = this.elements.volumeSlider.value;
+            // Знаходимо повзунок у налаштуваннях
+            const settingsSlider = document.getElementById('volume-slider-settings');
+            this.state.currentMusicPlayer.volume = settingsSlider ? settingsSlider.value : 1; // Беремо значення звідти
             this.state.currentMusicPlayer.play();
             this.state.isMusicPlaying = true;
             this.state.currentParticleType = eggName;
@@ -989,12 +985,14 @@ document.addEventListener('DOMContentLoaded', () => {
                  musicBtn.classList.toggle('playing', eggName === currentEggType);
             }
 
-            // Показуємо повзунок гучності завжди при старті музики
-            this.elements.volumeSlider.classList.add('visible');
+             // Оновлюємо стан повзунка в налаштуваннях, якщо вони відкриті
+             if (document.getElementById('settings-screen-active')) {
+                 this.renderVolumeSlider();
+             }
+
 
             this.startParticleRain(eggName);
 
-            // Відмічаємо пасхалку як знайдену, якщо вона ще не була знайдена
             if (this.state.currentUser && !this.state.currentUser.found_easter_eggs.includes(eggName)) {
                 this.state.currentUser.found_easter_eggs.push(eggName);
                 this.updateEasterEggIcon(eggName);
@@ -1019,12 +1017,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 musicBtn.classList.remove('playing');
             }
 
-            this.elements.volumeSlider.classList.remove('visible');
+             // Ховаємо повзунок у налаштуваннях, якщо вони відкриті
+             if (document.getElementById('settings-screen-active')) {
+                const sliderContainer = document.getElementById('volume-slider-container');
+                if (sliderContainer) sliderContainer.style.display = 'none';
+             }
+
             this.stopParticleRain();
         },
 
         async saveFoundEasterEggs() {
-             // Перевіряємо, чи є користувач
             if (!this.state.currentUser) return;
             try {
                 await fetch('/api/settings/save_easter_eggs', {
@@ -1034,13 +1036,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
              } catch (error) {
                  console.error("Помилка збереження пасхалок:", error);
-                 // Можна додати сповіщення користувачу
              }
         },
 
 
         updateEasterEggIcon(eggName) {
-             // Оновлюємо іконку в профілі (поточному або переглянутому)
              const currentScreen = document.querySelector('.screen');
              if (currentScreen) {
                  const profileIcon = currentScreen.querySelector(`#easter-egg-icons .easter-egg-icon[data-egg="${eggName}"]`);
@@ -1049,7 +1049,6 @@ document.addEventListener('DOMContentLoaded', () => {
                   }
              }
 
-             // Оновлюємо іконку в місці її знаходження (якщо вона там є)
              const specificIcon = document.querySelector(`[data-egg="${eggName}"]:not(.easter-egg-icon)`);
               if (specificIcon) {
                  specificIcon.classList.add('found');
@@ -1059,13 +1058,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         setVolume(volume) {
+            // Оновлюємо гучність поточного плеєра
             if (this.state.currentMusicPlayer) {
                 this.state.currentMusicPlayer.volume = volume;
             }
+             // Також оновлюємо значення іншого повзунка (якщо він існує), щоб вони були синхронізовані
+             const settingsSlider = document.getElementById('volume-slider-settings');
+             if (settingsSlider && settingsSlider.value !== volume) {
+                 settingsSlider.value = volume;
+             }
         },
 
         startParticleRain(particleName) {
-            if (this.state.isRaining) this.stopParticleRain(); // Зупиняємо попередній дощ
+            if (this.state.isRaining) this.stopParticleRain();
             this.state.isRaining = true;
             this.state.lastParticleTimestamp = 0;
             this.state.currentParticleType = particleName;
@@ -1075,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
         particleRainLoop(timestamp) {
             if (!this.state.isRaining) return;
 
-            const PARTICLE_INTERVAL = 120; // Густіший дощ
+            const PARTICLE_INTERVAL = 120;
             if (timestamp - this.state.lastParticleTimestamp > PARTICLE_INTERVAL) {
                 this.state.lastParticleTimestamp = timestamp;
 
