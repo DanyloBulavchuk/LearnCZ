@@ -339,6 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async handleRegisterSubmit(e, screen) {
+             e.preventDefault();
              const response = await fetch('/api/register', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ username: screen.querySelector('#register-username').value, pin: screen.querySelector('#register-pin').value }),
@@ -387,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const wordsToday = this.state.currentTraining.results.length > 0 ? this.state.currentTraining.results.filter(r => r.isCorrect).length : 0;
             
             detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
-                <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
+                <div class.rank"><span class="emoji">${emoji}</span> ${name}</div>
                 <div class="level-info">${T.level} ${level}</div>
                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
                 <div>${progress} / ${needed} XP</div>
