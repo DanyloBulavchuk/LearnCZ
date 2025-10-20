@@ -46,15 +46,14 @@
     <audio id="music-gold" loop src="/static/gold.mp3" type="audio/mpeg"></audio>
     <audio id="music-lazurit" loop src="/static/lazurit.mp3" type="audio/mpeg"></audio>
     <audio id="music-redstone" loop src="/static/redstone.mp3" type="audio/mpeg"></audio>
-
-    <div id="particle-rain-container"></div>
+    <audio id="music-macan" loop src="/static/macan.mp3" type="audio/mpeg"></audio> <div id="particle-rain-container"></div>
 
     <div id="templates" style="display: none;">
         <div id="welcome-screen">
             <h1 class="title" data-i18n="welcome"></h1>
             <div class="button-group">
-                <button class="glow-on-hover" data-screen="login-screen" data-i18n="login"></button>
-                <button class="glow-on-hover" data-screen="register-screen" data-i18n="register"></button>
+                <button class="btn" data-screen="login-screen" data-i18n="login"></button>
+                <button class="btn" data-screen="register-screen" data-i18n="register"></button>
             </div>
         </div>
 
@@ -63,9 +62,9 @@
             <form id="login-form">
                 <input type="text" id="login-username" data-i18n-placeholder="enter_nickname" required>
                 <input type="password" id="login-pin" data-i18n-placeholder="enter_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
-                <button type="submit" class="glow-on-hover" data-i18n="login"></button>
+                <button type="submit" class="btn" data-i18n="login"></button>
             </form>
-            <button class="glow-on-hover secondary back-button" data-screen="welcome-screen" data-i18n="back"></button>
+            <button class="btn btn-secondary back-button" data-screen="welcome-screen" data-i18n="back"></button>
         </div>
 
         <div id="register-screen">
@@ -73,17 +72,17 @@
             <form id="register-form">
                 <input type="text" id="register-username" data-i18n-placeholder="enter_nickname" required>
                 <input type="password" id="register-pin" data-i18n-placeholder="create_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
-                <button type="submit" class="glow-on-hover" data-i18n="register"></button>
+                <button type="submit" class="btn" data-i18n="register"></button>
             </form>
-            <button class="glow-on-hover secondary back-button" data-screen="welcome-screen" data-i18n="back"></button>
+            <button class="btn btn-secondary back-button" data-screen="welcome-screen" data-i18n="back"></button>
         </div>
 
         <div id="main-menu-screen">
             <h1 class="title" data-i18n="main_menu_title"></h1>
             <div class="button-group">
-                <button class="glow-on-hover" data-action="start-random-training" data-i18n="random_training"></button>
-                <button class="glow-on-hover" data-action="start-specific-training" data-i18n="specific_training"></button>
-                <button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button>
+                <button class="btn" data-action="start-random-training" data-i18n="random_training"></button>
+                <button class="btn" data-action="start-specific-training" data-i18n="specific_training"></button>
+                <button class="btn" data-action="show-dictionary" data-i18n="dictionary"></button>
             </div>
 
             <div id="music-control-button" data-egg="emerald">
@@ -122,12 +121,12 @@
                             <div class="easter-egg-icon" data-egg="lazurit"></div>
                             <div class="easter-egg-icon" data-egg="redstone"></div>
                             <div class="easter-egg-icon" data-egg="diamond"></div>
-                        </div>
+                            <div class="easter-egg-icon" data-egg="macan"></div> </div>
                     </div>
 
                     <div class="profile-actions">
-                        <button class="glow-on-hover secondary" data-screen="settings-screen" data-i18n="settings"></button>
-                        <button class="glow-on-hover danger" data-action="logout" data-i18n="logout"></button>
+                        <button class="btn btn-secondary" data-screen="settings-screen" data-i18n="settings"></button>
+                        <button class="btn btn-danger" data-action="logout" data-i18n="logout"></button>
                     </div>
                 </div>
             </div>
@@ -139,7 +138,8 @@
                  <div class="panel right-panel"> <div id="avatar-container">
                          <div id="avatar-image-wrapper-view">
                              </div>
-                         <div id="avatar-controls-view" style="display: none;"> </div>
+                         <div id="avatar-controls-view" style="display: none;">
+                         </div>
                      </div>
                      <div id="profile-details-view">
                          </div>
@@ -151,11 +151,11 @@
                             <div class="easter-egg-icon" data-egg="lazurit"></div>
                             <div class="easter-egg-icon" data-egg="redstone"></div>
                             <div class="easter-egg-icon" data-egg="diamond"></div>
-                         </div>
+                            <div class="easter-egg-icon" data-egg="macan"></div> </div>
                      </div>
                      <div class="view-profile-actions">
-                          <button id="back-to-my-profile-btn" class="glow-on-hover secondary" data-i18n="back_to_my_profile"></button>
-                          <button class="glow-on-hover" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
+                          <button id="back-to-my-profile-btn" class="btn btn-secondary" data-i18n="back_to_my_profile"></button>
+                          <button class="btn" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
                      </div>
                  </div>
              </div>
@@ -168,7 +168,7 @@
              <form id="settings-form">
                 <h2 data-i18n="change_pin"></h2>
                 <input type="password" id="new-pin" data-i18n-placeholder="new_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
-                <button type="submit" class="glow-on-hover" data-i18n="save_changes"></button>
+                <button type="submit" class="btn" data-i18n="save_changes"></button>
              </form>
 
              <div id="gender-slider-container">
@@ -177,16 +177,21 @@
              <div id="volume-slider-container">
                  </div>
 
-             <button class="glow-on-hover secondary back-button" data-screen="profile-screen" data-i18n="back"></button>
+             <button class="btn btn-secondary back-button" data-screen="profile-screen" data-i18n="back"></button>
 
              <div id="gold-easter-egg" data-egg="gold"></div>
         </div>
 
         <div id="lecture-selection-screen">
             <h1 class="title" data-i18n="choose_lecture"></h1>
-            <div id="lecture-buttons-container" class="lecture-grid scrollable"></div>
-            <div id="lecture-actions-container"></div>
-            <button class="glow-on-hover secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
+            <input type="text" id="global-search-input" data-i18n-placeholder="global_search_placeholder" class="training-input global-search">
+            <div id="lecture-buttons-container" class="lecture-grid scrollable">
+                 </div>
+            <div id="global-search-results" class="dictionary-list scrollable" style="display: none;">
+                </div>
+            <div id="lecture-actions-container">
+                 </div>
+            <button class="btn btn-secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
 
         <div id="dictionary-view-screen">
@@ -195,16 +200,16 @@
             <div id="dictionary-words-container" class="dictionary-list scrollable"></div>
             <div id="lazurit-easter-egg-container">
                  </div>
-            <button class="glow-on-hover secondary back-button" data-screen="lecture-selection-screen" data-action="back-to-dict-select" data-i18n="back"></button>
+            <button class="btn btn-secondary back-button" data-screen="lecture-selection-screen" data-action="back-to-dict-select" data-i18n="back"></button>
         </div>
 
         <div id="direction-selection-screen">
             <h1 class="title" data-i18n="direction_title"></h1>
             <div class="button-group">
-                <button class="glow-on-hover" data-action="set-direction" data-direction="cz_to_lang" data-i18n="cz_to_lang"></button>
-                <button class="glow-on-hover" data-action="set-direction" data-direction="lang_to_cz" data-i18n="lang_to_cz"></button>
+                <button class="btn" data-action="set-direction" data-direction="cz_to_lang" data-i18n="cz_to_lang"></button>
+                <button class="btn" data-action="set-direction" data-direction="lang_to_cz" data-i18n="lang_to_cz"></button>
             </div>
-            <button class="glow-on-hover secondary back-button" data-screen="lecture-selection-screen" data-action="back-to-train-select" data-i18n="back"></button>
+            <button class="btn btn-secondary back-button" data-screen="lecture-selection-screen" data-action="back-to-train-select" data-i18n="back"></button>
         </div>
 
         <div id="training-screen">
@@ -218,8 +223,8 @@
             <div class="training-feedback"></div>
             <div id="special-chars-keyboard"></div>
             <div class="training-buttons">
-                <button class="glow-on-hover training-check-btn" data-i18n="check"></button>
-                <button class="glow-on-hover secondary training-exit-btn" data-action="finish-training" data-i18n="finish_training"></button>
+                <button class="btn training-check-btn" data-i18n="check"></button>
+                <button class="btn btn-secondary training-exit-btn" data-action="finish-training" data-i18n="finish_training"></button>
             </div>
         </div>
 
@@ -227,7 +232,7 @@
             <h1 class="title" data-i18n="results_title"></h1>
             <div id="results-summary"></div>
             <div id="results-list" class="scrollable"></div>
-            <button class="glow-on-hover back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
+            <button class="btn back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
         </div>
     </div>
 

@@ -1,9 +1,22 @@
 :root {
     --bg-color: #0D0C1D;
     --text-color: #EAEAEA;
-    --accent-color: #9F50FF;
+    --accent-color: #9F50FF; /* Primary accent */
+    --accent-color-light: #C58FFF; /* Lighter shade for hover background */
+    --accent-color-glow: rgba(159, 80, 255, 0.4); /* Glow effect color */
+    --accent-color-border: linear-gradient(90deg, #9F50FF, #C58FFF, #9F50FF); /* Gradient for border */
+
+    --danger-color: #E74C3C; /* Red for danger/logout */
+    --danger-color-light: #FF7B6E;
+    --danger-color-glow: rgba(231, 76, 60, 0.4);
+    --danger-color-border: linear-gradient(90deg, #E74C3C, #FF7B6E, #E74C3C);
+
+    --secondary-color: #5A5A8C; /* Color for secondary/back buttons */
+    --secondary-color-light: #8C8CC1;
+    --secondary-color-glow: rgba(90, 90, 140, 0.4);
+    --secondary-color-border: linear-gradient(90deg, #5A5A8C, #8C8CC1, #5A5A8C);
+
     --success-color: #39FF14;
-    --danger-color: #E74C3C;
     --info-color: #00BFFF;
     --panel-bg: radial-gradient(circle, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%);
     --shadow-color: rgba(159, 80, 255, 0.25);
@@ -17,13 +30,26 @@ html.light-theme {
     --bg-color: #d1d5db;
     --text-color: #1f2937;
     --accent-color: #8b5cf6;
-    --success-color: #10b981;
+    --accent-color-light: #A78BFA;
+    --accent-color-glow: rgba(139, 92, 246, 0.3);
+    --accent-color-border: linear-gradient(90deg, #8b5cf6, #A78BFA, #8b5cf6);
+
     --danger-color: #ef4444;
+    --danger-color-light: #F87171;
+    --danger-color-glow: rgba(239, 68, 68, 0.3);
+    --danger-color-border: linear-gradient(90deg, #ef4444, #F87171, #ef4444);
+
+    --secondary-color: #6b7280;
+    --secondary-color-light: #9CA3AF;
+    --secondary-color-glow: rgba(107, 114, 128, 0.3);
+    --secondary-color-border: linear-gradient(90deg, #6b7280, #9CA3AF, #6b7280);
+
+    --success-color: #10b981;
     --info-color: #3b82f6;
     --panel-bg: #f9fafb;
     --shadow-color: rgba(107, 114, 128, 0.15);
     --border-color: #9ca3af;
-    --button-bg: #e5e7eb;
+    --button-bg: #e5e7eb; /* Base bg for light theme buttons */
     --button-text-color: #1f2937;
     --button-hover-bg: #d1d5db;
 }
@@ -89,7 +115,7 @@ html.light-theme #current-lang-btn { border-color: var(--border-color); }
     position: absolute; top: 110%; left: 0;
     display: none;
     flex-direction: column;
-    align-items: center; /* Центруємо іконку редстоуна */
+    align-items: center;
     background-color: #191622;
     border: 1px solid var(--accent-color);
     border-radius: 8px;
@@ -129,10 +155,10 @@ html.light-theme #lang-options { background-color: #fff; border-color: var(--bor
     background-position: center;
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
-    filter: none; /* Завжди кольорова тут */
-    margin-top: 5px; /* Невеликий відступ зверху */
+    filter: none;
+    margin-top: 5px;
 }
-#redstone-easter-egg.found { /* Додатковий стиль для знайденої, якщо знадобиться */ }
+#redstone-easter-egg.found { }
 #redstone-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -152,7 +178,7 @@ nav { display: flex; align-items: center; gap: 15px; }
     box-shadow: none;
 }
 .header-button:disabled:hover {
-    background-color: rgba(159, 80, 255, 0.05); /* Щоб не було ефекту при наведенні */
+    background-color: rgba(159, 80, 255, 0.05);
 }
 
 html.light-theme .header-button {
@@ -161,7 +187,7 @@ html.light-theme .header-button {
     box-shadow: none;
     border: 1px solid var(--border-color);
 }
-.header-button:hover:not(:disabled) { /* Додано :not(:disabled) */
+.header-button:hover:not(:disabled) {
     background-color: rgba(159, 80, 255, 0.3);
 }
 html.light-theme .header-button:hover:not(:disabled) {
@@ -207,20 +233,142 @@ html:not(.light-theme) .title {
 }
 
 .button-group { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-.button-group .glow-on-hover { width: 90%; max-width: 320px; }
+.button-group .btn { width: 90%; max-width: 320px; }
 
-button {
+/* --- Новий стиль кнопок --- */
+.btn {
     font-family: var(--font-family);
     font-size: 18px;
     font-weight: bold;
-    border: none;
+    color: var(--text-color);
+    background-color: rgba(13, 12, 29, 0.6); /* Темний фон */
+    border: 2px solid transparent; /* Спочатку прозорий бордер */
+    border-radius: 12px;
+    padding: 16px 35px; /* Зменшили вертикальний паддінг */
     cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 -2px 0 rgba(255, 255, 255, 0.1); /* Тінь для випуклості */
+    width: 100%;
+    max-width: 350px;
+    text-align: center; /* Центруємо текст */
 }
-button:active { transform: scale(0.98); }
+
+/* Градієнтний бордер при наведенні */
+.btn:before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px;
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    background: var(--accent-color-border);
+    background-size: 200% 100%;
+    border-radius: 14px; /* Трохи більше ніж у кнопки */
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease, background-position 0.5s ease;
+    animation: border-flow 4s linear infinite paused; /* Пауза за замовчуванням */
+}
+
+@keyframes border-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.btn:hover:before {
+    opacity: 1;
+    animation-play-state: running; /* Запускаємо анімацію при наведенні */
+}
+
+/* Ефект підсвічування при наведенні */
+.btn:hover {
+    background-color: var(--accent-color-light);
+    box-shadow: 0 6px 20px var(--accent-color-glow), inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+    color: #fff; /* Робимо текст білим для контрасту */
+}
+html.light-theme .btn:hover {
+     background-color: var(--accent-color-light);
+     box-shadow: 0 6px 20px var(--accent-color-glow), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+     color: var(--button-text-color);
+}
+
+
+/* Стилі для вторинних кнопок (Назад) */
+.btn.btn-secondary {
+    background-color: rgba(13, 12, 29, 0.6);
+    border: 2px solid var(--secondary-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 -2px 0 rgba(255, 255, 255, 0.1);
+}
+.btn.btn-secondary:before {
+    background: var(--secondary-color-border);
+}
+.btn.btn-secondary:hover {
+    background-color: var(--secondary-color-light);
+    box-shadow: 0 6px 20px var(--secondary-color-glow), inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+    border-color: transparent; /* Ховаємо основний бордер при наведенні */
+}
+html.light-theme .btn.btn-secondary {
+     background-color: var(--button-bg);
+     border-color: var(--secondary-color);
+     color: var(--button-text-color);
+}
+html.light-theme .btn.btn-secondary:hover {
+     background-color: var(--secondary-color-light);
+     box-shadow: 0 6px 20px var(--secondary-color-glow), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+     border-color: transparent;
+}
+
+
+/* Стилі для небезпечних кнопок (Вийти) */
+.btn.btn-danger {
+    background-color: rgba(13, 12, 29, 0.6);
+    border: 2px solid var(--danger-color);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 -2px 0 rgba(255, 255, 255, 0.1);
+}
+.btn.btn-danger:before {
+    background: var(--danger-color-border);
+}
+.btn.btn-danger:hover {
+    background-color: var(--danger-color-light);
+    box-shadow: 0 6px 20px var(--danger-color-glow), inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+    border-color: transparent;
+}
+html.light-theme .btn.btn-danger {
+     background-color: var(--button-bg);
+     border-color: var(--danger-color);
+     color: var(--button-text-color);
+}
+html.light-theme .btn.btn-danger:hover {
+     background-color: var(--danger-color-light);
+     box-shadow: 0 6px 20px var(--danger-color-glow), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+     border-color: transparent;
+}
+
+/* Спеціальні кнопки (Shift, символи) */
+.char-btn, .shift-btn {
+    min-width: 45px; width: 45px; height: 45px; padding: 0; font-size: 20px;
+}
+.shift-btn { min-width: 100px; width: 100px; }
+
+/* Кнопка старту тренування */
+.btn-start-training {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+.btn-start-training:hover {
+    background-color: var(--accent-color-light);
+    border-color: transparent;
+}
+
+/* Адаптація розміру кнопки Назад */
+.back-button {
+    padding: 14px 30px; /* Трохи менше */
+}
+
+/* --- Кінець нового стилю кнопок --- */
+
 
 form { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
 input[type="text"], input[type="password"] {
@@ -250,84 +398,6 @@ html.light-theme input:focus {
 .scrollable::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 20px; border: 3px solid transparent; }
 
 
-.glow-on-hover {
-    padding: 18px 35px;
-    color: var(--text-color);
-    background: transparent;
-    position: relative;
-    z-index: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    width: 100%; /* Займає всю ширину батьківського елемента */
-    max-width: 350px; /* Обмежуємо максимальну ширину */
-}
-.glow-on-hover:before {
-    content: '';
-    background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-    position: absolute;
-    top: -2px; left:-2px;
-    background-size: 400%;
-    z-index: -1;
-    filter: blur(5px);
-    width: calc(100% + 4px);
-    height: calc(100% + 4px);
-    animation: glowing 20s linear infinite;
-    opacity: 0;
-    transition: opacity .3s ease-in-out;
-    border-radius: 12px;
-}
-.glow-on-hover:hover:before { opacity: 1; }
-.glow-on-hover:after {
-    z-index: -1;
-    content: '';
-    position: absolute;
-    width: calc(100% - 4px);
-    height: calc(100% - 4px);
-    background: var(--bg-color);
-    left: 2px;
-    top: 2px;
-    border-radius: 10px;
-    transition: background .3s ease;
-}
-html:not(.light-theme) .glow-on-hover:hover:after {
-    background: rgba(159, 80, 255, 0.1);
-}
-@keyframes glowing {
-    0% { background-position: 0 0; }
-    50% { background-position: 400% 0; }
-    100% { background-position: 0 0; }
-}
-html.light-theme .glow-on-hover:after { background: var(--panel-bg); }
-html.light-theme .glow-on-hover:hover:after { background: var(--button-hover-bg); }
-html.light-theme .glow-on-hover { color: var(--text-color); }
-
-button.secondary:after, html.light-theme button.secondary:after {
-     background: transparent;
-     border: 2px solid var(--accent-color);
-}
-html.light-theme button.secondary:after { border-color: var(--accent-color); }
-
-button.danger:after, html.light-theme button.danger:after {
-    background: transparent;
-    border: 2px solid var(--danger-color);
-}
-
-.start-training-btn {
-    width: 90%;
-    max-width: 320px;
-    color: #fff !important;
-    font-size: 20px;
-    border: none;
-}
-.start-training-btn:after {
-    background: var(--accent-color) !important;
-}
-.start-training-btn:hover:after {
-    background: var(--accent-color) !important;
-    filter: brightness(1.2);
-}
-html.light-theme .start-training-btn { color: #fff !important; }
-
 #profile-screen, #view-profile-screen { height: 100%; }
 .profile-layout { display: flex; flex-grow: 1; gap: 20px; min-height: 0; }
 .profile-layout.view-only .left-panel {
@@ -354,8 +424,8 @@ html.light-theme .left-panel { border-right-color: var(--border-color); }
 .right-panel { flex: 55; }
 #leaderboard-container { min-height: 0; padding-right: 10px; }
 .leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; cursor: pointer; }
-.leaderboard-item:hover:not(.current-user) { background-color: rgba(159, 80, 255, 0.1); } /* Ефект наведення тільки на чужі */
-.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); cursor: default; } /* Забороняємо курсор на собі */
+.leaderboard-item:hover:not(.current-user) { background-color: rgba(159, 80, 255, 0.1); }
+.leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); cursor: default; }
 html.light-theme .leaderboard-item.current-user {
     background-color: #c6f6d5;
     box-shadow: none;
@@ -364,7 +434,16 @@ html.light-theme .leaderboard-item:hover:not(.current-user) { background-color: 
 
 .lb-pos { min-width: 35px; opacity: 0.7; font-weight: 400; }
 .lb-rank { font-size: 20px; min-width: 40px; text-align: center; }
-.lb-name { font-weight: bold; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-name { font-weight: bold; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
+.crown-icon {
+    display: inline-block;
+    animation: crown-glow 1.5s infinite alternate;
+}
+@keyframes crown-glow {
+    from { filter: drop-shadow(0 0 2px gold); }
+    to { filter: drop-shadow(0 0 8px gold); }
+}
+
 .lb-xp { color: #FFD700; font-weight: bold; white-space: nowrap; }
 html.light-theme .lb-xp { color: #d69e2e; }
 
@@ -421,7 +500,7 @@ html.light-theme #avatar-image-wrapper, html.light-theme #avatar-image-wrapper-v
     height: 45px;
     border-radius: 50%;
     font-size: 2rem;
-    line-height: 41px; /* Вирівнюємо стрілку по вертикалі */
+    line-height: 41px;
     padding: 0;
     opacity: 0.7;
     transition: all 0.2s ease-out;
@@ -494,6 +573,7 @@ html.light-theme #profile-details .rank, html.light-theme #profile-details-view 
     display: flex;
     gap: 15px;
     justify-content: center;
+    flex-wrap: wrap; /* Додано для перенесення на мобільних */
 }
 .easter-egg-icon {
     width: 40px;
@@ -501,7 +581,7 @@ html.light-theme #profile-details .rank, html.light-theme #profile-details-view 
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
-    filter: grayscale(1); /* Чорно-білі за замовчуванням */
+    filter: grayscale(1);
     opacity: 0.7;
     transition: all 0.3s ease;
     cursor: pointer;
@@ -510,13 +590,13 @@ html.light-theme #profile-details .rank, html.light-theme #profile-details-view 
     opacity: 1;
 }
 .easter-egg-icon:not(.found) {
-    cursor: default; /* Забороняємо курсор для не знайдених */
+    cursor: default;
 }
 .easter-egg-icon:not(.found):hover {
-    opacity: 0.7; /* Забороняємо ефект наведення для не знайдених */
+    opacity: 0.7;
 }
 .easter-egg-icon.found {
-    filter: grayscale(0); /* Стають кольоровими, коли знайдені */
+    filter: grayscale(0);
     opacity: 1;
 }
 .easter-egg-icon[data-egg="emerald"] { background-image: url('/static/emerald.png'); }
@@ -524,6 +604,7 @@ html.light-theme #profile-details .rank, html.light-theme #profile-details-view 
 .easter-egg-icon[data-egg="lazurit"] { background-image: url('/static/lazurit.png'); }
 .easter-egg-icon[data-egg="redstone"] { background-image: url('/static/redstone.png'); }
 .easter-egg-icon[data-egg="diamond"] { background-image: url('/static/diamond.png'); }
+.easter-egg-icon[data-egg="macan"] { background-image: url('/static/macan.png'); }
 
 
 .xp-bar { width: 100%; height: 15px; background-color: rgba(0,0,0, 0.1); border-radius: 10px; margin-top: 10px; overflow: hidden; }
@@ -535,26 +616,26 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     width: 90%;
     max-width: 250px;
 }
-#profile-screen .back-button { /* Стиль кнопки "Назад" тільки для профілю */
-     position: absolute; /* Абсолютне позиціонування відносно .screen */
-     bottom: 10px; /* Відступ знизу */
+/* Видаляємо позиціонування кнопки Назад для профілю */
+/* #profile-screen .back-button {
+     position: absolute;
+     bottom: 10px;
      left: 50%;
      transform: translateX(-50%);
-}
+} */
 
 .profile-actions {
     display: flex;
     gap: 10px;
-    margin-top: auto; /* Важливо для притиснення до низу */
-    padding-top: 20px; /* Додаємо відступ зверху */
+    margin-top: auto;
+    padding-top: 20px;
     width: 100%;
 }
 .profile-actions button { flex-grow: 1; min-width: 0; padding: 12px; font-size: 16px; }
 
-/* Стилі для кнопок на екрані перегляду профілю */
 .view-profile-actions {
     display: flex;
-    flex-direction: column; /* Кнопки одна під одною */
+    flex-direction: column;
     gap: 15px;
     align-items: center;
     margin-top: auto;
@@ -569,32 +650,32 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 
 #settings-screen {
     align-items: center;
-    justify-content: flex-start; /* Вирівнювання по верху */
+    justify-content: flex-start;
     padding-top: 20px;
-    gap: 30px; /* Відстань між елементами */
+    gap: 30px; /* Збільшили відстань */
     display: flex;
     flex-direction: column;
 }
 #settings-screen > h1,
-#settings-screen > form > h2 { /* Застосовуємо тільки до h2 в формі */
+#settings-screen > form > h2 {
     margin-bottom: 0;
 }
 #settings-screen > form,
 #settings-screen > #gender-slider-container,
-#settings-screen > #volume-slider-container, /* Додано контейнер повзунка */
+#settings-screen > #volume-slider-container,
 /* #settings-screen > #stop-music-button, Видалено */
 #settings-screen > .back-button,
 #settings-screen > #gold-easter-egg {
     width: 100%;
-    max-width: 350px; /* Обмеження ширини для центрування */
+    max-width: 350px;
 }
 #settings-screen > .back-button {
-    margin-top: auto; /* Притискаємо кнопку назад до низу */
+    margin-top: auto;
     margin-bottom: 10px;
 }
 
 
-.settings-divider { /* Цей клас більше не використовується в HTML */
+.settings-divider {
     display: none;
 }
 
@@ -663,8 +744,8 @@ html.light-theme .slider-track {
     background-position: center;
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
-    filter: none; /* Завжди кольорова тут */
-    margin: 0 auto; /* Центрування без зайвих відступів */
+    filter: none;
+    margin: 0 auto;
 }
 #gold-easter-egg.found { }
 #gold-easter-egg:hover {
@@ -673,18 +754,40 @@ html.light-theme .slider-track {
 
 
 /* Lecture & Dictionary Screens */
+.global-search { /* Стилі для нового поля пошуку */
+    margin-bottom: 20px;
+    max-width: 100%;
+}
 .lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; padding: 10px; flex-grow: 1; }
-.lecture-grid button { width: 100%; min-width: 0; padding: 25px; }
-.lecture-grid button.selected::before { opacity: 1; background: linear-gradient(45deg, #48ff00, #00ffd5, #48ff00); }
+.lecture-grid .btn { width: 100%; min-width: 0; padding: 25px; max-width: none; } /* Кнопки лекцій займають всю ширину */
+.lecture-grid .btn.selected:before { opacity: 1; background: linear-gradient(45deg, #48ff00, #00ffd5, #48ff00); }
 
 #lecture-actions-container {
     text-align: center;
     margin-top: 20px;
     padding-bottom: 10px;
+    flex-shrink: 0; /* Щоб не стискався */
 }
-#lecture-actions-container .start-training-btn {
+#lecture-actions-container .btn-start-training {
     max-width: 320px;
 }
+/* Контейнер для результатів пошуку */
+#global-search-results {
+    display: none; /* Ховаємо за замовчуванням */
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1; /* Займає вільне місце */
+    width: 100%;
+    max-width: 700px; /* Обмежуємо ширину як у словнику */
+    margin: 0 auto; /* Центруємо */
+}
+.search-result-lecture {
+    font-weight: bold;
+    color: var(--accent-color);
+    margin-right: 5px;
+    opacity: 0.8;
+}
+
 
 #dict-search-input {
     width: 100%;
@@ -703,7 +806,7 @@ html.light-theme .dict-item b { color: #777; }
     display: flex;
     justify-content: center;
     padding: 10px 0;
-    flex-shrink: 0; /* Щоб не стискався */
+    flex-shrink: 0;
 }
 #lazurit-easter-egg {
     width: 60px;
@@ -714,7 +817,7 @@ html.light-theme .dict-item b { color: #777; }
     background-position: center;
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
-    filter: none; /* Завжди кольорова тут */
+    filter: none;
 }
 #lazurit-easter-egg.found { }
 #lazurit-easter-egg:hover {
@@ -806,24 +909,22 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
 /* --- MUSIC, EASTER EGGS, PARTICLES --- */
-/* Стилі для повзунка гучності в налаштуваннях */
 #volume-slider-container {
     width: 100%;
-    max-width: 300px; /* Задали ширину контейнеру */
-    display: block; /* Завжди видимий */
-    margin: 10px auto 0 auto; /* Центруємо сам контейнер */
+    max-width: 300px; /* Зробили однаковою шириною з повзунком */
+    display: block;
+    margin: 10px auto 0 auto;
 }
 #volume-slider-settings {
-    width: 100%; /* Повзунок займає всю ширину контейнера */
-    /* display: block; Видалено - не потрібно */
-    /* margin: 0 auto; Видалено - контейнер вже відцентрований */
+    width: 100%;
+    display: block;
+    margin: 0 auto;
     cursor: pointer;
     -webkit-appearance: none;
     appearance: none;
     background: transparent;
     height: 20px;
 }
-/* ... (решта стилів для ::-webkit-slider-runnable-track, ::-webkit-slider-thumb, ::-moz-range-track, ::-moz-range-thumb як були раніше) ... */
 #volume-slider-settings::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
@@ -840,7 +941,7 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     background: var(--accent-color);
     box-shadow: 0 0 10px var(--accent-color), 0 0 15px var(--shadow-color);
     cursor: pointer;
-    margin-top: -8px; /* Центрування відносно доріжки */
+    margin-top: -8px;
     transition: transform 0.2s ease;
 }
 #volume-slider-settings::-webkit-slider-thumb:hover {
@@ -902,7 +1003,7 @@ html.light-theme #volume-slider-settings::-moz-range-thumb {
     position: absolute;
     top: 0;
     left: 0;
-    filter: none; /* Завжди кольорова */
+    filter: none;
 }
 #music-control-button img.diamond {
     opacity: 0;
@@ -961,18 +1062,19 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 @media (max-width: 768px) {
     .title { font-size: 1.8rem; margin-bottom: 20px; }
     #profile-screen, #view-profile-screen { justify-content: flex-start; }
-    .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 20px; /* Зменшили запас */}
-    .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; max-height: 40vh; /* Обмеження висоти рейтингу */ }
+    .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 20px; }
+    .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; max-height: 40vh; }
     html.light-theme .left-panel { border-bottom-color: var(--border-color); }
-    #leaderboard-container { max-height: none; /* Видаляємо попереднє обмеження */}
+    #leaderboard-container { max-height: none; }
 
     #avatar-image-wrapper, #avatar-image-wrapper-view { width: 150px; height: 150px; font-size: 1rem; }
     #avatar-controls { max-width: 250px; }
     .avatar-arrow { width: 40px; height: 40px; line-height: 36px; font-size: 1.8rem; }
 
-    button, .glow-on-hover { width: 90%; max-width: 320px; }
+    button.btn, .glow-on-hover { width: 90%; max-width: 320px; } /* Використовуємо .btn */
     .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; width: 90%; max-width: 250px; }
-    #profile-screen .back-button { position: static; transform: none; margin-top: 20px; } /* Повертаємо нормальне позиціонування на мобільних */
+    /* Видаляємо абсолютне позиціонування кнопки Назад в профілі на мобільних */
+    /* #profile-screen .back-button { position: static; transform: none; margin-top: 20px; } */
 
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }
@@ -982,19 +1084,16 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     #music-control-button {
          width: 90px;
          height: 90px;
-         bottom: 70px; /* Підняли вище */
+         bottom: 70px;
     }
-    /* Видаляємо позиціонування глобального повзунка */
 
-    /* Гарантуємо, що кнопка Назад видима */
-    /* Видаляємо margin-top: auto для всіх кнопок "Назад" на мобільних */
     #settings-screen .back-button,
     #results-screen .back-button,
     .view-profile-actions {
-        margin-top: 20px; /* Фіксований відступ зверху */
+        margin-top: 20px;
         position: relative;
         z-index: 1;
-        margin-bottom: 10px; /* Додаємо відступ знизу для всіх */
+        margin-bottom: 10px;
     }
      .view-profile-actions { margin-bottom: 10px; }
 }

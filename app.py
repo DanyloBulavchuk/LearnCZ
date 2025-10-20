@@ -80,7 +80,8 @@ TEXTS = {
         'choose_avatar': "Оберіть аватарку", 'avatar_unavailable': "Аватар недоступний",
         'stop_music_button_text': "ЗУПИНИТИ МУЗИКУ", 'easter_eggs_title': "Пасхалки",
         'search_word': "Пошук слова...", 'view_profile_title': "Профіль користувача",
-        'back_to_my_profile': "Повернутися у мій профіль"
+        'back_to_my_profile': "Повернутися у мій профіль",
+        'global_search_placeholder': "Пошук по всіх словах..."
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -106,7 +107,8 @@ TEXTS = {
         'choose_avatar': "Choose an avatar", 'avatar_unavailable': "Avatar unavailable",
         'stop_music_button_text': "STOP MUSIC", 'easter_eggs_title': "Easter Eggs",
         'search_word': "Search word...", 'view_profile_title': "User Profile",
-        'back_to_my_profile': "Back to My Profile"
+        'back_to_my_profile': "Back to My Profile",
+        'global_search_placeholder': "Search all words..."
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -132,7 +134,8 @@ TEXTS = {
         'choose_avatar': "Выберите аватар", 'avatar_unavailable': "Аватар недоступен",
         'stop_music_button_text': "ОСТАНОВИТЬ МУЗЫКУ", 'easter_eggs_title': "Пасхалки",
         'search_word': "Поиск слова...", 'view_profile_title': "Профиль пользователя",
-        'back_to_my_profile': "Вернуться в мой профиль"
+        'back_to_my_profile': "Вернуться в мой профиль",
+        'global_search_placeholder': "Поиск по всем словам..."
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
@@ -278,19 +281,17 @@ def get_session():
             return jsonify({"user": None})
     return jsonify({"user": None})
 
-# Ендпоінт для отримання публічних даних користувача
 @app.route('/api/user/<username>')
 def get_user_profile(username):
     conn = get_db_connection()
     if conn is None: abort(500)
     with conn.cursor() as cur:
-        # Отримуємо original_case, щоб зберегти регістр
         cur.execute("SELECT original_case, xp, gender, avatar, found_easter_eggs FROM users WHERE username = %s;", (username.lower(),))
         user = cur.fetchone()
     conn.close()
     if user:
         return jsonify({
-            "username": user[0], # Використовуємо original_case
+            "username": user[0],
             "xp": user[1],
             "gender": user[2],
             "avatar": user[3],
@@ -306,8 +307,9 @@ def get_initial_data():
     conn = get_db_connection()
     if conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT original_case, xp FROM users ORDER BY xp DESC, username ASC;")
-            leaderboard = [{"username": row[0], "xp": row[1]} for row in cur.fetchall()]
+            # Тепер також витягуємо found_easter_eggs для рейтингу
+            cur.execute("SELECT original_case, xp, found_easter_eggs FROM users ORDER BY xp DESC, username ASC;")
+            leaderboard = [{"username": row[0], "xp": row[1], "found_easter_eggs": row[2]} for row in cur.fetchall()]
         conn.close()
     return jsonify({
         "lectures": AVAILABLE_LECTURES,
@@ -333,8 +335,25 @@ def get_words():
              print(f"Помилка: отримано нечислові ID лекцій: {lecture_ids}")
              words_to_train = []
 
-
     return jsonify(words_to_train)
+
+# Новий ендпоінт для глобального пошуку
+@app.route('/api/global_search', methods=['POST'])
+def global_search():
+    data = request.json
+    search_term = data.get('term', '').lower().strip()
+    if not search_term:
+        return jsonify([])
+
+    results = []
+    for word in ALL_WORDS:
+        if (search_term in word.get('CZ', '').lower() or
+            search_term in word.get('UA', '').lower() or
+            search_term in word.get('RU', '').lower() or
+            search_term in word.get('EN', '').lower()):
+            results.append(word)
+
+    return jsonify(results)
 
 @app.route('/api/update_xp', methods=['POST'])
 def update_xp():
@@ -402,7 +421,7 @@ def save_easter_eggs():
     if not isinstance(eggs_list, list) or not all(isinstance(egg, str) for egg in eggs_list):
         abort(400, description="Invalid data format for easter eggs.")
 
-    allowed_eggs = ["emerald", "diamond", "gold", "lazurit", "redstone"]
+    allowed_eggs = ["emerald", "diamond", "gold", "lazurit", "redstone", "macan"] # Додано macan
     valid_eggs = [egg for egg in eggs_list if egg in allowed_eggs]
 
     eggs_json_string = json.dumps(valid_eggs)
@@ -420,5 +439,4 @@ with app.app_context():
     init_db()
 
 if __name__ == '__main__':
-    # Встановлюємо debug=False для продакшену
     app.run(debug=False)

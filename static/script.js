@@ -1,9 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const EASTER_EGG_ORDER = ["emerald", "gold", "lazurit", "redstone", "diamond", "macan"]; // Додано macan
+    const TOTAL_EASTER_EGGS = EASTER_EGG_ORDER.length;
+
     const app = {
         state: {
             currentUser: null,
-            viewingUser: null, // Для зберігання даних користувача, якого переглядаємо
-            loadedWords: {},
+            viewingUser: null,
+            loadedWords: {}, // Кеш завантажених слів { lectureId: [words], 'random': [words], 'search_term': [words] }
             lectures: [],
             leaderboard: [],
             texts: {},
@@ -11,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentAvatarIndex: 0,
             currentLang: 'ua',
             isShiftActive: false,
-            viewMode: null,
+            viewMode: null, // 'dictionary', 'training', 'global_search'
             selectedLectureForView: null,
             isCheckingAnswer: false,
 
@@ -22,6 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
             isRaining: false,
             lastParticleTimestamp: 0,
             animationFrameId: null,
+
+            globalSearchAbortController: null, // Для скасування попередніх запитів пошуку
+            globalSearchTimeout: null, // Для затримки перед пошуком
 
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
@@ -39,8 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             langOptions: document.getElementById('lang-options'),
             themeToggle: document.getElementById('theme-checkbox'),
             particleRainContainer: document.getElementById('particle-rain-container'),
-            // volumeSlider тепер не глобальний елемент
-            // volumeSlider: document.getElementById('volume-slider'),
+            // volumeSlider: document.getElementById('volume-slider'), // Видалено
 
             audio: {
                 emerald: document.getElementById('music-emerald'),
@@ -48,12 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 gold: document.getElementById('music-gold'),
                 lazurit: document.getElementById('music-lazurit'),
                 redstone: document.getElementById('music-redstone'),
+                macan: document.getElementById('music-macan'), // Додано macan
             }
         },
 
         init() {
-            this.initTheme(); // Застосовуємо тему
-            this.loadVolume(); // Завантажуємо гучність
+            this.initTheme();
+            this.loadVolume();
             this.addEventListeners();
             this.checkSession();
         },
@@ -75,9 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
                    return;
                 }
 
-                // Блокуємо клік на себе в рейтингу
                 if (target.matches('.leaderboard-item') && target.classList.contains('current-user')) {
-                    return; // Нічого не робити при кліку на себе
+                    return;
                 }
 
                 if (dataset.screen) this.navigateTo(dataset.screen);
@@ -90,14 +95,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     e.stopPropagation();
                     const isProfileIcon = target.closest('#easter-egg-icons');
                     const isFound = target.classList.contains('found');
+
+                    // Перевірка, чи ми не в чужому профілі
+                    const isViewingOtherProfile = document.getElementById('view-profile-screen-active');
+                    if (isViewingOtherProfile && isProfileIcon) {
+                        return; // Не дозволяємо активувати з чужого профілю
+                    }
+
                     if (isProfileIcon && !isFound) {
-                        return; // Не запускати музику для не знайдених пасхалок у профілі
+                        return;
                     }
                     this.playMusic(dataset.egg);
                 }
                 else if (target.matches('.char-btn')) this.insertChar(target.textContent);
                 else if (target.matches('.shift-btn')) this.toggleShift();
-                // Обробник кліку на іншого користувача в рейтингу
                 else if (target.matches('.leaderboard-item') && target.dataset.username) {
                    this.handleViewUserProfile(target.dataset.username);
                 }
@@ -105,10 +116,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.body.addEventListener('input', (e) => {
                 const target = e.target;
-                 // Обробляємо повзунок гучності тільки в налаштуваннях
                  if (target.id === 'volume-slider-settings') {
                     this.setVolume(target.value);
-                    this.saveVolume(target.value); // Зберігаємо гучність
+                    this.saveVolume(target.value);
+                 }
+                 else if (target.id === 'global-search-input') {
+                     // Додаємо затримку перед пошуком
+                     clearTimeout(this.state.globalSearchTimeout);
+                     const searchTerm = target.value.trim();
+                     if (searchTerm.length > 0) {
+                         this.hideLectureButtons();
+                         // Запускаємо пошук через 300мс після останнього введення
+                         this.state.globalSearchTimeout = setTimeout(() => {
+                            this.handleGlobalSearch(searchTerm);
+                         }, 300);
+                     } else {
+                         this.showLectureButtons();
+                         this.renderSearchResults([]); // Очищуємо результати
+                     }
+                 }
+                 else if (target.id === 'dict-search-input') {
+                     if (target.value.toLowerCase() === 'macan') {
+                         this.displayMacanEasterEgg();
+                     } else {
+                         this.hideMacanEasterEgg();
+                     }
+                     this.filterDictionaryView(target.value);
                  }
              });
 
@@ -128,14 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
-        // Завжди встановлюємо темну тему при завантаженні
         initTheme() {
             document.documentElement.classList.remove('light-theme');
-            localStorage.setItem('theme', 'dark'); // Записуємо 'dark' в localStorage
+            localStorage.setItem('theme', 'dark');
             if (this.elements.themeToggle) {
-                this.elements.themeToggle.checked = false; // Перемикач у стан "вимкнено"
+                this.elements.themeToggle.checked = false;
             }
-            this.updateMusicButtonForTheme(false); // Оновлюємо кнопку для темної теми
+            this.updateMusicButtonForTheme(false);
         },
 
         handleThemeChange() {
@@ -160,6 +192,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.viewingUser = null;
             }
 
+            // Якщо йдемо з екрану вибору лекцій, переконуємось, що кнопки видимі
+             if (document.getElementById('lecture-selection-screen-active') && screenId !== 'lecture-selection-screen') {
+                 this.showLectureButtons();
+                 const searchInput = document.getElementById('global-search-input');
+                 if(searchInput) searchInput.value = ''; // Очищаємо пошук при виході
+                 this.renderSearchResults([]); // Очищаємо результати
+             }
+
+
             const oldScreen = this.elements.appContainer.querySelector('.screen');
             if (oldScreen) {
                 oldScreen.classList.remove('entering');
@@ -167,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 oldScreen.addEventListener('animationend', () => oldScreen.remove(), { once: true });
             }
 
-            // Видаляємо логіку глобального повзунка звідси
 
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
@@ -202,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const clickActions = {
                  '.training-check-btn': () => this.checkAnswer(),
-                 // '#stop-music-button': () => this.stopAllMusic(), Видалено
+                 // '#stop-music-button': () => this.stopAllMusic(), // Видалено
                  '#back-to-my-profile-btn': () => this.navigateTo('profile-screen')
             };
             for (const selector in clickActions) {
@@ -213,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (screenId) {
                 case 'main-menu-screen':
                     this.updateMusicButtonForTheme(localStorage.getItem('theme') === 'light');
-                    // Видаляємо логіку повзунка звідси
                     break;
                 case 'profile-screen':
                     this.renderProfile(this.state.currentUser);
@@ -222,10 +261,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'settings-screen':
                     this.renderGenderSlider();
-                    this.renderVolumeSlider(); // Рендеримо повзунок тут
+                    this.renderVolumeSlider();
                     break;
                 case 'lecture-selection-screen':
-                    this.renderLectureSelection();
+                    this.renderLectureSelection(); // Рендеримо кнопки
+                    this.showLectureButtons(); // Показуємо їх
+                    const searchInput = activeScreen.querySelector('#global-search-input');
+                    if (searchInput && searchInput.value.length > 0) {
+                        this.hideLectureButtons();
+                        // Якщо повернулись на екран з текстом пошуку, виконуємо пошук знову
+                        this.handleGlobalSearch(searchInput.value);
+                    } else {
+                        this.renderSearchResults([]); // Очищуємо результати
+                    }
                     break;
                 case 'dictionary-view-screen':
                     this.renderDictionary();
@@ -251,6 +299,151 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
             }
         },
+
+        hideLectureButtons() {
+            const container = document.getElementById('lecture-buttons-container');
+            const actions = document.getElementById('lecture-actions-container');
+            const resultsContainer = document.getElementById('global-search-results');
+            if (container) container.style.display = 'none';
+            if (actions) actions.style.display = 'none';
+            if (resultsContainer) resultsContainer.style.display = 'flex'; // Показуємо результати
+        },
+
+        showLectureButtons() {
+            const container = document.getElementById('lecture-buttons-container');
+            const actions = document.getElementById('lecture-actions-container');
+            const resultsContainer = document.getElementById('global-search-results');
+            if (container) container.style.display = 'grid';
+            if (actions) actions.style.display = 'block';
+            if (resultsContainer) resultsContainer.style.display = 'none'; // Ховаємо результати
+        },
+
+        // --- Оновлена функція глобального пошуку ---
+        async handleGlobalSearch(searchTerm) {
+             // Скасовуємо попередній запит, якщо він ще виконується
+            if (this.state.globalSearchAbortController) {
+                this.state.globalSearchAbortController.abort();
+            }
+            this.state.globalSearchAbortController = new AbortController();
+
+            try {
+                const response = await fetch('/api/global_search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ term: searchTerm }),
+                    signal: this.state.globalSearchAbortController.signal // Передаємо сигнал для скасування
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const results = await response.json();
+                this.renderSearchResults(results); // Відображаємо результати
+            } catch (error) {
+                 if (error.name === 'AbortError') {
+                     console.log('Search request aborted'); // Це нормально при швидкому введенні
+                 } else {
+                     console.error("Помилка глобального пошуку:", error);
+                     this.renderSearchResults([]); // Показуємо порожній результат у разі помилки
+                 }
+            } finally {
+                 this.state.globalSearchAbortController = null; // Очищуємо контролер
+            }
+        },
+
+         // --- Нова функція для відображення результатів глобального пошуку ---
+        renderSearchResults(results) {
+            const container = document.getElementById('global-search-results');
+            if (!container) return;
+            container.innerHTML = ''; // Очищуємо попередні результати
+
+            if (results.length === 0) {
+                 // Можна додати повідомлення "Нічого не знайдено"
+                 // container.innerHTML = '<p>Нічого не знайдено.</p>';
+                 return;
+            }
+
+            const langKey = this.state.currentLang.toUpperCase();
+            results.forEach((word, index) => {
+                const item = document.createElement('div');
+                item.className = 'dict-item'; // Використовуємо той же стиль, що й у словнику
+                // Додаємо номер лекції до результату
+                const lectureLabel = word.lecture === 0 ? (this.state.texts[this.state.currentLang]?.notebook_lecture || 'Записник') : `L${word.lecture}`;
+                item.innerHTML = `<span class="search-result-lecture">[${lectureLabel}]</span> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
+                container.appendChild(item);
+            });
+        },
+        // --- Кінець функцій пошуку ---
+
+        displayMacanEasterEgg() {
+            let display = document.getElementById('macan-easter-egg-display');
+            if (!display) {
+                display = document.createElement('div');
+                display.id = 'macan-easter-egg-display';
+                display.dataset.egg = 'macan';
+                display.style.position = 'fixed';
+                display.style.top = '50%';
+                display.style.left = '50%';
+                display.style.transform = 'translate(-50%, -50%)';
+                display.style.width = '150px';
+                display.style.height = '150px';
+                display.style.backgroundImage = 'url(/static/macan.png)';
+                display.style.backgroundSize = 'contain';
+                display.style.backgroundRepeat = 'no-repeat';
+                display.style.cursor = 'pointer';
+                display.style.zIndex = '10000';
+                display.style.opacity = '0';
+                display.style.transition = 'opacity 0.5s ease';
+                display.addEventListener('click', () => {
+                    this.playMusic('macan');
+                    this.hideMacanEasterEgg();
+                });
+                document.body.appendChild(display);
+                requestAnimationFrame(() => {
+                    display.style.opacity = '1';
+                });
+            } else {
+                 display.style.display = 'block';
+                 requestAnimationFrame(() => {
+                     display.style.opacity = '1';
+                 });
+            }
+        },
+
+        hideMacanEasterEgg() {
+            const display = document.getElementById('macan-easter-egg-display');
+            if (display) {
+                display.style.opacity = '0';
+                setTimeout(() => {
+                     if (display) display.style.display = 'none';
+                }, 500);
+            }
+        },
+
+        filterDictionaryView(searchTerm) {
+            const container = document.getElementById('dictionary-words-container');
+            if (!container) return;
+
+            const lectureNum = this.state.selectedLectureForView;
+            if (lectureNum === null) return;
+
+            const words = this.state.loadedWords[lectureNum] || [];
+            const langKey = this.state.currentLang.toUpperCase();
+            const term = searchTerm.toLowerCase();
+
+            const filteredWords = words.filter(word =>
+                word.CZ.toLowerCase().includes(term) ||
+                (word[langKey] || word.UA).toLowerCase().includes(term)
+            );
+
+            container.innerHTML = '';
+            filteredWords.forEach((word, index) => {
+                const item = document.createElement('div');
+                item.className = 'dict-item';
+                item.innerHTML = `<b>${index + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
+                container.appendChild(item);
+            });
+        },
+
 
         handleAction(action, dataset) {
             const actions = {
@@ -338,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.updateAllTexts();
             if (document.getElementById('settings-screen-active')) {
                 this.renderGenderSlider();
-                this.renderVolumeSlider(); // Оновлюємо повзунок при зміні мови
+                this.renderVolumeSlider();
             }
         },
 
@@ -438,7 +631,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.elements.profileButton.style.display = 'none';
             }
             const currentScreenId = this.elements.appContainer.querySelector('.screen')?.id;
-            this.elements.profileButton.disabled = (currentScreenId === 'profile-screen-active' || currentScreenId === 'view-profile-screen-active');
+             if (this.elements.profileButton) {
+                 this.elements.profileButton.disabled = (currentScreenId === 'profile-screen-active' || currentScreenId === 'view-profile-screen-active');
+            }
         },
 
         async handleLoginSubmit(e, screen) {
@@ -528,12 +723,20 @@ document.addEventListener('DOMContentLoaded', () => {
                        const item = document.createElement('div');
                        item.className = 'leaderboard-item';
                        item.dataset.username = user.username;
+
+                       let userEggs = [];
+                       try {
+                           userEggs = JSON.parse(user.found_easter_eggs || '[]');
+                       } catch (e) { console.error("Error parsing easter eggs for leaderboard user", user.username, e); }
+                       const hasAllEggs = userEggs.length >= TOTAL_EASTER_EGGS;
+                       const crown = hasAllEggs ? '<span class="crown-icon">👑</span>' : '';
+
                        if (user.username === this.state.currentUser.username) {
                             item.classList.add('current-user');
                        }
                        item.innerHTML = `<span class="lb-pos">${index + 1}.</span>
                            <span class="lb-rank">${userRank.emoji}</span>
-                           <span class="lb-name">${user.username}</span>
+                           <span class="lb-name">${user.username}${crown}</span>
                            <span class="lb-xp">(${user.xp} XP)</span>`;
                        leaderboardContainer.appendChild(item);
                   });
@@ -643,20 +846,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-         // Рендеримо повзунок гучності на екрані налаштувань
          renderVolumeSlider() {
              const container = document.getElementById('volume-slider-container');
              if (!container) return;
 
-             // Завжди показуємо контейнер
-             container.style.display = 'block';
+             container.style.display = 'block'; // Завжди видимий
 
-             // Беремо збережену гучність або 1 за замовчуванням
              const savedVolume = parseFloat(localStorage.getItem('volumeLevel') || '1');
 
              container.innerHTML = `
                  <input type="range" id="volume-slider-settings" min="0" max="1" step="0.01" value="${savedVolume}">
              `;
+             this.setVolume(savedVolume);
          },
 
 
@@ -696,30 +897,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         renderLectureSelection() {
-            this.state.currentTraining.selectedLectures = [];
             const container = document.getElementById('lecture-buttons-container');
             const actionsContainer = document.getElementById('lecture-actions-container');
+            if (!container || !actionsContainer) return;
+
+            this.state.currentTraining.selectedLectures = [];
             container.innerHTML = '';
             actionsContainer.innerHTML = '';
 
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
-                button.className = 'glow-on-hover';
+                button.className = 'btn btn-lecture'; // Використовуємо новий базовий клас
                 button.dataset.action = 'select-lecture';
                 button.dataset.lecture = lectureNum;
-                button.dataset.lectureTitle = lectureNum;
+                button.dataset.lectureTitle = lectureNum; // Зберігаємо для тексту
                 container.appendChild(button);
             });
 
             if (this.state.viewMode === 'training') {
                 const startBtn = document.createElement('button');
-                startBtn.className = 'glow-on-hover start-training-btn';
+                startBtn.className = 'btn btn-start-training'; // Нові класи
                 startBtn.dataset.action = 'start-selected-lectures-training';
                 startBtn.dataset.i18n = 'start_training';
                 actionsContainer.appendChild(startBtn);
             }
-            this.updateAllTexts();
+            this.updateAllTexts(); // Оновлюємо текст кнопок
         },
+
 
         async renderDictionary() {
             const container = document.getElementById('dictionary-words-container');
@@ -727,33 +931,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!container || !searchInput) return;
 
             container.innerHTML = '';
+            searchInput.value = '';
+
             const lectureNum = this.state.selectedLectureForView;
             if (lectureNum === null) return;
 
-            const words = await this.loadWordsForLectures([lectureNum]);
-            const langKey = this.state.currentLang.toUpperCase();
+            // Перевіряємо, чи слова вже завантажені
+            let words = this.state.loadedWords[lectureNum];
+            if (!words) {
+                words = await this.loadWordsForLectures([lectureNum]);
+                this.state.loadedWords[lectureNum] = words; // Кешуємо слова
+            }
 
-            const renderWords = (wordList) => {
-                container.innerHTML = '';
-                wordList.forEach((word, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'dict-item';
-                    item.innerHTML = `<b>${index + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
-                    container.appendChild(item);
-                });
-            };
-
-            renderWords(words);
-
-            searchInput.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                const filteredWords = words.filter(word =>
-                    word.CZ.toLowerCase().includes(searchTerm) ||
-                    (word[langKey] || word.UA).toLowerCase().includes(searchTerm)
-                );
-                renderWords(filteredWords);
-            });
+            this.filterDictionaryView(''); // Відображаємо всі слова
         },
+
+
 
         async startTraining() {
             let wordsToTrain = [];
@@ -840,7 +1033,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if(response.ok) {
                     const data = await response.json();
-                    this.state.currentUser.xp = data.new_xp;
+                     if (this.state.currentUser) {
+                          this.state.currentUser.xp = data.new_xp;
+                     }
                 }
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
@@ -912,13 +1107,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let html = '<div class="keyboard-row">';
             chars.forEach((char, index) => {
-                html += `<button type="button" class="char-btn glow-on-hover">${char}</button>`;
+                html += `<button type="button" class="char-btn btn">${char}</button>`;
                 if (index === 7) {
                     html += '</div><div class="keyboard-row">';
                 }
             });
             html += '</div>';
-            html += '<div class="keyboard-row"><button type="button" class="shift-btn glow-on-hover">Shift</button></div>';
+            html += `<div class="keyboard-row"><button type="button" class="shift-btn btn btn-secondary">Shift</button></div>`;
             keyboardContainer.innerHTML = html;
         },
 
@@ -961,6 +1156,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
          playMusic(eggName) {
+            const isViewingOtherProfile = document.getElementById('view-profile-screen-active');
+            const isProfileEggIcon = event?.target?.closest('#easter-egg-icons');
+            if (isViewingOtherProfile && isProfileEggIcon) {
+                return;
+            }
+
             const newPlayer = this.elements.audio[eggName];
             if (!newPlayer) return;
 
@@ -984,7 +1185,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  musicBtn.classList.toggle('playing', eggName === currentEggType);
             }
 
-             // Оновлюємо повзунок в налаштуваннях, якщо він видимий
              if (document.getElementById('settings-screen-active')) {
                  this.renderVolumeSlider();
              }
@@ -1015,9 +1215,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 musicBtn.classList.remove('playing');
             }
 
-             // Оновлюємо (ховаємо) повзунок в налаштуваннях, якщо вони відкриті
              if (document.getElementById('settings-screen-active')) {
-                 this.renderVolumeSlider(); // Перерендеримо, він сам сховається
+                 this.renderVolumeSlider(); // Перерендеримо, щоб він зник (через display: none)
              }
 
             this.stopParticleRain();
@@ -1038,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         updateEasterEggIcon(eggName) {
-             const currentScreen = document.querySelector('.screen.entering'); // Шукаємо активний екран
+             const currentScreen = document.querySelector('.screen.entering, .screen:not(.exiting)'); // Шукаємо активний або той, що з'являється
              if (currentScreen) {
                  const profileIcon = currentScreen.querySelector(`#easter-egg-icons .easter-egg-icon[data-egg="${eggName}"]`);
                   if (profileIcon) {
@@ -1046,30 +1245,30 @@ document.addEventListener('DOMContentLoaded', () => {
                   }
              }
 
-             // Оновлюємо іконку в місці її знаходження, якщо вона видима
              const specificIcon = document.querySelector(`[data-egg="${eggName}"]:not(.easter-egg-icon)`);
-              if (specificIcon && specificIcon.offsetParent !== null) { // Перевірка видимості
+              if (specificIcon && specificIcon.offsetParent !== null) {
                  specificIcon.classList.add('found');
              }
         },
 
-
-        // Встановлюємо гучність для ВСІХ аудіо елементів
         setVolume(volume) {
+            const vol = parseFloat(volume);
             for (const key in this.elements.audio) {
-                this.elements.audio[key].volume = volume;
+                this.elements.audio[key].volume = vol;
             }
         },
 
-        // Зберігаємо гучність в localStorage
         saveVolume(volume) {
             localStorage.setItem('volumeLevel', volume);
         },
 
-        // Завантажуємо гучність з localStorage
         loadVolume() {
-            const savedVolume = localStorage.getItem('volumeLevel') || '1'; // 1 - за замовчуванням
+            const savedVolume = localStorage.getItem('volumeLevel') || '1';
             this.setVolume(savedVolume);
+             const settingsSlider = document.getElementById('volume-slider-settings');
+             if (settingsSlider) {
+                 settingsSlider.value = savedVolume;
+             }
         },
 
         startParticleRain(particleName) {
