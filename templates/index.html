@@ -49,6 +49,7 @@
     <audio id="music-redstone" loop src="/static/redstone.mp3" type="audio/mpeg"></audio>
 
     <div id="particle-rain-container"></div>
+    <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
 
     <div id="templates" style="display: none;">
         <div id="welcome-screen">
@@ -87,8 +88,6 @@
                 <button class="glow-on-hover" data-action="show-dictionary" data-i18n="dictionary"></button>
             </div>
 
-            <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
-
             <div id="music-control-button" data-egg="emerald">
                  <img src="/static/emerald.png" alt="Play Emerald Music" class="emerald">
                  <img src="/static/diamond.png" alt="Play Diamond Music" class="diamond">
@@ -106,7 +105,7 @@
 
                     <div id="avatar-container">
                         <div id="avatar-image-wrapper">
-                        </div>
+                            </div>
                         <div id="avatar-controls">
                             <button class="avatar-arrow" data-action="prev-avatar"></button>
                             <span id="avatar-name"></span>
@@ -114,7 +113,8 @@
                         </div>
                     </div>
 
-                    <div id="profile-details"></div>
+                    <div id="profile-details">
+                        </div>
 
                     <div id="easter-egg-container">
                         <h3 data-i18n="easter_eggs_title"></h3>
@@ -136,8 +136,35 @@
             <button class="glow-on-hover back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
         </div>
 
+        <div id="view-profile-screen">
+             <h1 class="title" data-i18n="view_profile_title"></h1>
+             <div class="profile-layout view-only"> <div class="panel right-panel"> <div id="avatar-container">
+                         <div id="avatar-image-wrapper-view"> </div>
+                         <div id="avatar-controls-view"> </div>
+                     </div>
+                     <div id="profile-details-view"> </div>
+                     <div id="easter-egg-container">
+                         <h3 data-i18n="easter_eggs_title"></h3>
+                         <div id="easter-egg-icons">
+                             <div class="easter-egg-icon" data-egg="emerald"></div>
+                             <div class="easter-egg-icon" data-egg="gold"></div>
+                             <div class="easter-egg-icon" data-egg="lazurit"></div>
+                             <div class="easter-egg-icon" data-egg="redstone"></div>
+                             <div class="easter-egg-icon" data-egg="diamond"></div>
+                         </div>
+                     </div>
+                     <div class="view-profile-actions">
+                          <button id="back-to-my-profile-btn" class="glow-on-hover secondary" data-i18n="back_to_my_profile"></button>
+                          <button class="glow-on-hover" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
+                     </div>
+                 </div>
+             </div>
+        </div>
+
+
         <div id="settings-screen">
              <h1 class="title" data-i18n="settings_title"></h1>
+
              <form id="settings-form">
                 <h2 data-i18n="change_pin"></h2>
                 <input type="password" id="new-pin" data-i18n-placeholder="new_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
@@ -148,7 +175,7 @@
 
              <h2 data-i18n="select_gender"></h2>
              <div id="gender-slider-container">
-             </div>
+                 </div>
 
              <div class="settings-divider"></div>
 
@@ -170,7 +197,8 @@
             <h1 class="title" data-i18n="dictionary"></h1>
             <input type="text" id="dict-search-input" data-i18n-placeholder="search_word" class="training-input">
             <div id="dictionary-words-container" class="dictionary-list scrollable"></div>
-            <div id="lazurit-easter-egg-container"></div>
+            <div id="lazurit-easter-egg-container">
+                 </div>
             <button class="glow-on-hover secondary back-button" data-screen="lecture-selection-screen" data-action="back-to-dict-select" data-i18n="back"></button>
         </div>
 

@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const app = {
         state: {
             currentUser: null,
+            viewingUser: null, // Для зберігання даних користувача, якого переглядаємо
             loadedWords: {},
             lectures: [],
             leaderboard: [],
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
             viewMode: null,
             selectedLectureForView: null,
             isCheckingAnswer: false,
-            
+
             isMusicPlaying: false,
             currentMusicPlayer: null,
             currentParticleType: null,
@@ -21,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isRaining: false,
             lastParticleTimestamp: 0,
             animationFrameId: null,
-            
+
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
@@ -39,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             themeToggle: document.getElementById('theme-checkbox'),
             particleRainContainer: document.getElementById('particle-rain-container'),
             volumeSlider: document.getElementById('volume-slider'),
-            
+
             audio: {
                 emerald: document.getElementById('music-emerald'),
                 diamond: document.getElementById('music-diamond'),
@@ -54,11 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
             this.addEventListeners();
             this.checkSession();
         },
-        
+
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
-                const target = e.target.closest('[data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn');
-                
+                // Додаємо .leaderboard-item до селектора
+                const target = e.target.closest('[data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn, .leaderboard-item');
+
                 if (!target) {
                     if (!this.elements.langSwitcher.contains(e.target)) {
                         this.elements.langOptions.classList.remove('visible');
@@ -67,6 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const dataset = target.dataset;
+
+                // Перевірка, чи не натиснуто на неактивну кнопку профілю
+                if (target === this.elements.profileButton && target.disabled) {
+                   return;
+                }
+
                 if (dataset.screen) this.navigateTo(dataset.screen);
                 else if (dataset.action) this.handleAction(dataset.action, dataset);
                 else if (dataset.lang) {
@@ -75,10 +83,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 else if (dataset.egg) {
                     e.stopPropagation();
+                     // Додаємо перевірку, чи клік був на іконці в профілі і чи вона не знайдена
+                    const isProfileIcon = target.closest('#easter-egg-icons');
+                    const isFound = target.classList.contains('found');
+                    if (isProfileIcon && !isFound) {
+                        return; // Не запускати музику для не знайдених пасхалок у профілі
+                    }
                     this.playMusic(dataset.egg);
                 }
                 else if (target.matches('.char-btn')) this.insertChar(target.textContent);
                 else if (target.matches('.shift-btn')) this.toggleShift();
+                // Обробник кліку на елемент рейтингу
+                else if (target.matches('.leaderboard-item') && target.dataset.username) {
+                   if (target.dataset.username !== this.state.currentUser.username) {
+                       this.handleViewUserProfile(target.dataset.username);
+                   } else {
+                       this.navigateTo('profile-screen'); // Якщо клікнули на себе, просто переходимо у свій профіль
+                   }
+                }
             });
 
             document.body.addEventListener('input', (e) => {
@@ -87,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.setVolume(target.value);
                 }
             });
-            
+
             document.body.addEventListener('change', (e) => {
                 const target = e.target;
                 if (target.id === 'theme-checkbox') {
@@ -102,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.elements.langOptions.classList.toggle('visible');
             });
         },
-        
+
         initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
             if (savedTheme === 'light') {
@@ -118,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('theme', isLight ? 'light' : 'dark');
             this.updateMusicButtonForTheme(isLight);
         },
-        
+
         updateMusicButtonForTheme(isLight) {
             const musicBtn = document.getElementById('music-control-button');
             if (musicBtn) {
@@ -127,6 +149,16 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         navigateTo(screenId) {
+            // Вимикаємо кнопку профілю, якщо переходимо на екран профілю
+            if (this.elements.profileButton) {
+                this.elements.profileButton.disabled = (screenId === 'profile-screen' || screenId === 'view-profile-screen');
+            }
+             // Скидаємо перегляд іншого користувача при переході кудись
+            if (screenId !== 'view-profile-screen') {
+                this.state.viewingUser = null;
+            }
+
+
             const oldScreen = this.elements.appContainer.querySelector('.screen');
             if (oldScreen) {
                 oldScreen.classList.remove('entering');
@@ -134,9 +166,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 oldScreen.addEventListener('animationend', () => oldScreen.remove(), { once: true });
             }
 
+            // Ховаємо повзунок гучності на всіх екранах, крім головного
             if (screenId !== 'main-menu-screen' && this.state.isMusicPlaying) {
-                this.elements.volumeSlider.classList.remove('visible');
+                 this.elements.volumeSlider.classList.remove('visible');
+            } else if (screenId === 'main-menu-screen' && this.state.isMusicPlaying) {
+                 this.elements.volumeSlider.classList.add('visible'); // Показуємо знову на головному
             }
+
 
             const template = this.elements.templates.querySelector(`#${screenId}`);
             if (template) {
@@ -145,33 +181,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 newScreen.id = `${screenId}-active`;
                 newScreen.innerHTML = template.innerHTML;
                 this.elements.appContainer.appendChild(newScreen);
-                
+
                 this.onScreenLoad(screenId);
             }
         },
 
         onScreenLoad(screenId) {
-            this.updateAllTexts(); 
+            this.updateAllTexts();
             const activeScreen = document.getElementById(`${screenId}-active`);
             if (!activeScreen) return;
-            
+
             const formActions = {
                 '#login-form': (e) => this.handleLoginSubmit(e, activeScreen),
                 '#register-form': (e) => this.handleRegisterSubmit(e, activeScreen),
                 '#settings-form': (e) => this.handleChangePin(e, activeScreen),
-                '.training-form': (e) => { 
-                    e.preventDefault(); 
-                    this.checkAnswer(); 
+                '.training-form': (e) => {
+                    e.preventDefault();
+                    this.checkAnswer();
                 }
             };
             for (const selector in formActions) {
                 const form = activeScreen.querySelector(selector);
                 if (form) form.addEventListener('submit', formActions[selector]);
             }
-            
+
             const clickActions = {
                  '.training-check-btn': () => this.checkAnswer(),
                  '#stop-music-button': () => this.stopAllMusic(),
+                 // Кнопка повернення до свого профілю
+                 '#back-to-my-profile-btn': () => this.navigateTo('profile-screen')
             };
             for (const selector in clickActions) {
                  const btn = activeScreen.querySelector(selector);
@@ -186,9 +224,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     break;
                 case 'profile-screen':
-                    this.renderProfile();
-                    this.renderAvatarUI();
-                    this.renderEasterEggs();
+                    this.renderProfile(this.state.currentUser); // Рендеримо свій профіль
+                    this.renderAvatarUI(this.state.currentUser, false); // false = не readonly
+                    this.renderEasterEggs(this.state.currentUser);
                     break;
                 case 'settings-screen':
                     this.renderGenderSlider();
@@ -209,9 +247,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'results-screen':
                     this.renderResults();
                     break;
+                 case 'view-profile-screen': // Новий кейс для перегляду
+                     if (this.state.viewingUser) {
+                         this.renderProfile(this.state.viewingUser, true); // true = режим перегляду
+                         this.renderAvatarUI(this.state.viewingUser, true); // true = readonly
+                         this.renderEasterEggs(this.state.viewingUser);
+                     } else {
+                         this.navigateTo('main-menu-screen'); // Якщо дані не завантажились, повертаємось
+                     }
+                    break;
             }
         },
-        
+
         handleAction(action, dataset) {
             const actions = {
                 'start-random-training': () => {
@@ -272,7 +319,26 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             if (actions[action]) actions[action](dataset);
         },
-        
+
+        // Функція для отримання та відображення профілю іншого користувача
+        async handleViewUserProfile(username) {
+            try {
+                const response = await fetch(`/api/user/${username}`);
+                if (response.ok) {
+                    const userData = await response.json();
+                    userData.found_easter_eggs = JSON.parse(userData.found_easter_eggs || '[]');
+                    this.state.viewingUser = userData; // Зберігаємо дані користувача
+                    this.navigateTo('view-profile-screen'); // Переходимо на новий екран
+                } else {
+                    console.error('Failed to load user profile:', await response.text());
+                    alert('Не вдалося завантажити профіль користувача.');
+                }
+            } catch (e) {
+                console.error('Error fetching user profile:', e);
+                alert('Помилка при завантаженні профілю.');
+            }
+        },
+
         setLanguage(lang) {
             this.state.currentLang = lang;
             const flagClasses = { ua: 'flag-ua', en: 'flag-us', ru: 'flag-ru' };
@@ -290,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.querySelectorAll('[data-i18n]').forEach(el => { if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n]; });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder]; });
-            document.querySelectorAll('[data-lecture-title]').forEach(el => { 
+            document.querySelectorAll('[data-lecture-title]').forEach(el => {
                 const lectureNum = el.dataset.lectureTitle;
                 if (lectureNum === '0') {
                     el.textContent = texts.notebook_lecture || 'Мій записник';
@@ -299,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         },
-        
+
         async checkSession() {
             try {
                 await this.loadInitialData();
@@ -309,13 +375,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (this.state.currentUser) {
                     this.state.currentUser.found_easter_eggs = JSON.parse(this.state.currentUser.found_easter_eggs || '[]');
                 }
-            } catch (e) { this.state.currentUser = null; } 
+            } catch (e) { this.state.currentUser = null; }
             finally {
                 this.updateHeader();
                 this.navigateTo(this.state.currentUser ? 'main-menu-screen' : 'welcome-screen');
             }
         },
-        
+
         async loadInitialData() {
             try {
                 const response = await fetch('/api/data/initial');
@@ -327,37 +393,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.setLanguage(this.state.currentLang);
             } catch (e) { console.error("Could not load initial data:", e); }
         },
-        
+
         async loadWordsForLectures(lectureIds) {
-            const lecturesToFetch = lectureIds.filter(id => !this.state.loadedWords[id]);
-            
-            if (lecturesToFetch.length > 0 || (lectureIds.includes('random') && !this.state.loadedWords['random'])) {
-                const response = await fetch('/api/get_words', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ lectures: lectureIds.includes('random') ? ['random'] : lecturesToFetch })
-                });
-                const words = await response.json();
-                
-                if (lectureIds.includes('random')) {
-                    this.state.loadedWords['random'] = words;
-                } else {
-                    lecturesToFetch.forEach(id => {
-                        this.state.loadedWords[id] = words.filter(w => w.lecture === id);
-                    });
+            // Перетворюємо всі ID на числа, крім 'random'
+            const numericLectureIds = lectureIds.filter(id => id !== 'random').map(id => parseInt(id, 10));
+            const hasRandom = lectureIds.includes('random');
+
+            const lecturesToFetch = numericLectureIds.filter(id => !this.state.loadedWords[id]);
+            const fetchRandom = hasRandom && !this.state.loadedWords['random'];
+
+            if (lecturesToFetch.length > 0 || fetchRandom) {
+                const requestBody = { lectures: fetchRandom ? ['random'] : lecturesToFetch };
+                try {
+                     const response = await fetch('/api/get_words', {
+                         method: 'POST',
+                         headers: {'Content-Type': 'application/json'},
+                         body: JSON.stringify(requestBody)
+                     });
+                     if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+                     const words = await response.json();
+
+                     if (fetchRandom) {
+                         this.state.loadedWords['random'] = words;
+                     } else {
+                         lecturesToFetch.forEach(id => {
+                              // Зберігаємо слова за їх числовим ID
+                             this.state.loadedWords[id] = words.filter(w => w.lecture === id);
+                         });
+                     }
+                } catch (error) {
+                     console.error("Помилка завантаження слів:", error);
+                     return []; // Повертаємо пустий масив у разі помилки
                 }
             }
-            
+
             let allWords = [];
-            if (lectureIds.includes('random')) {
-                allWords = [...this.state.loadedWords['random']];
+            if (hasRandom) {
+                allWords = [...(this.state.loadedWords['random'] || [])];
             } else {
-                lectureIds.forEach(id => {
+                numericLectureIds.forEach(id => {
                     allWords.push(...(this.state.loadedWords[id] || []));
                 });
             }
             return allWords;
         },
+
 
         updateHeader() {
             if (this.state.currentUser) {
@@ -366,6 +446,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 this.elements.profileButton.style.display = 'none';
             }
+             // Оновлюємо стан кнопки профілю
+            const currentScreenId = this.elements.appContainer.querySelector('.screen')?.id;
+            this.elements.profileButton.disabled = (currentScreenId === 'profile-screen-active' || currentScreenId === 'view-profile-screen-active');
         },
 
         async handleLoginSubmit(e, screen) {
@@ -395,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert(`Помилка реєстрації: ${await response.text()}`); }
         },
-        
+
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
             this.stopAllMusic();
@@ -423,89 +506,121 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Не вдалося змінити PIN-код.');
             }
         },
-        
-        renderProfile() {
-            const detailsContainer = document.getElementById('profile-details');
-            if (!detailsContainer || !this.state.currentUser) return;
-            const xp = this.state.currentUser.xp;
-            const { level, progress, needed } = this.xpToLevel(xp);
-            const { emoji, name } = this.getRank(level);
-            const T = this.state.texts[this.state.currentLang];
-            
-            detailsContainer.innerHTML = `<div class="username">${this.state.currentUser.username}</div>
-                <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
-                <div class="level-info">${T.level} ${level}</div>
-                <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
-                <div>${progress} / ${needed} XP</div>`;
-            
-            const leaderboardContainer = document.getElementById('leaderboard-container');
-            leaderboardContainer.innerHTML = '';
-            (this.state.leaderboard || []).forEach((user, index) => {
-                const userLevel = this.xpToLevel(user.xp).level;
-                const userRank = this.getRank(userLevel);
-                const item = document.createElement('div');
-                item.className = 'leaderboard-item';
-                if (user.username === this.state.currentUser.username) item.classList.add('current-user');
-                item.innerHTML = `<span class="lb-pos">${index + 1}.</span>
-                    <span class="lb-rank">${userRank.emoji}</span>
-                    <span class="lb-name">${user.username}</span>
-                    <span class="lb-xp">(${user.xp} XP)</span>`;
-                leaderboardContainer.appendChild(item);
-            });
+
+         // Оновлена функція рендерингу профілю
+        renderProfile(userData, isViewing = false) {
+             const screen = document.getElementById(isViewing ? 'view-profile-screen-active' : 'profile-screen-active');
+             if (!screen) return;
+             const detailsContainer = screen.querySelector('#profile-details-view') || screen.querySelector('#profile-details'); // Використовуємо різні ID
+             const leaderboardContainer = screen.querySelector('#leaderboard-container'); // Тільки для свого профілю
+
+             if (!detailsContainer || !userData) return;
+
+             // Приховуємо рейтинг, якщо переглядаємо чужий профіль
+             if (isViewing && leaderboardContainer) {
+                  leaderboardContainer.closest('.left-panel')?.remove(); // Видаляємо всю ліву панель
+             }
+
+             const xp = userData.xp;
+             const { level, progress, needed } = this.xpToLevel(xp);
+             const { emoji, name } = this.getRank(level);
+             const T = this.state.texts[this.state.currentLang];
+
+             detailsContainer.innerHTML = `<div class="username">${userData.username}</div>
+                 <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
+                 <div class="level-info">${T.level} ${level}</div>
+                 <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
+                 <div>${progress} / ${needed} XP</div>`;
+
+             // Рендеримо рейтинг тільки у своєму профілі
+             if (!isViewing && leaderboardContainer && this.state.currentUser) {
+                  leaderboardContainer.innerHTML = ''; // Очищаємо перед рендерингом
+                  (this.state.leaderboard || []).forEach((user, index) => {
+                       const userLevel = this.xpToLevel(user.xp).level;
+                       const userRank = this.getRank(userLevel);
+                       const item = document.createElement('div');
+                       item.className = 'leaderboard-item';
+                       item.dataset.username = user.username; // Додаємо data-username
+                       if (user.username === this.state.currentUser.username) {
+                            item.classList.add('current-user');
+                       }
+                       item.innerHTML = `<span class="lb-pos">${index + 1}.</span>
+                           <span class="lb-rank">${userRank.emoji}</span>
+                           <span class="lb-name">${user.username}</span>
+                           <span class="lb-xp">(${user.xp} XP)</span>`;
+                       leaderboardContainer.appendChild(item);
+                  });
+             }
         },
 
-        renderEasterEggs() {
-            const container = document.getElementById('easter-egg-icons');
-            if (!container || !this.state.currentUser) return;
-            
-            const foundEggs = this.state.currentUser.found_easter_eggs || [];
-            container.querySelectorAll('.easter-egg-icon').forEach(icon => {
-                if (foundEggs.includes(icon.dataset.egg)) {
-                    icon.classList.add('found');
-                }
-            });
+
+        // Оновлена функція рендерингу пасхалок
+        renderEasterEggs(userData) {
+             const screen = document.getElementById(this.state.viewingUser ? 'view-profile-screen-active' : 'profile-screen-active');
+             if (!screen) return;
+             const container = screen.querySelector('#easter-egg-icons');
+             if (!container || !userData) return;
+
+             const foundEggs = userData.found_easter_eggs || [];
+             container.querySelectorAll('.easter-egg-icon').forEach(icon => {
+                  icon.classList.toggle('found', foundEggs.includes(icon.dataset.egg));
+             });
         },
-        
-        renderAvatarUI() {
-            const wrapper = document.getElementById('avatar-image-wrapper');
-            const controls = document.getElementById('avatar-controls');
-            const nameEl = document.getElementById('avatar-name');
-            if (!wrapper || !controls || !nameEl) return;
 
-            const T = this.state.texts[this.state.currentLang];
-            const { gender, avatar } = this.state.currentUser;
 
-            if (gender === 'N' || !gender) {
-                wrapper.innerHTML = `<span>${T.choose_avatar}</span>`;
-                controls.classList.add('hidden');
-                nameEl.textContent = '';
-                return;
-            }
+        // Оновлена функція рендерингу аватара
+        renderAvatarUI(userData, isReadonly = false) {
+             const screen = document.getElementById(isReadonly ? 'view-profile-screen-active' : 'profile-screen-active');
+             if (!screen) return;
+             const wrapper = screen.querySelector('#avatar-image-wrapper-view') || screen.querySelector('#avatar-image-wrapper');
+             const controls = screen.querySelector('#avatar-controls-view') || screen.querySelector('#avatar-controls');
+             const nameEl = screen.querySelector('#avatar-name-view') || screen.querySelector('#avatar-name');
 
-            const avatarList = this.state.avatars[gender] || [];
-            if (avatarList.length === 0) {
-                wrapper.innerHTML = `<span>${T.avatar_unavailable}</span>`;
-                controls.classList.add('hidden');
-                nameEl.textContent = '';
-                return;
-            }
-            
-            controls.classList.remove('hidden');
-            let currentAvatar = avatar;
-            let currentIndex = avatarList.indexOf(currentAvatar);
+             if (!wrapper || !userData) return;
 
-            if (currentIndex === -1) {
-                currentIndex = 0;
-                currentAvatar = avatarList[0];
-                this.state.currentUser.avatar = currentAvatar;
-            }
-            this.state.currentAvatarIndex = currentIndex;
-            
-            wrapper.innerHTML = `<img src="/avatars/${currentAvatar}" alt="Avatar">`;
-            nameEl.textContent = currentAvatar.replace(`${gender}_`, '').replace('.png', '');
+             const T = this.state.texts[this.state.currentLang];
+             const { gender, avatar } = userData;
+
+             // Приховуємо кнопки зміни аватара у режимі перегляду
+             if (controls) {
+                  controls.style.display = isReadonly ? 'none' : 'flex';
+             }
+             if (nameEl) {
+                 nameEl.style.display = isReadonly ? 'none' : 'block'; // Ховаємо назву файлу
+             }
+
+
+             if (gender === 'N' || !gender || !avatar) {
+                 wrapper.innerHTML = `<span>${T.avatar_unavailable}</span>`;
+                 if (controls) controls.classList.add('hidden');
+                 if (nameEl) nameEl.textContent = '';
+                 return;
+             }
+
+             const avatarList = this.state.avatars[gender] || [];
+             if (avatarList.length === 0 || !avatarList.includes(avatar)) {
+                 wrapper.innerHTML = `<span>${T.avatar_unavailable}</span>`;
+                 if (controls) controls.classList.add('hidden');
+                 if (nameEl) nameEl.textContent = '';
+                 return;
+             }
+
+             if (controls) controls.classList.remove('hidden');
+
+             // Встановлюємо індекс лише для свого профілю
+             if (!isReadonly && this.state.currentUser && userData.username === this.state.currentUser.username) {
+                 this.state.currentAvatarIndex = avatarList.indexOf(avatar);
+             }
+
+             wrapper.innerHTML = `<img src="/avatars/${avatar}" alt="Avatar">`;
+             if (nameEl && !isReadonly) nameEl.textContent = avatar.replace(`${gender}_`, '').replace('.png', '').replace('.jpg', '');
         },
-        
+
+
         async handleAvatarChange(direction) {
+            // Забороняємо зміну, якщо переглядаємо чужий профіль (хоча кнопок і не має бути видно)
+            if (this.state.viewingUser) return;
+
             const { gender } = this.state.currentUser;
             const avatarList = this.state.avatars[gender];
             if (!avatarList || avatarList.length === 0) return;
@@ -513,24 +628,25 @@ document.addEventListener('DOMContentLoaded', () => {
             let newIndex = this.state.currentAvatarIndex + direction;
             if (newIndex < 0) newIndex = avatarList.length - 1;
             if (newIndex >= avatarList.length) newIndex = 0;
-            
+
             const newAvatar = avatarList[newIndex];
             this.state.currentAvatarIndex = newIndex;
             this.state.currentUser.avatar = newAvatar;
-            
-            this.renderAvatarUI();
+
+            // Перерендеримо UI аватара для поточного користувача
+            this.renderAvatarUI(this.state.currentUser, false);
 
             await fetch('/api/settings/save_avatar', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ avatar: newAvatar })
             });
         },
-        
+
         renderGenderSlider() {
             const container = document.getElementById('gender-slider-container');
             if (!container) return;
             const T = this.state.texts[this.state.currentLang];
-            
+
             container.innerHTML = `
                 <span class="gender-label">${T.gender_female}</span>
                 <label class="gender-switch">
@@ -539,17 +655,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 </label>
                 <span class="gender-label">${T.gender_male}</span>
             `;
-            
+
             const slider = container.querySelector('#gender-slider');
             if (this.state.currentUser.gender === 'M') {
                 slider.checked = true;
             }
         },
-        
+
         async handleGenderChange(gender) {
             this.state.currentUser.gender = gender;
-            this.state.currentAvatarIndex = 0; 
-            
+            this.state.currentAvatarIndex = 0;
+
             const avatarList = this.state.avatars[gender] || [];
             const newAvatar = avatarList.length > 0 ? avatarList[0] : null;
             this.state.currentUser.avatar = newAvatar;
@@ -558,9 +674,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ gender: gender, avatar: newAvatar })
             });
-            
+
             if (document.getElementById('profile-screen-active')) {
-                this.renderAvatarUI();
+                this.renderAvatarUI(this.state.currentUser, false);
             }
         },
 
@@ -568,25 +684,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('lazurit-easter-egg-container');
             if (!container) return;
             container.innerHTML = '';
-            
+
             const T = this.state.texts[this.state.currentLang];
-            const found = this.state.currentUser.found_easter_eggs.includes('lazurit');
-            
+            // Перевіряємо знайдені пасхалки поточного користувача
+            const found = this.state.currentUser && this.state.currentUser.found_easter_eggs.includes('lazurit');
+
             const eggEl = document.createElement('div');
             eggEl.id = 'lazurit-easter-egg';
             eggEl.dataset.egg = 'lazurit';
             if (found) eggEl.classList.add('found');
-            
+
             container.appendChild(eggEl);
         },
-        
+
+
         renderLectureSelection() {
-            this.state.currentTraining.selectedLectures = []; 
+            this.state.currentTraining.selectedLectures = [];
             const container = document.getElementById('lecture-buttons-container');
             const actionsContainer = document.getElementById('lecture-actions-container');
             container.innerHTML = '';
             actionsContainer.innerHTML = '';
-            
+
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
                 button.className = 'glow-on-hover';
@@ -595,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 button.dataset.lectureTitle = lectureNum;
                 container.appendChild(button);
             });
-            
+
             if (this.state.viewMode === 'training') {
                 const startBtn = document.createElement('button');
                 startBtn.className = 'glow-on-hover start-training-btn';
@@ -605,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             this.updateAllTexts();
         },
-        
+
         async renderDictionary() {
             const container = document.getElementById('dictionary-words-container');
             const searchInput = document.getElementById('dict-search-input');
@@ -614,7 +732,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '';
             const lectureNum = this.state.selectedLectureForView;
             if (lectureNum === null) return;
-            
+
             const words = await this.loadWordsForLectures([lectureNum]);
             const langKey = this.state.currentLang.toUpperCase();
 
@@ -632,8 +750,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             searchInput.addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase();
-                const filteredWords = words.filter(word => 
-                    word.CZ.toLowerCase().includes(searchTerm) || 
+                const filteredWords = words.filter(word =>
+                    word.CZ.toLowerCase().includes(searchTerm) ||
                     (word[langKey] || word.UA).toLowerCase().includes(searchTerm)
                 );
                 renderWords(filteredWords);
@@ -650,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (mode === 'specific_selected') {
                 lectureIds = selectedLectures;
             }
-            
+
             wordsToTrain = await this.loadWordsForLectures(lectureIds);
 
             if (wordsToTrain.length === 0) {
@@ -664,12 +782,12 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.currentTraining.results = [];
             this.navigateTo('training-screen');
         },
-        
+
         renderCurrentWord() {
             const screen = document.getElementById('training-screen-active');
             if (!screen) return;
             if (this.state.currentTraining.index >= this.state.currentTraining.words.length) {
-                this.navigateTo('results-screen'); 
+                this.navigateTo('results-screen');
                 return;
             }
 
@@ -680,14 +798,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const wordData = words[index];
             screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
             const langKey = this.state.currentLang.toUpperCase();
-            
+
             const questionWordRaw = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
             const questionWord = questionWordRaw.replace(/\s*\(.*?\)\s*/g, '').trim();
             screen.querySelector('.training-word').textContent = questionWord;
 
             const inputEl = screen.querySelector('.training-input');
-            inputEl.value = ''; 
-            inputEl.disabled = false; 
+            inputEl.value = '';
+            inputEl.disabled = false;
             inputEl.focus();
             screen.querySelector('.training-feedback').innerHTML = '';
         },
@@ -709,12 +827,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.isCheckingAnswer = false;
                 return;
             }
-            
+
             const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
             const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
             const correctAnswers = correctAnswersRaw.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s);
             const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
-            
+
             let xp_earned = 0;
             if (isCorrect) {
                 xp_earned = direction === 'lang_to_cz' ? 12 : 5;
@@ -730,12 +848,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
             }
-            
+
             results.push({
                 question: (direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA)).replace(/\s*\(.*?\)\s*/g, '').trim(),
                 userAnswer, isCorrect, correctAnswer: correctAnswers[0], xp_earned
             });
-            
+
             feedbackEl.style.color = isCorrect ? 'var(--success-color)' : 'var(--danger-color)';
             inputEl.disabled = true;
 
@@ -744,7 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.renderCurrentWord();
             }, isCorrect ? 1200 : 2000);
         },
-        
+
         renderResults() {
             const summaryEl = document.getElementById('results-summary');
             const listEl = document.getElementById('results-list');
@@ -756,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  listEl.innerHTML = '';
                  return;
             }
-            
+
             const correctCount = results.filter(r => r.isCorrect).length;
             const totalXpEarned = results.reduce((sum, res) => sum + (res.xp_earned || 0), 0);
 
@@ -769,10 +887,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(+${res.xp_earned || 0} XP)</span>`;
                 listEl.appendChild(item);
             });
-            
-            this.loadInitialData();
+
+            this.loadInitialData(); // Перезавантажуємо дані, щоб оновити XP у хедері, якщо потрібно
         },
-        
+
         generateDiffHtml(correct, user) {
             if (!user) return `<span class="diff-incorrect">(пусто)</span> -> <span class="diff-correct">${correct}</span>`;
             let html = '';
@@ -787,14 +905,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return html;
         },
-        
+
         renderKeyboard() {
             const CZECH_LOWER = ['á', 'č', 'ď', 'é', 'ě', 'í', 'ň', 'ó', 'ř', 'š', 'ť', 'ú', 'ů', 'ý', 'ž'];
             const CZECH_UPPER = ['Á', 'Č', 'Ď', 'É', 'Ě', 'Í', 'Ň', 'Ó', 'Ř', 'Š', 'Ť', 'Ú', 'Ů', 'Ý', 'Ž'];
             const chars = this.state.isShiftActive ? CZECH_UPPER : CZECH_LOWER;
             const keyboardContainer = document.getElementById('special-chars-keyboard');
             if (!keyboardContainer) return;
-            
+
             let html = '<div class="keyboard-row">';
             chars.forEach((char, index) => {
                 html += `<button type="button" class="char-btn glow-on-hover">${char}</button>`;
@@ -845,15 +963,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return { emoji: rankEmoji, name: rankName };
         },
 
-        playMusic(eggName) {
+         playMusic(eggName) {
             const newPlayer = this.elements.audio[eggName];
             if (!newPlayer) return;
 
+            // Якщо натиснуто на ту саму пасхалку, що грає - зупиняємо
             if (this.state.currentMusicPlayer === newPlayer && this.state.isMusicPlaying) {
                 this.stopAllMusic();
                 return;
             }
 
+            // Зупиняємо попередню музику та ефекти
             this.stopAllMusic();
 
             this.state.currentMusicPlayer = newPlayer;
@@ -864,19 +984,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const musicBtn = document.getElementById('music-control-button');
             if (musicBtn) {
-                musicBtn.classList.add('playing');
+                 // Оновлюємо стан кнопки лише якщо це емеральд або діамант
+                const currentEggType = musicBtn.dataset.egg;
+                 musicBtn.classList.toggle('playing', eggName === currentEggType);
             }
-            
+
+            // Показуємо повзунок гучності завжди при старті музики
             this.elements.volumeSlider.classList.add('visible');
 
             this.startParticleRain(eggName);
-            
-            if (!this.state.currentUser.found_easter_eggs.includes(eggName)) {
+
+            // Відмічаємо пасхалку як знайдену, якщо вона ще не була знайдена
+            if (this.state.currentUser && !this.state.currentUser.found_easter_eggs.includes(eggName)) {
                 this.state.currentUser.found_easter_eggs.push(eggName);
                 this.updateEasterEggIcon(eggName);
                 this.saveFoundEasterEggs();
             }
         },
+
 
         stopAllMusic() {
             if (!this.state.isMusicPlaying && !this.state.isRaining) return;
@@ -888,32 +1013,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.state.isMusicPlaying = false;
             this.state.currentMusicPlayer = null;
-            
+
             const musicBtn = document.getElementById('music-control-button');
             if (musicBtn) {
                 musicBtn.classList.remove('playing');
             }
-            
+
             this.elements.volumeSlider.classList.remove('visible');
             this.stopParticleRain();
         },
-        
+
         async saveFoundEasterEggs() {
-            await fetch('/api/settings/save_easter_eggs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ eggs: this.state.currentUser.found_easter_eggs })
-            });
+             // Перевіряємо, чи є користувач
+            if (!this.state.currentUser) return;
+            try {
+                await fetch('/api/settings/save_easter_eggs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ eggs: this.state.currentUser.found_easter_eggs })
+                });
+             } catch (error) {
+                 console.error("Помилка збереження пасхалок:", error);
+                 // Можна додати сповіщення користувачу
+             }
         },
-        
+
+
         updateEasterEggIcon(eggName) {
-            document.querySelectorAll(`.easter-egg-icon[data-egg="${eggName}"]`).forEach(icon => {
-                icon.classList.add('found');
-            });
-            document.querySelectorAll(`[data-egg="${eggName}"]`).forEach(icon => {
-                icon.classList.add('found');
-            });
+             // Оновлюємо іконку в профілі (поточному або переглянутому)
+             const currentScreen = document.querySelector('.screen');
+             if (currentScreen) {
+                 const profileIcon = currentScreen.querySelector(`#easter-egg-icons .easter-egg-icon[data-egg="${eggName}"]`);
+                  if (profileIcon) {
+                     profileIcon.classList.add('found');
+                  }
+             }
+
+             // Оновлюємо іконку в місці її знаходження (якщо вона там є)
+             const specificIcon = document.querySelector(`[data-egg="${eggName}"]:not(.easter-egg-icon)`);
+              if (specificIcon) {
+                 specificIcon.classList.add('found');
+             }
         },
+
+
 
         setVolume(volume) {
             if (this.state.currentMusicPlayer) {
@@ -922,40 +1065,40 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         startParticleRain(particleName) {
-            if (this.state.isRaining) this.stopParticleRain();
+            if (this.state.isRaining) this.stopParticleRain(); // Зупиняємо попередній дощ
             this.state.isRaining = true;
             this.state.lastParticleTimestamp = 0;
             this.state.currentParticleType = particleName;
             this.state.animationFrameId = requestAnimationFrame(this.particleRainLoop.bind(this));
         },
-        
+
         particleRainLoop(timestamp) {
             if (!this.state.isRaining) return;
 
-            const PARTICLE_INTERVAL = 120;
+            const PARTICLE_INTERVAL = 120; // Густіший дощ
             if (timestamp - this.state.lastParticleTimestamp > PARTICLE_INTERVAL) {
                 this.state.lastParticleTimestamp = timestamp;
-                
+
                 const particle = document.createElement('div');
                 particle.classList.add('falling-particle');
                 particle.style.backgroundImage = `url('/static/${this.state.currentParticleType}.png')`;
-                
+
                 const size = Math.random() * 10 + 10;
                 const duration = Math.random() * 5 + 7;
-                
+
                 particle.style.width = `${size}px`;
                 particle.style.height = `${size}px`;
                 particle.style.left = `${Math.random() * 100}vw`;
                 particle.style.animationDuration = `${duration}s`;
                 particle.style.opacity = Math.random() * 0.4 + 0.4;
-                
+
                 this.elements.particleRainContainer.appendChild(particle);
 
                 setTimeout(() => {
                     particle.remove();
                 }, duration * 1000);
             }
-            
+
             this.state.animationFrameId = requestAnimationFrame(this.particleRainLoop.bind(this));
         },
 
@@ -966,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cancelAnimationFrame(this.state.animationFrameId);
                 this.state.animationFrameId = null;
             }
-            
+
             this.elements.particleRainContainer.querySelectorAll('.falling-particle').forEach(el => {
                 el.style.transition = 'opacity 0.5s ease-out';
                 el.style.opacity = '0';

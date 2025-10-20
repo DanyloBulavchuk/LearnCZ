@@ -89,6 +89,7 @@ html.light-theme #current-lang-btn { border-color: var(--border-color); }
     position: absolute; top: 110%; left: 0;
     display: none;
     flex-direction: column;
+    align-items: center; /* Центруємо іконку редстоуна */
     background-color: #191622;
     border: 1px solid var(--accent-color);
     border-radius: 8px;
@@ -129,6 +130,7 @@ html.light-theme #lang-options { background-color: #fff; border-color: var(--bor
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
     filter: none; /* Завжди кольорова тут */
+    margin-top: 5px; /* Невеликий відступ зверху */
 }
 #redstone-easter-egg:hover {
     transform: scale(1.15);
@@ -142,16 +144,26 @@ nav { display: flex; align-items: center; gap: 15px; }
     padding: 10px 18px; cursor: pointer; transition: all 0.3s ease; min-width: 0;
     border: none; box-shadow: 0 0 15px rgba(159, 80, 255, 0.3);
 }
+.header-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(159, 80, 255, 0.05);
+    box-shadow: none;
+}
+.header-button:disabled:hover {
+    background-color: rgba(159, 80, 255, 0.05); /* Щоб не було ефекту при наведенні */
+}
+
 html.light-theme .header-button {
     background-color: var(--button-bg);
     color: var(--button-text-color);
     box-shadow: none;
     border: 1px solid var(--border-color);
 }
-.header-button:hover {
+.header-button:hover:not(:disabled) { /* Додано :not(:disabled) */
     background-color: rgba(159, 80, 255, 0.3);
 }
-html.light-theme .header-button:hover {
+html.light-theme .header-button:hover:not(:disabled) {
     background-color: var(--button-hover-bg);
 }
 
@@ -232,6 +244,10 @@ html.light-theme input:focus {
     scrollbar-width: thin;
     scrollbar-color: var(--accent-color) transparent;
 }
+.scrollable::-webkit-scrollbar { width: 8px; }
+.scrollable::-webkit-scrollbar-track { background: transparent; }
+.scrollable::-webkit-scrollbar-thumb { background-color: var(--accent-color); border-radius: 20px; border: 3px solid transparent; }
+
 
 .glow-on-hover {
     padding: 18px 35px;
@@ -241,7 +257,10 @@ html.light-theme input:focus {
     z-index: 0;
     border-radius: 12px;
     overflow: hidden;
+    width: 100%; /* Займає всю ширину батьківського елемента */
+    max-width: 350px; /* Обмежуємо максимальну ширину */
 }
+/* ... (решта стилів .glow-on-hover) ... */
 .glow-on-hover:before {
     content: '';
     background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
@@ -309,8 +328,16 @@ button.danger:after, html.light-theme button.danger:after {
 }
 html.light-theme .start-training-btn { color: #fff !important; }
 
-#profile-screen { height: 100%; }
+#profile-screen, #view-profile-screen { height: 100%; }
 .profile-layout { display: flex; flex-grow: 1; gap: 20px; min-height: 0; }
+/* Стилі для приховування лівої панелі при перегляді */
+.profile-layout.view-only .left-panel {
+    display: none;
+}
+.profile-layout.view-only .right-panel {
+    flex: 1; /* Займає всю ширину */
+}
+
 .panel {
     padding: 25px;
     background: var(--panel-bg);
@@ -327,12 +354,15 @@ html.light-theme .panel {
 html.light-theme .left-panel { border-right-color: var(--border-color); }
 .right-panel { flex: 55; }
 #leaderboard-container { min-height: 0; padding-right: 10px; }
-.leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; }
+.leaderboard-item { display: flex; align-items: center; padding: 10px; border-radius: 8px; margin-bottom: 5px; transition: background-color 0.3s; width: 100%; cursor: pointer; }
+.leaderboard-item:hover { background-color: rgba(159, 80, 255, 0.1); }
 .leaderboard-item.current-user { background-color: rgba(57, 255, 20, 0.15); box-shadow: 0 0 10px rgba(57, 255, 20, 0.3); }
 html.light-theme .leaderboard-item.current-user {
     background-color: #c6f6d5;
     box-shadow: none;
 }
+html.light-theme .leaderboard-item:hover { background-color: #e2e8f0; }
+
 .lb-pos { min-width: 35px; opacity: 0.7; font-weight: 400; }
 .lb-rank { font-size: 20px; min-width: 40px; text-align: center; }
 .lb-name { font-weight: bold; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -345,7 +375,7 @@ html.light-theme .lb-xp { color: #d69e2e; }
     align-items: center;
     margin-bottom: 15px;
 }
-#avatar-image-wrapper {
+#avatar-image-wrapper, #avatar-image-wrapper-view {
     width: 250px;
     height: 250px;
     border-radius: 50%;
@@ -360,20 +390,20 @@ html.light-theme .lb-xp { color: #d69e2e; }
     font-size: 1.2rem;
     flex-shrink: 0;
 }
-#avatar-image-wrapper span {
+#avatar-image-wrapper span, #avatar-image-wrapper-view span {
     padding: 20px;
 }
-html.light-theme #avatar-image-wrapper {
+html.light-theme #avatar-image-wrapper, html.light-theme #avatar-image-wrapper-view {
     box-shadow: 0 10px 20px var(--shadow-color);
     background-color: #e2e8f0;
     color: #4a5568;
 }
-#avatar-image-wrapper img {
+#avatar-image-wrapper img, #avatar-image-wrapper-view img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-#avatar-controls {
+#avatar-controls, #avatar-controls-view {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -381,7 +411,7 @@ html.light-theme #avatar-image-wrapper {
     max-width: 300px;
     margin-top: 15px;
 }
-#avatar-controls.hidden {
+#avatar-controls.hidden, #avatar-controls-view.hidden {
     display: none;
 }
 .avatar-arrow {
@@ -392,7 +422,7 @@ html.light-theme #avatar-image-wrapper {
     height: 45px;
     border-radius: 50%;
     font-size: 2rem;
-    line-height: 45px;
+    line-height: 41px; /* Вирівнюємо стрілку по вертикалі */
     padding: 0;
     opacity: 0.7;
     transition: all 0.2s ease-out;
@@ -426,7 +456,7 @@ html.light-theme #avatar-image-wrapper {
     opacity: 1;
 }
 
-#avatar-name {
+#avatar-name, #avatar-name-view {
     font-size: 1.1rem;
     font-weight: bold;
     color: var(--text-color);
@@ -434,19 +464,20 @@ html.light-theme #avatar-image-wrapper {
 }
 
 
-#profile-details { width: 100%; text-align: center; margin-top: 15px; }
-#profile-details .username {
+#profile-details, #profile-details-view { width: 100%; text-align: center; margin-top: 15px; }
+#profile-details .username, #profile-details-view .username {
     font-size: 3rem; font-weight: 900;
     transition: text-shadow .5s ease;
 }
-html:not(.light-theme) #profile-details .username {
+html:not(.light-theme) #profile-details .username, html:not(.light-theme) #profile-details-view .username {
     text-shadow: 0 0 12px var(--shadow-color);
 }
-#profile-details .rank, #profile-details .level-info { font-weight: 400; }
-#profile-details .rank { font-size: 1.2rem; color: #AAAAAA; margin-bottom: 25px; }
-html.light-theme #profile-details .rank { color: #718096; }
-#profile-details .rank .emoji { font-size: 1.5rem; }
-#profile-details .level-info { font-size: 1.2rem; }
+#profile-details .rank, #profile-details .level-info,
+#profile-details-view .rank, #profile-details-view .level-info { font-weight: 400; }
+#profile-details .rank, #profile-details-view .rank { font-size: 1.2rem; color: #AAAAAA; margin-bottom: 25px; }
+html.light-theme #profile-details .rank, html.light-theme #profile-details-view .rank { color: #718096; }
+#profile-details .rank .emoji, #profile-details-view .rank .emoji { font-size: 1.5rem; }
+#profile-details .level-info, #profile-details-view .level-info { font-size: 1.2rem; }
 
 #easter-egg-container {
     margin-top: 30px;
@@ -474,6 +505,10 @@ html.light-theme #profile-details .rank { color: #718096; }
     filter: grayscale(1); /* Чорно-білі за замовчуванням */
     opacity: 0.7;
     transition: all 0.3s ease;
+    cursor: pointer; /* Додаємо курсор */
+}
+.easter-egg-icon:hover {
+    opacity: 1;
 }
 .easter-egg-icon.found {
     filter: grayscale(0); /* Стають кольоровими, коли знайдені */
@@ -504,11 +539,29 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 }
 .profile-actions button { flex-grow: 1; min-width: 0; padding: 12px; font-size: 16px; }
 
+/* Стилі для кнопок на екрані перегляду профілю */
+.view-profile-actions {
+    display: flex;
+    flex-direction: column; /* Кнопки одна під одною */
+    gap: 15px;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 20px;
+    width: 100%;
+}
+.view-profile-actions button {
+    width: 90%;
+    max-width: 300px;
+}
+
+
 #settings-screen {
     align-items: center;
     justify-content: flex-start; /* Вирівнювання по верху */
     padding-top: 20px;
     gap: 20px; /* Відстань між елементами */
+    display: flex; /* Додано */
+    flex-direction: column; /* Додано */
 }
 #settings-screen > h1,
 #settings-screen > h2 {
@@ -533,7 +586,7 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     width: 80%;
     max-width: 350px;
     background-color: rgba(159, 80, 255, 0.3);
-    margin: 20px 0; /* Зменшили відступи */
+    margin: 10px 0; /* Зменшили відступи */
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
@@ -604,8 +657,9 @@ html.light-theme .slider-track {
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
     filter: none; /* Завжди кольорова тут */
-    margin: 10px auto 0 auto; /* Зменшили відступ */
+    margin: 0 auto; /* Центрування без зайвих відступів */
 }
+
 #gold-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -642,7 +696,7 @@ html.light-theme .dict-item b { color: #777; }
     display: flex;
     justify-content: center;
     padding: 10px 0;
-    flex-shrink: 0;
+    flex-shrink: 0; /* Щоб не стискався */
 }
 #lazurit-easter-egg {
     width: 60px;
@@ -745,12 +799,12 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 
 /* --- MUSIC, EASTER EGGS, PARTICLES --- */
 #volume-slider {
-    position: absolute; /* Позиціонування відносно батьківського .screen */
-    bottom: 20px; /* Відступ знизу */
+    position: fixed; /* Фіксоване позиціонування відносно вікна */
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%) scale(0.9);
     width: 200px;
-    z-index: 11;
+    z-index: 999; /* Вище, ніж particle container */
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.3s ease, transform 0.3s ease;
@@ -765,7 +819,7 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     transform: translateX(-50%) scale(1);
     pointer-events: auto;
 }
-/* Webkit (Chrome, Safari) */
+/* ... (решта стилів #volume-slider) ... */
 #volume-slider::-webkit-slider-runnable-track {
     width: 100%;
     height: 6px;
@@ -788,7 +842,6 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 #volume-slider::-webkit-slider-thumb:hover {
     transform: scale(1.15);
 }
-/* Firefox */
 #volume-slider::-moz-range-track {
     width: 100%;
     height: 6px;
@@ -809,7 +862,6 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 #volume-slider::-moz-range-thumb:hover {
     transform: scale(1.15);
 }
-/* Light theme */
 html.light-theme #volume-slider::-webkit-slider-runnable-track {
     background: rgba(255,255,255,0.5);
     border: 1px solid var(--border-color);
@@ -822,7 +874,6 @@ html.light-theme #volume-slider::-webkit-slider-thumb,
 html.light-theme #volume-slider::-moz-range-thumb {
     box-shadow: 0 0 10px var(--accent-color);
 }
-
 
 #music-control-button {
     position: absolute;
@@ -904,15 +955,15 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 /* Mobile Adaptivity */
 @media (max-width: 768px) {
     .title { font-size: 1.8rem; margin-bottom: 20px; }
-    #profile-screen { justify-content: flex-start; }
-    .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 30px; }
+    #profile-screen, #view-profile-screen { justify-content: flex-start; }
+    .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 70px; /* Запас для кнопки Назад */}
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; }
     html.light-theme .left-panel { border-bottom-color: var(--border-color); }
     #leaderboard-container { max-height: 250px; }
 
-    #avatar-image-wrapper { width: 150px; height: 150px; font-size: 1rem; }
+    #avatar-image-wrapper, #avatar-image-wrapper-view { width: 150px; height: 150px; font-size: 1rem; }
     #avatar-controls { max-width: 250px; }
-    .avatar-arrow { width: 40px; height: 40px; line-height: 40px; font-size: 1.8rem; }
+    .avatar-arrow { width: 40px; height: 40px; line-height: 36px; font-size: 1.8rem; }
 
     button, .glow-on-hover { width: 90%; max-width: 320px; }
     .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; width: 90%; max-width: 250px; }
@@ -921,12 +972,26 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .logo { font-size: 20px; position: static; transform: none;}
     .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
     .shift-btn { width: 80px; }
-    #music-control-button { width: 90px; height: 90px; bottom: 48px;}
-    #volume-slider { bottom: 30px; width: 180px; } /* Підняли трохи вище */
+    #music-control-button {
+         width: 90px;
+         height: 90px;
+         bottom: 70px; /* Підняли вище */
+    }
+    #volume-slider {
+         bottom: 170px; /* Також підняли */
+         width: 180px;
+    }
 
-    .right-panel .back-button { margin-top: auto; } /* Для кнопки Назад в профілі */
-    #settings-screen .back-button { margin-top: auto; } /* Для кнопки Назад в налаштуваннях */
-    #results-screen .back-button { margin-top: auto; } /* Для кнопки Назад в результатах */
+    /* Гарантуємо, що кнопка Назад видима */
+    .right-panel .back-button,
+    #settings-screen .back-button,
+    #results-screen .back-button,
+    .view-profile-actions {
+        margin-top: auto; /* Залишаємо притиснення до низу */
+        position: relative; /* Щоб z-index працював, якщо буде потрібно */
+        z-index: 1; /* На випадок перекриття */
+    }
+     .view-profile-actions { margin-bottom: 10px; } /* Додатковий відступ для кнопок перегляду */
 }
 
 @media (max-width: 480px) {
@@ -935,7 +1000,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .left-panel { min-width: 0; }
     .lb-name { max-width: 120px; }
     .lb-xp { font-size: 0.9rem; }
-    #profile-details .username { font-size: 2.2rem; }
+    #profile-details .username, #profile-details-view .username { font-size: 2.2rem; }
     .lecture-grid { grid-template-columns: 1fr; }
     .training-word { font-size: 1.8rem; }
     .char-btn, .shift-btn { width: 30px; height: 30px; font-size: 14px; }

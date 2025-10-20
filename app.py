@@ -79,7 +79,8 @@ TEXTS = {
         'select_gender': "Оберіть вашу стать", 'gender_female': "Ж", 'gender_male': "Ч",
         'choose_avatar': "Оберіть аватарку", 'avatar_unavailable': "Аватар недоступний",
         'stop_music_button_text': "ЗУПИНИТИ МУЗИКУ", 'easter_eggs_title': "Пасхалки",
-        'search_word': "Пошук слова..."
+        'search_word': "Пошук слова...", 'view_profile_title': "Профіль користувача",
+        'back_to_my_profile': "Повернутися у мій профіль"
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -104,7 +105,8 @@ TEXTS = {
         'select_gender': "Select your gender", 'gender_female': "F", 'gender_male': "M",
         'choose_avatar': "Choose an avatar", 'avatar_unavailable': "Avatar unavailable",
         'stop_music_button_text': "STOP MUSIC", 'easter_eggs_title': "Easter Eggs",
-        'search_word': "Search word..."
+        'search_word': "Search word...", 'view_profile_title': "User Profile",
+        'back_to_my_profile': "Back to My Profile"
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -129,7 +131,8 @@ TEXTS = {
         'select_gender': "Выберите ваш пол", 'gender_female': "Ж", 'gender_male': "М",
         'choose_avatar': "Выберите аватар", 'avatar_unavailable': "Аватар недоступен",
         'stop_music_button_text': "ОСТАНОВИТЬ МУЗЫКУ", 'easter_eggs_title': "Пасхалки",
-        'search_word': "Поиск слова..."
+        'search_word': "Поиск слова...", 'view_profile_title': "Профиль пользователя",
+        'back_to_my_profile': "Вернуться в мой профиль"
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
@@ -275,6 +278,28 @@ def get_session():
             return jsonify({"user": None})
     return jsonify({"user": None})
 
+# Новий ендпоінт для отримання публічних даних користувача
+@app.route('/api/user/<username>')
+def get_user_profile(username):
+    conn = get_db_connection()
+    if conn is None: abort(500)
+    with conn.cursor() as cur:
+        # Отримуємо original_case, щоб зберегти регістр
+        cur.execute("SELECT original_case, xp, gender, avatar, found_easter_eggs FROM users WHERE username = %s;", (username.lower(),))
+        user = cur.fetchone()
+    conn.close()
+    if user:
+        return jsonify({
+            "username": user[0], # Використовуємо original_case
+            "xp": user[1],
+            "gender": user[2],
+            "avatar": user[3],
+            "found_easter_eggs": user[4]
+        })
+    else:
+        abort(404, description="User not found.")
+
+
 @app.route('/api/data/initial')
 def get_initial_data():
     leaderboard = []
@@ -301,7 +326,6 @@ def get_words():
     if 'random' in lecture_ids:
         words_to_train = ALL_WORDS
     else:
-        # Переконаємось, що ми порівнюємо числа з числами
         try:
             numeric_ids = [int(lid) for lid in lecture_ids]
             words_to_train = [word for word in ALL_WORDS if word['lecture'] in numeric_ids]
@@ -356,12 +380,17 @@ def save_avatar_settings():
             cur.execute("UPDATE users SET gender = %s WHERE username = %s;", (gender, user_key))
         if avatar is not None:
             # Перевірка безпеки: чи існує такий аватар для цієї статі
-            if gender in ALL_AVATARS and avatar in ALL_AVATARS[gender]:
+            # Треба отримати стать з БД, якщо вона не передана, або використовувати поточну
+            current_gender = gender
+            if current_gender is None:
+                 cur.execute("SELECT gender FROM users WHERE username = %s;", (user_key,))
+                 result = cur.fetchone()
+                 if result: current_gender = result[0]
+
+            if current_gender in ALL_AVATARS and avatar in ALL_AVATARS[current_gender]:
                  cur.execute("UPDATE users SET avatar = %s WHERE username = %s;", (avatar, user_key))
             else:
-                 print(f"ПОПЕРЕДЖЕННЯ: Спроба зберегти неіснуючий аватар '{avatar}' для статі '{gender}' користувача '{user_key}'")
-                 # Можна або повернути помилку, або просто проігнорувати
-                 # abort(400, description="Invalid avatar selection.")
+                 print(f"ПОПЕРЕДЖЕННЯ: Спроба зберегти неіснуючий аватар '{avatar}' для статі '{current_gender}' користувача '{user_key}'")
 
     conn.commit()
     conn.close()
@@ -372,11 +401,14 @@ def save_easter_eggs():
     if 'username' not in session: abort(401)
     data = request.json
     eggs_list = data.get('eggs', [])
-    # Базова перевірка, чи це список рядків
     if not isinstance(eggs_list, list) or not all(isinstance(egg, str) for egg in eggs_list):
         abort(400, description="Invalid data format for easter eggs.")
 
-    eggs_json_string = json.dumps(eggs_list)
+    # Додаткова перевірка: чи всі яйця з дозволеного списку?
+    allowed_eggs = ["emerald", "diamond", "gold", "lazurit", "redstone"]
+    valid_eggs = [egg for egg in eggs_list if egg in allowed_eggs]
+
+    eggs_json_string = json.dumps(valid_eggs)
     user_key = session['username'].lower()
 
     conn = get_db_connection()
@@ -391,5 +423,4 @@ with app.app_context():
     init_db()
 
 if __name__ == '__main__':
-    # Переконайтесь, що debug=False у продакшені
-    app.run(debug=True)
+    app.run()
