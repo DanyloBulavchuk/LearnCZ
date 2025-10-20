@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 oldScreen.addEventListener('animationend', () => oldScreen.remove(), { once: true });
             }
 
-            if (screenId !== 'main-menu-screen') {
+            if (screenId !== 'main-menu-screen' && this.state.isMusicPlaying) {
                 this.elements.volumeSlider.classList.remove('visible');
             }
 
@@ -565,8 +565,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         renderLazuritEasterEgg() {
-            const container = document.getElementById('dictionary-words-container');
+            const container = document.getElementById('lazurit-easter-egg-container');
             if (!container) return;
+            container.innerHTML = '';
             
             const T = this.state.texts[this.state.currentLang];
             const found = this.state.currentUser.found_easter_eggs.includes('lazurit');
@@ -576,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
             eggEl.dataset.egg = 'lazurit';
             if (found) eggEl.classList.add('found');
             
-            container.insertAdjacentElement('afterend', eggEl);
+            container.appendChild(eggEl);
         },
         
         renderLectureSelection() {
@@ -848,6 +849,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const newPlayer = this.elements.audio[eggName];
             if (!newPlayer) return;
 
+            if (this.state.currentMusicPlayer === newPlayer && this.state.isMusicPlaying) {
+                this.stopAllMusic();
+                return;
+            }
+
             this.stopAllMusic();
 
             this.state.currentMusicPlayer = newPlayer;
@@ -861,9 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 musicBtn.classList.add('playing');
             }
             
-            if (document.getElementById('main-menu-screen-active')) {
-                this.elements.volumeSlider.classList.add('visible');
-            }
+            this.elements.volumeSlider.classList.add('visible');
 
             this.startParticleRain(eggName);
             
@@ -903,10 +907,12 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         
         updateEasterEggIcon(eggName) {
-            const icon = document.querySelector(`.easter-egg-icon[data-egg="${eggName}"]`);
-            if (icon) {
+            document.querySelectorAll(`.easter-egg-icon[data-egg="${eggName}"]`).forEach(icon => {
                 icon.classList.add('found');
-            }
+            });
+            document.querySelectorAll(`[data-egg="${eggName}"]`).forEach(icon => {
+                icon.classList.add('found');
+            });
         },
 
         setVolume(volume) {
@@ -926,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
         particleRainLoop(timestamp) {
             if (!this.state.isRaining) return;
 
-            const PARTICLE_INTERVAL = 240;
+            const PARTICLE_INTERVAL = 120;
             if (timestamp - this.state.lastParticleTimestamp > PARTICLE_INTERVAL) {
                 this.state.lastParticleTimestamp = timestamp;
                 

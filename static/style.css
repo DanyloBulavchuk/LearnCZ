@@ -8,7 +8,7 @@
     --panel-bg: radial-gradient(circle, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%);
     --shadow-color: rgba(159, 80, 255, 0.25);
     --font-family: 'Montserrat', sans-serif;
-    
+
     --gender-male-color: #00BFFF;
     --gender-female-color: #FF69B4;
 }
@@ -87,7 +87,7 @@ html.light-theme #current-lang-btn { border-color: var(--border-color); }
 
 #lang-options {
     position: absolute; top: 110%; left: 0;
-    display: none; 
+    display: none;
     flex-direction: column;
     background-color: #191622;
     border: 1px solid var(--accent-color);
@@ -99,9 +99,9 @@ html.light-theme #current-lang-btn { border-color: var(--border-color); }
     transition: transform 0.3s ease, background-color 0.5s ease, border-color 0.5s ease;
     z-index: 10;
 }
-#lang-options.visible { 
+#lang-options.visible {
     display: flex;
-    transform: scaleY(1); 
+    transform: scaleY(1);
 }
 html.light-theme #lang-options { background-color: #fff; border-color: var(--border-color); }
 #lang-options .flag-icon {
@@ -128,10 +128,7 @@ html.light-theme #lang-options { background-color: #fff; border-color: var(--bor
     background-position: center;
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
-    filter: grayscale(1);
-}
-#redstone-easter-egg.found {
-    filter: grayscale(0);
+    filter: none; /* Завжди кольорова тут */
 }
 #redstone-easter-egg:hover {
     transform: scale(1.15);
@@ -170,11 +167,11 @@ html.light-theme .header-button:hover {
     position: absolute;
     opacity: 0;
 }
-.screen.entering { 
-    animation: fadeIn 0.3s ease-out forwards; 
+.screen.entering {
+    animation: fadeIn 0.3s ease-out forwards;
 }
-.screen.exiting { 
-    animation: fadeOut 0.3s ease-out forwards; 
+.screen.exiting {
+    animation: fadeOut 0.3s ease-out forwards;
     pointer-events: none;
 }
 
@@ -200,14 +197,14 @@ html:not(.light-theme) .title {
 .button-group .glow-on-hover { width: 90%; max-width: 320px; }
 
 button {
-    font-family: var(--font-family); 
-    font-size: 18px; 
-    font-weight: bold; 
+    font-family: var(--font-family);
+    font-size: 18px;
+    font-weight: bold;
     border: none;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex; 
-    justify-content: center; 
+    display: flex;
+    justify-content: center;
     align-items: center;
 }
 button:active { transform: scale(0.98); }
@@ -229,8 +226,8 @@ html.light-theme input:focus {
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
 }
 
-.scrollable { 
-    overflow-y: auto; 
+.scrollable {
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: var(--accent-color) transparent;
@@ -297,7 +294,7 @@ button.danger:after, html.light-theme button.danger:after {
 }
 
 .start-training-btn {
-    width: 90%; 
+    width: 90%;
     max-width: 320px;
     color: #fff !important;
     font-size: 20px;
@@ -315,7 +312,7 @@ html.light-theme .start-training-btn { color: #fff !important; }
 #profile-screen { height: 100%; }
 .profile-layout { display: flex; flex-grow: 1; gap: 20px; min-height: 0; }
 .panel {
-    padding: 25px; 
+    padding: 25px;
     background: var(--panel-bg);
     border-radius: 15px; height: 100%; display: flex; flex-direction: column;
     box-shadow: 0 15px 40px var(--shadow-color);
@@ -400,6 +397,7 @@ html.light-theme #avatar-image-wrapper {
     opacity: 0.7;
     transition: all 0.2s ease-out;
     position: relative;
+    cursor: pointer;
 }
 .avatar-arrow:before {
     content: '';
@@ -437,8 +435,8 @@ html.light-theme #avatar-image-wrapper {
 
 
 #profile-details { width: 100%; text-align: center; margin-top: 15px; }
-#profile-details .username { 
-    font-size: 3rem; font-weight: 900; 
+#profile-details .username {
+    font-size: 3rem; font-weight: 900;
     transition: text-shadow .5s ease;
 }
 html:not(.light-theme) #profile-details .username {
@@ -473,12 +471,12 @@ html.light-theme #profile-details .rank { color: #718096; }
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
-    filter: grayscale(1);
+    filter: grayscale(1); /* Чорно-білі за замовчуванням */
     opacity: 0.7;
     transition: all 0.3s ease;
 }
 .easter-egg-icon.found {
-    filter: grayscale(0);
+    filter: grayscale(0); /* Стають кольоровими, коли знайдені */
     opacity: 1;
 }
 .easter-egg-icon[data-egg="emerald"] { background-image: url('/static/emerald.png'); }
@@ -491,20 +489,51 @@ html.light-theme #profile-details .rank { color: #718096; }
 .xp-bar { width: 100%; height: 15px; background-color: rgba(0,0,0, 0.1); border-radius: 10px; margin-top: 10px; overflow: hidden; }
 html.light-theme .xp-bar { background-color: #e2e8f0; }
 .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--success-color), #2ECC71); border-radius: 10px; transition: width 0.5s ease-in-out; }
-.back-button { 
-    margin: 20px auto 10px auto; 
-    flex-shrink: 0; 
+.back-button {
+    margin: 20px auto 10px auto;
+    flex-shrink: 0;
     width: 90%;
     max-width: 250px;
 }
-.profile-actions { display: flex; gap: 10px; margin-top: auto; width: 100%; }
+.profile-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto; /* Важливо для притиснення до низу */
+    padding-top: 20px; /* Додаємо відступ зверху */
+    width: 100%;
+}
 .profile-actions button { flex-grow: 1; min-width: 0; padding: 12px; font-size: 16px; }
+
+#settings-screen {
+    align-items: center;
+    justify-content: flex-start; /* Вирівнювання по верху */
+    padding-top: 20px;
+    gap: 20px; /* Відстань між елементами */
+}
+#settings-screen > h1,
+#settings-screen > h2 {
+    margin-bottom: 0; /* Прибираємо стандартний відступ заголовків */
+}
+#settings-screen > form,
+#settings-screen > #gender-slider-container,
+#settings-screen > #stop-music-button,
+#settings-screen > .back-button,
+#settings-screen > #gold-easter-egg {
+    width: 100%;
+    max-width: 350px; /* Обмеження ширини для центрування */
+}
+#settings-screen > .back-button {
+    margin-top: auto; /* Притискаємо кнопку назад до низу */
+    margin-bottom: 10px;
+}
+
 
 .settings-divider {
     height: 1px;
     width: 80%;
+    max-width: 350px;
     background-color: rgba(159, 80, 255, 0.3);
-    margin: 30px 0;
+    margin: 20px 0; /* Зменшили відступи */
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
@@ -514,7 +543,7 @@ html.light-theme .settings-divider {
     align-items: center;
     justify-content: center;
     gap: 15px;
-    margin-top: 10px;
+    margin-top: 0; /* Прибираємо відступ */
 }
 .gender-label {
     font-size: 1.5rem;
@@ -574,11 +603,8 @@ html.light-theme .slider-track {
     background-position: center;
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
-    filter: grayscale(1);
-    margin: 20px auto 0 auto;
-}
-#gold-easter-egg.found {
-    filter: grayscale(0);
+    filter: none; /* Завжди кольорова тут */
+    margin: 10px auto 0 auto; /* Зменшили відступ */
 }
 #gold-easter-egg:hover {
     transform: scale(1.15);
@@ -605,13 +631,19 @@ html.light-theme .slider-track {
     margin-bottom: 20px;
 }
 
-.dictionary-list { display: flex; flex-direction: column; gap: 8px; }
+.dictionary-list { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
 .dict-item { background: var(--panel-bg); padding: 12px 18px; border-radius: 8px; box-shadow: 0 5px 15px var(--shadow-color); transition: all 0.5s ease; }
 html.light-theme .dict-item { border: 1px solid var(--border-color); }
 .dict-item b { color: #888; opacity: 0.7; }
 html.light-theme .dict-item b { color: #777; }
 .cz-word { font-weight: bold; }
 
+#lazurit-easter-egg-container {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0;
+    flex-shrink: 0;
+}
 #lazurit-easter-egg {
     width: 60px;
     height: 60px;
@@ -621,11 +653,7 @@ html.light-theme .dict-item b { color: #777; }
     background-position: center;
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
-    filter: grayscale(1);
-    margin: 30px auto 10px auto;
-}
-#lazurit-easter-egg.found {
-    filter: grayscale(0);
+    filter: none; /* Завжди кольорова тут */
 }
 #lazurit-easter-egg:hover {
     transform: scale(1.15);
@@ -706,7 +734,7 @@ input:checked + .slider {
 /* Results Screen */
 #results-screen { gap: 15px; }
 #results-summary { font-size: 1.5rem; text-align: center; }
-#results-list { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 5px; }
+#results-list { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 5px; flex-grow: 1; }
 .result-item { padding: 8px; border-radius: 5px; font-size: 0.9rem; }
 .result-item.correct { background-color: rgba(57, 255, 20, 0.1); }
 .result-item.incorrect { background-color: rgba(231, 76, 60, 0.1); }
@@ -717,8 +745,8 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 
 /* --- MUSIC, EASTER EGGS, PARTICLES --- */
 #volume-slider {
-    position: absolute;
-    bottom: 165px;
+    position: absolute; /* Позиціонування відносно батьківського .screen */
+    bottom: 20px; /* Відступ знизу */
     left: 50%;
     transform: translateX(-50%) scale(0.9);
     width: 200px;
@@ -818,6 +846,7 @@ html.light-theme #volume-slider::-moz-range-thumb {
     position: absolute;
     top: 0;
     left: 0;
+    filter: none; /* Завжди кольорова */
 }
 #music-control-button img.diamond {
     opacity: 0;
@@ -828,13 +857,13 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 #music-control-button.playing img.emerald {
     filter: drop-shadow(0 0 25px #10b981) drop-shadow(0 0 40px #6ee7b7);
 }
-#music-control-button img.emerald {
+#music-control-button img.emerald:not(.playing) { /* Додано :not(.playing) */
     filter: drop-shadow(0 0 15px #059669) drop-shadow(0 0 25px #34d399);
 }
 #music-control-button.playing img.diamond {
     filter: drop-shadow(0 0 25px #00BFFF) drop-shadow(0 0 40px #77ddff);
 }
-#music-control-button img.diamond {
+#music-control-button img.diamond:not(.playing) { /* Додано :not(.playing) */
     filter: drop-shadow(0 0 15px #00BFFF) drop-shadow(0 0 25px #77ddff);
 }
 
@@ -880,20 +909,24 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; }
     html.light-theme .left-panel { border-bottom-color: var(--border-color); }
     #leaderboard-container { max-height: 250px; }
-    
+
     #avatar-image-wrapper { width: 150px; height: 150px; font-size: 1rem; }
     #avatar-controls { max-width: 250px; }
     .avatar-arrow { width: 40px; height: 40px; line-height: 40px; font-size: 1.8rem; }
 
     button, .glow-on-hover { width: 90%; max-width: 320px; }
-    .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; }
+    .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; width: 90%; max-width: 250px; }
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }
     .logo { font-size: 20px; position: static; transform: none;}
     .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
     .shift-btn { width: 80px; }
     #music-control-button { width: 90px; height: 90px; bottom: 48px;}
-    #volume-slider { bottom: 150px; width: 180px; }
+    #volume-slider { bottom: 30px; width: 180px; } /* Підняли трохи вище */
+
+    .right-panel .back-button { margin-top: auto; } /* Для кнопки Назад в профілі */
+    #settings-screen .back-button { margin-top: auto; } /* Для кнопки Назад в налаштуваннях */
+    #results-screen .back-button { margin-top: auto; } /* Для кнопки Назад в результатах */
 }
 
 @media (max-width: 480px) {
@@ -907,4 +940,5 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .training-word { font-size: 1.8rem; }
     .char-btn, .shift-btn { width: 30px; height: 30px; font-size: 14px; }
     .shift-btn { width: 70px; }
+    .back-button { padding: 10px; font-size: 14px; }
 }

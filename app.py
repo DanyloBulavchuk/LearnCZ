@@ -37,7 +37,7 @@ def init_db():
                 found_easter_eggs TEXT DEFAULT '[]'
             );
         """)
-        
+
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(1) DEFAULT 'N';")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);")
@@ -49,7 +49,7 @@ def init_db():
             conn.rollback()
         else:
             conn.commit()
-            
+
     conn.close()
 
 WORDS_DIR = 'words_CZ'
@@ -78,7 +78,8 @@ TEXTS = {
         'notebook_lecture': "Мій записник",
         'select_gender': "Оберіть вашу стать", 'gender_female': "Ж", 'gender_male': "Ч",
         'choose_avatar': "Оберіть аватарку", 'avatar_unavailable': "Аватар недоступний",
-        'stop_music_button_text': "ЗУПИНИТИ МУЗИКУ", 'easter_eggs_title': "Пасхалки"
+        'stop_music_button_text': "ЗУПИНИТИ МУЗИКУ", 'easter_eggs_title': "Пасхалки",
+        'search_word': "Пошук слова..."
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -102,7 +103,8 @@ TEXTS = {
         'notebook_lecture': "My Notebook",
         'select_gender': "Select your gender", 'gender_female': "F", 'gender_male': "M",
         'choose_avatar': "Choose an avatar", 'avatar_unavailable': "Avatar unavailable",
-        'stop_music_button_text': "STOP MUSIC", 'easter_eggs_title': "Easter Eggs"
+        'stop_music_button_text': "STOP MUSIC", 'easter_eggs_title': "Easter Eggs",
+        'search_word': "Search word..."
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -126,7 +128,8 @@ TEXTS = {
         'notebook_lecture': "Мой блокнот",
         'select_gender': "Выберите ваш пол", 'gender_female': "Ж", 'gender_male': "М",
         'choose_avatar': "Выберите аватар", 'avatar_unavailable': "Аватар недоступен",
-        'stop_music_button_text': "ОСТАНОВИТЬ МУЗЫКУ", 'easter_eggs_title': "Пасхалки"
+        'stop_music_button_text': "ОСТАНОВИТЬ МУЗЫКУ", 'easter_eggs_title': "Пасхалки",
+        'search_word': "Поиск слова..."
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
@@ -137,15 +140,16 @@ TEXTS['ru']['cz_to_lang'] = "Чешский → Русский"; TEXTS['ru']['la
 def load_all_words():
     all_data = []
     if not os.path.exists(WORDS_DIR):
+        print(f"ПОПЕРЕДЖЕННЯ: Директорія {WORDS_DIR} не знайдена.")
         return []
 
     all_files = [f for f in os.listdir(WORDS_DIR) if f.endswith('.xlsx')]
-    
+
     numeric_files = sorted(
-        [f for f in all_files if f[:-5].isdigit()], 
+        [f for f in all_files if f[:-5].isdigit()],
         key=lambda x: int(x.split('.')[0])
     )
-    
+
     for filename in numeric_files:
         try:
             df = pd.read_excel(os.path.join(WORDS_DIR, filename), header=None, engine='openpyxl')
@@ -156,7 +160,7 @@ def load_all_words():
                 df['lecture'] = int(filename.split('.')[0])
                 all_data.append(df)
         except Exception as e:
-            print(f"Error loading {filename}: {e}")
+            print(f"Помилка завантаження {filename}: {e}")
 
     if 'notebook.xlsx' in all_files:
         filename = 'notebook.xlsx'
@@ -169,11 +173,11 @@ def load_all_words():
                 df['lecture'] = 0
                 all_data.append(df)
         except Exception as e:
-            print(f"Error loading {filename}: {e}")
+            print(f"Помилка завантаження {filename}: {e}")
 
     if not all_data:
         return []
-        
+
     full_df = pd.concat(all_data, ignore_index=True)
     full_df.fillna('', inplace=True)
     return full_df.to_dict('records')
@@ -184,7 +188,7 @@ def load_avatars():
         os.makedirs(AVATARS_DIR)
         print(f"Створено директорію {AVATARS_DIR}. Будь ласка, додайте аватари.")
         return avatars
-        
+
     for f in os.listdir(AVATARS_DIR):
         if f.startswith('M_') and (f.endswith('.png') or f.endswith('.jpg')):
             avatars['M'].append(f)
@@ -234,8 +238,8 @@ def login():
     if user and user[1] == pin:
         session['username'] = user[0]
         return jsonify({"user": {
-            "username": user[0], 
-            "xp": user[2], 
+            "username": user[0],
+            "xp": user[2],
             "gender": user[3],
             "avatar": user[4],
             "found_easter_eggs": user[5]
@@ -260,8 +264,8 @@ def get_session():
         conn.close()
         if user:
             return jsonify({"user": {
-                "username": session['username'], 
-                "xp": user[0], 
+                "username": session['username'],
+                "xp": user[0],
                 "gender": user[1],
                 "avatar": user[2],
                 "found_easter_eggs": user[3]
@@ -281,8 +285,8 @@ def get_initial_data():
             leaderboard = [{"username": row[0], "xp": row[1]} for row in cur.fetchall()]
         conn.close()
     return jsonify({
-        "lectures": AVAILABLE_LECTURES, 
-        "leaderboard": leaderboard, 
+        "lectures": AVAILABLE_LECTURES,
+        "leaderboard": leaderboard,
         "texts": TEXTS,
         "avatars": ALL_AVATARS
     })
@@ -293,12 +297,19 @@ def get_words():
     lecture_ids = data.get('lectures', [])
     if not lecture_ids:
         return jsonify([])
-        
+
     if 'random' in lecture_ids:
         words_to_train = ALL_WORDS
     else:
-        words_to_train = [word for word in ALL_WORDS if word['lecture'] in lecture_ids]
-        
+        # Переконаємось, що ми порівнюємо числа з числами
+        try:
+            numeric_ids = [int(lid) for lid in lecture_ids]
+            words_to_train = [word for word in ALL_WORDS if word['lecture'] in numeric_ids]
+        except ValueError:
+             print(f"Помилка: отримано нечислові ID лекцій: {lecture_ids}")
+             words_to_train = []
+
+
     return jsonify(words_to_train)
 
 @app.route('/api/update_xp', methods=['POST'])
@@ -316,7 +327,7 @@ def update_xp():
     conn.commit()
     conn.close()
     return jsonify({"new_xp": new_xp})
-    
+
 @app.route('/api/settings/change_pin', methods=['POST'])
 def change_pin():
     if 'username' not in session: abort(401)
@@ -337,14 +348,21 @@ def save_avatar_settings():
     gender = data.get('gender')
     avatar = data.get('avatar')
     user_key = session['username'].lower()
-    
+
     conn = get_db_connection()
     if conn is None: abort(500)
     with conn.cursor() as cur:
         if gender is not None:
             cur.execute("UPDATE users SET gender = %s WHERE username = %s;", (gender, user_key))
         if avatar is not None:
-            cur.execute("UPDATE users SET avatar = %s WHERE username = %s;", (avatar, user_key))
+            # Перевірка безпеки: чи існує такий аватар для цієї статі
+            if gender in ALL_AVATARS and avatar in ALL_AVATARS[gender]:
+                 cur.execute("UPDATE users SET avatar = %s WHERE username = %s;", (avatar, user_key))
+            else:
+                 print(f"ПОПЕРЕДЖЕННЯ: Спроба зберегти неіснуючий аватар '{avatar}' для статі '{gender}' користувача '{user_key}'")
+                 # Можна або повернути помилку, або просто проігнорувати
+                 # abort(400, description="Invalid avatar selection.")
+
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
@@ -354,9 +372,13 @@ def save_easter_eggs():
     if 'username' not in session: abort(401)
     data = request.json
     eggs_list = data.get('eggs', [])
+    # Базова перевірка, чи це список рядків
+    if not isinstance(eggs_list, list) or not all(isinstance(egg, str) for egg in eggs_list):
+        abort(400, description="Invalid data format for easter eggs.")
+
     eggs_json_string = json.dumps(eggs_list)
     user_key = session['username'].lower()
-    
+
     conn = get_db_connection()
     if conn is None: abort(500)
     with conn.cursor() as cur:
@@ -369,4 +391,5 @@ with app.app_context():
     init_db()
 
 if __name__ == '__main__':
+    # Переконайтесь, що debug=False у продакшені
     app.run(debug=True)
