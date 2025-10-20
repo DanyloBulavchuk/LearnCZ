@@ -8,6 +8,9 @@
     --panel-bg: radial-gradient(circle, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%);
     --shadow-color: rgba(159, 80, 255, 0.25);
     --font-family: 'Montserrat', sans-serif;
+    
+    --gender-male-color: #00BFFF;
+    --gender-female-color: #FF69B4;
 }
 
 html.light-theme {
@@ -279,7 +282,6 @@ button.danger:after, html.light-theme button.danger:after {
 }
 html.light-theme .start-training-btn { color: #fff !important; }
 
-/* Profile Screen */
 #profile-screen { height: 100%; }
 .profile-layout { display: flex; flex-grow: 1; gap: 20px; min-height: 0; }
 .panel {
@@ -309,9 +311,70 @@ html.light-theme .leaderboard-item.current-user {
 .lb-name { font-weight: bold; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-xp { color: #FFD700; font-weight: bold; white-space: nowrap; }
 html.light-theme .lb-xp { color: #d69e2e; }
-.shark-image-container { margin-bottom: 15px; text-align: center; }
-.shark-image-container img { width: 250px; height: 250px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 20px rgba(159, 80, 255, 0.5); }
-html.light-theme .shark-image-container img { box-shadow: 0 10px 20px var(--shadow-color); }
+
+#avatar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px;
+}
+#avatar-image-wrapper {
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(159, 80, 255, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    padding: 20px;
+    font-size: 1.2rem;
+}
+html.light-theme #avatar-image-wrapper {
+    box-shadow: 0 10px 20px var(--shadow-color);
+    background-color: #e2e8f0;
+    color: #4a5568;
+}
+#avatar-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+#avatar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 300px;
+    margin-top: 15px;
+}
+#avatar-controls.hidden {
+    display: none;
+}
+.avatar-arrow {
+    background: none;
+    border: none;
+    font-size: 2.5rem;
+    color: var(--accent-color);
+    padding: 0 10px;
+    opacity: 0.7;
+    transition: opacity 0.2s, transform 0.2s;
+}
+.avatar-arrow:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+#avatar-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+
 #profile-details { width: 100%; text-align: center; margin-top: 15px; }
 #profile-details .username { 
     font-size: 3rem; font-weight: 900; 
@@ -338,6 +401,71 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 }
 .profile-actions { display: flex; gap: 10px; margin-top: auto; width: 100%; }
 .profile-actions button { flex-grow: 1; min-width: 0; padding: 12px; font-size: 16px; }
+
+.settings-divider {
+    height: 1px;
+    width: 80%;
+    background-color: rgba(159, 80, 255, 0.3);
+    margin: 30px 0;
+}
+html.light-theme .settings-divider {
+    background-color: var(--border-color);
+}
+#gender-slider-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+}
+.gender-label {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+.gender-switch {
+    position: relative;
+    display: inline-block;
+    width: 90px;
+    height: 40px;
+}
+.gender-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider-track {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--gender-female-color);
+    transition: .4s;
+    border-radius: 40px;
+}
+.slider-track:before {
+    position: absolute;
+    content: "";
+    height: 32px;
+    width: 32px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+input:checked + .slider-track {
+    background-color: var(--gender-male-color);
+}
+input:checked + .slider-track:before {
+    transform: translateX(50px);
+}
+html.light-theme .slider-track {
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+}
 
 /* Lecture & Dictionary Screens */
 .lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 10px; flex-grow: 1; }
@@ -448,6 +576,21 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
 /* --- EMERALD BUTTON AND RAIN EFFECT --- */
+#volume-slider {
+    display: none;
+    position: absolute;
+    bottom: 165px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    z-index: 11;
+    cursor: pointer;
+    accent-color: var(--accent-color);
+}
+#volume-slider.visible {
+    display: block;
+}
+
 #emerald-music-button {
     position: absolute;
     bottom: 32px;
@@ -492,7 +635,7 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 }
 .falling-emerald {
     position: absolute;
-    top: -30px; /* Start off-screen */
+    top: -30px;
     background-image: url('/static/emerald.png');
     background-size: contain;
     background-repeat: no-repeat;
@@ -515,7 +658,11 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; }
     html.light-theme .left-panel { border-bottom-color: var(--border-color); }
     #leaderboard-container { max-height: 250px; }
-    .shark-image-container img { width: 150px; height: 150px; }
+    
+    #avatar-image-wrapper { width: 150px; height: 150px; font-size: 1rem; }
+    #avatar-controls { max-width: 250px; }
+    .avatar-arrow { font-size: 2rem; }
+
     button, .glow-on-hover { min-width: 250px; }
     .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; }
     .training-word { font-size: 2rem; }
@@ -524,22 +671,5 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
     .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
     .shift-btn { width: 80px; }
     #emerald-music-button { width: 90px; height: 90px; bottom: 48px;}
-}
-
-#volume-slider {
-    display: none; /* Сховано за замовчуванням */
-    position: absolute;
-    /* Розміщуємо трохи вище кнопки-емеральда */
-    bottom: 165px; /* (120px висота кнопки + 32px відступ + 13px пробіл) */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    z-index: 11; /* Щоб був вище кнопки */
-    cursor: pointer;
-    /* Задаємо колір повзунка, щоб відповідав темі */
-    accent-color: var(--accent-color);
-}
-
-#volume-slider.visible {
-    display: block; /* Робимо видимим, коли музика грає */
+    #volume-slider { bottom: 150px; width: 180px; }
 }

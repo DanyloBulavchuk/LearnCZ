@@ -2,17 +2,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const app = {
         state: {
             currentUser: null,
-            words: [],
+            loadedWords: {},
             lectures: [],
             leaderboard: [],
             texts: {},
+            avatars: { M: [], F: [] },
+            currentAvatarIndex: 0,
             currentLang: 'ua',
             isShiftActive: false,
-            viewMode: null, // 'dictionary' or 'training'
+            viewMode: null,
             selectedLectureForView: null,
             isCheckingAnswer: false,
             isMusicPlaying: false,
-            emeraldRainInterval: null,
+            isRaining: false,
+            lastEmeraldTimestamp: 0,
+            animationFrameId: null,
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
@@ -30,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             themeToggle: document.getElementById('theme-checkbox'),
             musicPlayer: document.getElementById('background-music'),
             emeraldRainContainer: document.getElementById('emerald-rain-container'),
+            volumeSlider: document.getElementById('volume-slider'),
         },
 
         init() {
@@ -38,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.checkSession();
         },
         
-            addEventListeners() {
+        addEventListeners() {
             document.body.addEventListener('click', (e) => {
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], .char-btn, .shift-btn, #emerald-music-button');
                 
@@ -61,21 +66,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (target.matches('.shift-btn')) this.toggleShift();
             });
 
-            // --- НОВИЙ ОБРОБНИК ПОДІЙ ---
-            // Додаємо слухача для події 'input' (рух повзунка)
             document.body.addEventListener('input', (e) => {
                 const target = e.target;
                 if (target.id === 'volume-slider') {
                     this.setVolume(target.value);
                 }
             });
-            // --- КІНЕЦЬ НОВОГО КОДУ ---
+            
+            document.body.addEventListener('change', (e) => {
+                const target = e.target;
+                if (target.id === 'theme-checkbox') {
+                    this.handleThemeChange();
+                } else if (target.id === 'gender-slider') {
+                    this.handleGenderChange(target.checked ? 'M' : 'F');
+                }
+            });
 
             this.elements.currentLangBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.elements.langOptions.classList.toggle('visible');
             });
-            this.elements.themeToggle.addEventListener('change', () => this.handleThemeChange());
         },
         
         initTheme() {
@@ -141,6 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (screenId) {
                 case 'profile-screen':
                     this.renderProfile();
+                    this.renderAvatarUI();
+                    break;
+                case 'settings-screen':
+                    this.renderGenderSlider();
                     break;
                 case 'lecture-selection-screen':
                     this.renderLectureSelection();
@@ -173,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.navigateTo('lecture-selection-screen');
                 },
                 'select-lecture': (ds) => {
-                    const lectureNum = parseInt(ds.lecture, 10);
+                    const lectureNum = (ds.lecture === '0' || ds.lecture === 0) ? 0 : parseInt(ds.lecture, 10);
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${lectureNum}"]`);
                     if (!btn) return;
 
@@ -212,7 +226,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 'back-to-train-select': () => {
                     this.state.viewMode = 'training';
                     this.navigateTo('lecture-selection-screen');
-                }
+                },
+                'prev-avatar': () => this.handleAvatarChange(-1),
+                'next-avatar': () => this.handleAvatarChange(1),
             };
             if (actions[action]) actions[action](dataset);
         },
@@ -222,6 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const flagClasses = { ua: 'flag-ua', en: 'flag-us', ru: 'flag-ru' };
             this.elements.currentLangBtn.className = `flag-icon ${flagClasses[lang]}`;
             this.updateAllTexts();
+            if (document.getElementById('settings-screen-active')) {
+                this.renderGenderSlider();
+            }
         },
 
         updateAllTexts() {
@@ -233,8 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder]; });
             document.querySelectorAll('[data-lecture-title]').forEach(el => { 
                 const lectureNum = el.dataset.lectureTitle;
-                if (lectureNum === 'notebook') {
-                    el.textContent = texts.notebook || 'Записник';
+                if (lectureNum === '0') {
+                    el.textContent = texts.notebook_lecture || 'Мій записник';
                 } else {
                     el.textContent = `${texts.lecture || 'Лекція'} №${lectureNum}`;
                 }
@@ -258,12 +277,43 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch('/api/data/initial');
                 const data = await response.json();
-                this.state.words = data.words;
                 this.state.lectures = data.lectures;
                 this.state.leaderboard = data.leaderboard;
                 this.state.texts = data.texts;
+                this.state.avatars = data.avatars;
                 this.setLanguage(this.state.currentLang);
             } catch (e) { console.error("Could not load initial data:", e); }
+        },
+        
+        async loadWordsForLectures(lectureIds) {
+            const lecturesToFetch = lectureIds.filter(id => !this.state.loadedWords[id]);
+            
+            if (lecturesToFetch.length > 0 || (lectureIds.includes('random') && !this.state.loadedWords['random'])) {
+                const response = await fetch('/api/get_words', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ lectures: lectureIds.includes('random') ? ['random'] : lecturesToFetch })
+                });
+                const words = await response.json();
+                
+                if (lectureIds.includes('random')) {
+                    this.state.loadedWords['random'] = words;
+                } else {
+                    lecturesToFetch.forEach(id => {
+                        this.state.loadedWords[id] = words.filter(w => w.lecture === id);
+                    });
+                }
+            }
+            
+            let allWords = [];
+            if (lectureIds.includes('random')) {
+                allWords = [...this.state.loadedWords['random']];
+            } else {
+                lectureIds.forEach(id => {
+                    allWords.push(...(this.state.loadedWords[id] || []));
+                });
+            }
+            return allWords;
         },
 
         updateHeader() {
@@ -303,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
             this.state.currentUser = null;
+            this.state.loadedWords = {};
             this.updateHeader();
             this.navigateTo('welcome-screen');
         },
@@ -364,6 +415,104 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
         
+        renderAvatarUI() {
+            const wrapper = document.getElementById('avatar-image-wrapper');
+            const controls = document.getElementById('avatar-controls');
+            const nameEl = document.getElementById('avatar-name');
+            if (!wrapper || !controls || !nameEl) return;
+
+            const T = this.state.texts[this.state.currentLang];
+            const { gender, avatar } = this.state.currentUser;
+
+            if (gender === 'N' || !gender) {
+                wrapper.innerHTML = `<span>${T.choose_avatar}</span>`;
+                controls.classList.add('hidden');
+                nameEl.textContent = '';
+                return;
+            }
+
+            const avatarList = this.state.avatars[gender] || [];
+            if (avatarList.length === 0) {
+                wrapper.innerHTML = `<span>${T.avatar_unavailable}</span>`;
+                controls.classList.add('hidden');
+                nameEl.textContent = '';
+                return;
+            }
+            
+            controls.classList.remove('hidden');
+            let currentAvatar = avatar;
+            let currentIndex = avatarList.indexOf(currentAvatar);
+
+            if (currentIndex === -1) {
+                currentIndex = 0;
+                currentAvatar = avatarList[0];
+                this.state.currentUser.avatar = currentAvatar;
+            }
+            this.state.currentAvatarIndex = currentIndex;
+            
+            wrapper.innerHTML = `<img src="/avatars/${currentAvatar}" alt="Avatar">`;
+            nameEl.textContent = currentAvatar.replace(`${gender}_`, '').replace('.png', '');
+        },
+        
+        async handleAvatarChange(direction) {
+            const { gender } = this.state.currentUser;
+            const avatarList = this.state.avatars[gender];
+            if (!avatarList || avatarList.length === 0) return;
+
+            let newIndex = this.state.currentAvatarIndex + direction;
+            if (newIndex < 0) newIndex = avatarList.length - 1;
+            if (newIndex >= avatarList.length) newIndex = 0;
+            
+            const newAvatar = avatarList[newIndex];
+            this.state.currentAvatarIndex = newIndex;
+            this.state.currentUser.avatar = newAvatar;
+            
+            this.renderAvatarUI();
+
+            await fetch('/api/settings/save_avatar', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ avatar: newAvatar })
+            });
+        },
+        
+        renderGenderSlider() {
+            const container = document.getElementById('gender-slider-container');
+            if (!container) return;
+            const T = this.state.texts[this.state.currentLang];
+            
+            container.innerHTML = `
+                <span class="gender-label">${T.gender_female}</span>
+                <label class="gender-switch">
+                    <input type="checkbox" id="gender-slider">
+                    <span class="slider-track"></span>
+                </label>
+                <span class="gender-label">${T.gender_male}</span>
+            `;
+            
+            const slider = container.querySelector('#gender-slider');
+            if (this.state.currentUser.gender === 'M') {
+                slider.checked = true;
+            }
+        },
+        
+        async handleGenderChange(gender) {
+            this.state.currentUser.gender = gender;
+            this.state.currentAvatarIndex = 0; 
+            
+            const avatarList = this.state.avatars[gender] || [];
+            const newAvatar = avatarList.length > 0 ? avatarList[0] : null;
+            this.state.currentUser.avatar = newAvatar;
+
+            await fetch('/api/settings/save_avatar', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ gender: gender, avatar: newAvatar })
+            });
+            
+            if (document.getElementById('profile-screen-active')) {
+                this.renderAvatarUI();
+            }
+        },
+        
         renderLectureSelection() {
             this.state.currentTraining.selectedLectures = []; 
             const container = document.getElementById('lecture-buttons-container');
@@ -390,7 +539,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.updateAllTexts();
         },
         
-        renderDictionary() {
+        async renderDictionary() {
             const container = document.getElementById('dictionary-words-container');
             const searchInput = document.getElementById('dict-search-input');
             if (!container || !searchInput) return;
@@ -398,9 +547,9 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '';
             const lectureNum = this.state.selectedLectureForView;
             if (lectureNum === null) return;
-
+            
+            const words = await this.loadWordsForLectures([lectureNum]);
             const langKey = this.state.currentLang.toUpperCase();
-            const words = this.state.words.filter(w => String(w.lecture) === String(lectureNum));
 
             const renderWords = (wordList) => {
                 container.innerHTML = '';
@@ -424,15 +573,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         },
 
-        startTraining() {
+        async startTraining() {
             let wordsToTrain = [];
             const { mode, selectedLectures } = this.state.currentTraining;
+            let lectureIds = [];
 
             if (mode === 'random') {
-                wordsToTrain = [...this.state.words];
+                lectureIds = ['random'];
             } else if (mode === 'specific_selected') {
-                wordsToTrain = this.state.words.filter(w => selectedLectures.includes(w.lecture));
+                lectureIds = selectedLectures;
             }
+            
+            wordsToTrain = await this.loadWordsForLectures(lectureIds);
 
             if (wordsToTrain.length === 0) {
                 alert("Для цього режиму немає слів.");
@@ -627,70 +779,81 @@ document.addEventListener('DOMContentLoaded', () => {
             return { emoji: rankEmoji, name: rankName };
         },
 
-        // --- EMERALD MUSIC AND RAIN FUNCTIONS ---
         toggleMusic() {
             this.state.isMusicPlaying = !this.state.isMusicPlaying;
             const emeraldButton = document.querySelector('#emerald-music-button');
-            // --- ЗМІНА: Отримуємо повзунок ---
-            const volumeSlider = document.getElementById('volume-slider');
 
             if (this.state.isMusicPlaying) {
                 this.elements.musicPlayer.play();
                 this.startEmeraldRain();
                 if (emeraldButton) emeraldButton.classList.add('playing');
-                // --- ЗМІНА: Показываємо повзунок ---
-                if (volumeSlider) {
-                    volumeSlider.classList.add('visible');
-                    // Встановлюємо гучність музики відповідно до поточного значення повзунка
-                    this.setVolume(volumeSlider.value); 
+                if (this.elements.volumeSlider) {
+                    this.elements.volumeSlider.classList.add('visible');
+                    this.setVolume(this.elements.volumeSlider.value);
                 }
             } else {
                 this.elements.musicPlayer.pause();
-                this.elements.musicPlayer.currentTime = 0; // Reset music to the beginning
+                this.elements.musicPlayer.currentTime = 0;
                 this.stopEmeraldRain();
                 if (emeraldButton) emeraldButton.classList.remove('playing');
-                // --- ЗМІНА: Приховуємо повзунок ---
-                if (volumeSlider) volumeSlider.classList.remove('visible');
+                if (this.elements.volumeSlider) this.elements.volumeSlider.classList.remove('visible');
             }
         },
-
+        
         setVolume(volume) {
             this.elements.musicPlayer.volume = volume;
         },
 
         startEmeraldRain() {
-            if (this.state.emeraldRainInterval) return;
-            this.state.emeraldRainInterval = setInterval(() => {
+            if (this.state.isRaining) return;
+            this.state.isRaining = true;
+            this.state.lastEmeraldTimestamp = 0;
+            this.state.animationFrameId = requestAnimationFrame(this.emeraldRainLoop.bind(this));
+        },
+        
+        emeraldRainLoop(timestamp) {
+            if (!this.state.isRaining) return;
+
+            const EMERALD_INTERVAL = 240;
+            if (timestamp - this.state.lastEmeraldTimestamp > EMERALD_INTERVAL) {
+                this.state.lastEmeraldTimestamp = timestamp;
+                
                 const emerald = document.createElement('div');
                 emerald.classList.add('falling-emerald');
                 
-                const size = Math.random() * 10 + 10; // 10px to 20px
-                const duration = Math.random() * 5 + 7; // 7s to 12s
+                const size = Math.random() * 10 + 10;
+                const duration = Math.random() * 5 + 7;
                 
                 emerald.style.width = `${size}px`;
                 emerald.style.height = `${size}px`;
                 emerald.style.left = `${Math.random() * 100}vw`;
                 emerald.style.animationDuration = `${duration}s`;
-                emerald.style.opacity = Math.random() * 0.4 + 0.4; // 0.4 to 0.8
+                emerald.style.opacity = Math.random() * 0.4 + 0.4;
                 
                 this.elements.emeraldRainContainer.appendChild(emerald);
 
-                // Self-destruct after animation
                 setTimeout(() => {
                     emerald.remove();
                 }, duration * 1000);
-
-            }, 240); // Змінено з 300 на 240 для +25% емеральдів
+            }
+            
+            this.state.animationFrameId = requestAnimationFrame(this.emeraldRainLoop.bind(this));
         },
 
         stopEmeraldRain() {
-            clearInterval(this.state.emeraldRainInterval);
-            this.state.emeraldRainInterval = null;
-            // Clear all falling emeralds immediately
-            this.elements.emeraldRainContainer.innerHTML = '';
+            this.state.isRaining = false;
+            if (this.state.animationFrameId) {
+                cancelAnimationFrame(this.state.animationFrameId);
+                this.state.animationFrameId = null;
+            }
+            
+            this.elements.emeraldRainContainer.querySelectorAll('.falling-emerald').forEach(el => {
+                el.style.transition = 'opacity 0.5s ease-out';
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 500);
+            });
         }
     };
 
     app.init();
 });
-

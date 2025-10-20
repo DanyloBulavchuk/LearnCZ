@@ -3,17 +3,15 @@ import json
 import pandas as pd
 import psycopg2
 from datetime import date, timedelta
-from flask import Flask, jsonify, render_template, request, session, abort
+from flask import Flask, jsonify, render_template, request, session, abort, send_from_directory
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- App Configuration ---
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_fallback_secret_key_for_dev')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# --- Database Connection ---
 def get_db_connection():
     try:
         return psycopg2.connect(DATABASE_URL)
@@ -35,14 +33,26 @@ def init_db():
                 pin VARCHAR(4) NOT NULL,
                 xp INTEGER DEFAULT 0,
                 streak_count INTEGER DEFAULT 0,
-                last_streak_date DATE
+                last_streak_date DATE,
+                gender VARCHAR(1) DEFAULT 'N',
+                avatar VARCHAR(255)
             );
         """)
-    conn.commit()
+        
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(1) DEFAULT 'N';")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);")
+        except psycopg2.Error as e:
+            print(f"Помилка при оновленні таблиці: {e}")
+            conn.rollback()
+        else:
+            conn.commit()
+            
     conn.close()
 
-# --- Constants, Ranks, and Localization ---
 WORDS_DIR = 'words_CZ'
+AVATARS_DIR = os.path.join(app.static_folder, 'avatars')
+
 TEXTS = {
     'ua': {
         'welcome': "Ласкаво просимо!", 'login': "Вхід", 'register': "Реєстрація",
@@ -64,7 +74,9 @@ TEXTS = {
         'words_learned_today': "Сьогодні вивчено слів", 'daily_streak': "Щоденна серія",
         'settings_title': "Налаштування", 'change_pin': "Змінити PIN-код", 'new_pin': "Новий PIN-код",
         'save_changes': "Зберегти зміни", 'pin_changed_success': "PIN-код успішно змінено!",
-        'notebook_lecture': "Мій записник"
+        'notebook_lecture': "Мій записник",
+        'select_gender': "Оберіть вашу стать", 'gender_female': "Ж", 'gender_male': "Ч",
+        'choose_avatar': "Оберіть аватарку", 'avatar_unavailable': "Аватар недоступний"
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -86,7 +98,9 @@ TEXTS = {
         'words_learned_today': "Words learned today", 'daily_streak': "Daily Streak",
         'settings_title': "Settings", 'change_pin': "Change PIN", 'new_pin': "New PIN",
         'save_changes': "Save Changes", 'pin_changed_success': "PIN changed successfully!",
-        'notebook_lecture': "My Notebook"
+        'notebook_lecture': "My Notebook",
+        'select_gender': "Select your gender", 'gender_female': "F", 'gender_male': "M",
+        'choose_avatar': "Choose an avatar", 'avatar_unavailable': "Avatar unavailable"
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -108,7 +122,9 @@ TEXTS = {
         'words_learned_today': "Слов выучено сегодня", 'daily_streak': "Дневная серия",
         'settings_title': "Настройки", 'change_pin': "Сменить PIN-код", 'new_pin': "Новый PIN-код",
         'save_changes': "Сохранить изменения", 'pin_changed_success': "PIN-код успешно изменен!",
-        'notebook_lecture': "Мой блокнот"
+        'notebook_lecture': "Мой блокнот",
+        'select_gender': "Выберите ваш пол", 'gender_female': "Ж", 'gender_male': "М",
+        'choose_avatar': "Выберите аватар", 'avatar_unavailable': "Аватар недоступен"
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
@@ -144,7 +160,6 @@ def load_all_words():
         key=lambda x: int(x.split('.')[0])
     )
     
-    # Process numeric files
     for filename in numeric_files:
         try:
             df = pd.read_excel(os.path.join(WORDS_DIR, filename), header=None, engine='openpyxl')
@@ -157,7 +172,6 @@ def load_all_words():
         except Exception as e:
             print(f"Error loading {filename}: {e}")
 
-    # Process 'notebook.xlsx'
     if 'notebook.xlsx' in all_files:
         filename = 'notebook.xlsx'
         try:
@@ -166,7 +180,7 @@ def load_all_words():
                 df = df.iloc[:, :4]
                 df.columns = ['CZ', 'UA', 'RU', 'EN']
                 df.dropna(subset=['CZ', 'UA'], inplace=True)
-                df['lecture'] = 0  # Assign special lecture number 0
+                df['lecture'] = 0
                 all_data.append(df)
         except Exception as e:
             print(f"Error loading {filename}: {e}")
@@ -178,12 +192,32 @@ def load_all_words():
     full_df.fillna('', inplace=True)
     return full_df.to_dict('records')
 
+def load_avatars():
+    avatars = {"M": [], "F": []}
+    if not os.path.exists(AVATARS_DIR):
+        os.makedirs(AVATARS_DIR)
+        print(f"Створено директорію {AVATARS_DIR}. Будь ласка, додайте аватари.")
+        return avatars
+        
+    for f in os.listdir(AVATARS_DIR):
+        if f.startswith('M_') and f.endswith('.png'):
+            avatars['M'].append(f)
+        elif f.startswith('F_') and f.endswith('.png'):
+            avatars['F'].append(f)
+    avatars['M'].sort()
+    avatars['F'].sort()
+    return avatars
+
 ALL_WORDS = load_all_words()
+ALL_AVATARS = load_avatars()
 AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
 
-# --- Flask Routes ---
 @app.route('/')
 def index(): return render_template('index.html')
+
+@app.route('/avatars/<filename>')
+def get_avatar(filename):
+    return send_from_directory(AVATARS_DIR, filename)
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -195,11 +229,11 @@ def register():
     with conn.cursor() as cur:
         cur.execute("SELECT id FROM users WHERE username = %s;", (username.lower(),))
         if cur.fetchone(): abort(409)
-        cur.execute("INSERT INTO users (username, original_case, pin, xp) VALUES (%s, %s, %s, %s);", (username.lower(), username, pin, 0))
+        cur.execute("INSERT INTO users (username, original_case, pin, xp, gender) VALUES (%s, %s, %s, %s, 'N');", (username.lower(), username, pin, 0))
     conn.commit()
     conn.close()
     session['username'] = username
-    return jsonify({"user": {"username": username, "xp": 0}})
+    return jsonify({"user": {"username": username, "xp": 0, "gender": "N", "avatar": None}})
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -208,12 +242,18 @@ def login():
     conn = get_db_connection()
     if conn is None: abort(500)
     with conn.cursor() as cur:
-        cur.execute("SELECT original_case, pin, xp, streak_count FROM users WHERE username = %s;", (username.lower(),))
+        cur.execute("SELECT original_case, pin, xp, streak_count, gender, avatar FROM users WHERE username = %s;", (username.lower(),))
         user = cur.fetchone()
     conn.close()
     if user and user[1] == pin:
         session['username'] = user[0]
-        return jsonify({"user": {"username": user[0], "xp": user[2], "streak_count": user[3]}})
+        return jsonify({"user": {
+            "username": user[0], 
+            "xp": user[2], 
+            "streak_count": user[3],
+            "gender": user[4],
+            "avatar": user[5]
+        }})
     abort(401)
 
 @app.route('/api/logout', methods=['POST'])
@@ -229,11 +269,17 @@ def get_session():
             session.pop('username', None)
             return jsonify({"user": None})
         with conn.cursor() as cur:
-            cur.execute("SELECT xp, streak_count FROM users WHERE username = %s;", (session['username'].lower(),))
+            cur.execute("SELECT xp, streak_count, gender, avatar FROM users WHERE username = %s;", (session['username'].lower(),))
             user = cur.fetchone()
         conn.close()
         if user:
-            return jsonify({"user": {"username": session['username'], "xp": user[0], "streak_count": user[1]}})
+            return jsonify({"user": {
+                "username": session['username'], 
+                "xp": user[0], 
+                "streak_count": user[1],
+                "gender": user[2],
+                "avatar": user[3]
+            }})
         else:
             session.pop('username', None)
             return jsonify({"user": None})
@@ -248,7 +294,26 @@ def get_initial_data():
             cur.execute("SELECT original_case, xp FROM users ORDER BY xp DESC, username ASC;")
             leaderboard = [{"username": row[0], "xp": row[1]} for row in cur.fetchall()]
         conn.close()
-    return jsonify({"words": ALL_WORDS, "lectures": AVAILABLE_LECTURES, "leaderboard": leaderboard, "texts": TEXTS})
+    return jsonify({
+        "lectures": AVAILABLE_LECTURES, 
+        "leaderboard": leaderboard, 
+        "texts": TEXTS,
+        "avatars": ALL_AVATARS
+    })
+
+@app.route('/api/get_words', methods=['POST'])
+def get_words():
+    data = request.json
+    lecture_ids = data.get('lectures', [])
+    if not lecture_ids:
+        return jsonify([])
+        
+    if 'random' in lecture_ids:
+        words_to_train = ALL_WORDS
+    else:
+        words_to_train = [word for word in ALL_WORDS if word['lecture'] in lecture_ids]
+        
+    return jsonify(words_to_train)
 
 @app.route('/api/update_xp', methods=['POST'])
 def update_xp():
@@ -285,6 +350,25 @@ def change_pin():
     conn.commit()
     conn.close()
     return jsonify({"message": "PIN updated."})
+
+@app.route('/api/settings/save_avatar', methods=['POST'])
+def save_avatar_settings():
+    if 'username' not in session: abort(401)
+    data = request.json
+    gender = data.get('gender')
+    avatar = data.get('avatar')
+    user_key = session['username'].lower()
+    
+    conn = get_db_connection()
+    if conn is None: abort(500)
+    with conn.cursor() as cur:
+        if gender is not None:
+            cur.execute("UPDATE users SET gender = %s WHERE username = %s;", (gender, user_key))
+        if avatar is not None:
+            cur.execute("UPDATE users SET avatar = %s WHERE username = %s;", (avatar, user_key))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
 
 with app.app_context():
     init_db()
