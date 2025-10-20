@@ -1,12 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const EASTER_EGG_ORDER = ["emerald", "gold", "lazurit", "redstone", "diamond", "macan"]; // Додано macan
+    const EASTER_EGG_ORDER = ["emerald", "gold", "lazurit", "redstone", "diamond", "macan"];
     const TOTAL_EASTER_EGGS = EASTER_EGG_ORDER.length;
+    // Updated Rank Thresholds
+    const RANKS = { 1: "🥉", 5: "🥈", 12: "🥇", 20: "🏆", 30: "💎" };
+    const NAMES = { 1: "Nováček", 5: "Učedník", 12: "Znalec", 20: "Mistr", 30: "Polyglot" };
+
 
     const app = {
         state: {
             currentUser: null,
             viewingUser: null,
-            loadedWords: {}, // Кеш завантажених слів { lectureId: [words], 'random': [words], 'search_term': [words] }
+            loadedWords: {},
             lectures: [],
             leaderboard: [],
             texts: {},
@@ -14,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentAvatarIndex: 0,
             currentLang: 'ua',
             isShiftActive: false,
-            viewMode: null, // 'dictionary', 'training', 'global_search'
+            viewMode: null,
             selectedLectureForView: null,
             isCheckingAnswer: false,
 
@@ -26,8 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
             lastParticleTimestamp: 0,
             animationFrameId: null,
 
-            globalSearchAbortController: null, // Для скасування попередніх запитів пошуку
-            globalSearchTimeout: null, // Для затримки перед пошуком
+            globalSearchAbortController: null,
+            globalSearchTimeout: null,
 
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
@@ -45,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
             langOptions: document.getElementById('lang-options'),
             themeToggle: document.getElementById('theme-checkbox'),
             particleRainContainer: document.getElementById('particle-rain-container'),
-            // volumeSlider: document.getElementById('volume-slider'), // Видалено
 
             audio: {
                 emerald: document.getElementById('music-emerald'),
@@ -53,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 gold: document.getElementById('music-gold'),
                 lazurit: document.getElementById('music-lazurit'),
                 redstone: document.getElementById('music-redstone'),
-                macan: document.getElementById('music-macan'), // Додано macan
+                macan: document.getElementById('music-macan'),
             }
         },
 
@@ -96,10 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isProfileIcon = target.closest('#easter-egg-icons');
                     const isFound = target.classList.contains('found');
 
-                    // Перевірка, чи ми не в чужому профілі
                     const isViewingOtherProfile = document.getElementById('view-profile-screen-active');
                     if (isViewingOtherProfile && isProfileIcon) {
-                        return; // Не дозволяємо активувати з чужого профілю
+                        return;
                     }
 
                     if (isProfileIcon && !isFound) {
@@ -121,26 +123,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.saveVolume(target.value);
                  }
                  else if (target.id === 'global-search-input') {
-                     // Додаємо затримку перед пошуком
                      clearTimeout(this.state.globalSearchTimeout);
                      const searchTerm = target.value.trim();
+
+                     // Macan easter egg check
+                     if (searchTerm.toLowerCase() === 'macan') {
+                         this.displayMacanEasterEgg();
+                     } else {
+                         this.hideMacanEasterEgg();
+                     }
+
                      if (searchTerm.length > 0) {
                          this.hideLectureButtons();
-                         // Запускаємо пошук через 300мс після останнього введення
                          this.state.globalSearchTimeout = setTimeout(() => {
                             this.handleGlobalSearch(searchTerm);
                          }, 300);
                      } else {
                          this.showLectureButtons();
-                         this.renderSearchResults([]); // Очищуємо результати
+                         this.renderSearchResults([]);
                      }
                  }
                  else if (target.id === 'dict-search-input') {
-                     if (target.value.toLowerCase() === 'macan') {
-                         this.displayMacanEasterEgg();
-                     } else {
-                         this.hideMacanEasterEgg();
-                     }
+                     // Macan check removed from here
                      this.filterDictionaryView(target.value);
                  }
              });
@@ -192,12 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.viewingUser = null;
             }
 
-            // Якщо йдемо з екрану вибору лекцій, переконуємось, що кнопки видимі
              if (document.getElementById('lecture-selection-screen-active') && screenId !== 'lecture-selection-screen') {
                  this.showLectureButtons();
                  const searchInput = document.getElementById('global-search-input');
-                 if(searchInput) searchInput.value = ''; // Очищаємо пошук при виході
-                 this.renderSearchResults([]); // Очищаємо результати
+                 if(searchInput) searchInput.value = '';
+                 this.renderSearchResults([]);
              }
 
 
@@ -242,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const clickActions = {
                  '.training-check-btn': () => this.checkAnswer(),
-                 // '#stop-music-button': () => this.stopAllMusic(), // Видалено
                  '#back-to-my-profile-btn': () => this.navigateTo('profile-screen')
             };
             for (const selector in clickActions) {
@@ -264,15 +266,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.renderVolumeSlider();
                     break;
                 case 'lecture-selection-screen':
-                    this.renderLectureSelection(); // Рендеримо кнопки
-                    this.showLectureButtons(); // Показуємо їх
+                    this.renderLectureSelection();
+                    this.showLectureButtons();
                     const searchInput = activeScreen.querySelector('#global-search-input');
                     if (searchInput && searchInput.value.length > 0) {
                         this.hideLectureButtons();
-                        // Якщо повернулись на екран з текстом пошуку, виконуємо пошук знову
                         this.handleGlobalSearch(searchInput.value);
                     } else {
-                        this.renderSearchResults([]); // Очищуємо результати
+                        this.renderSearchResults([]);
                     }
                     break;
                 case 'dictionary-view-screen':
@@ -306,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultsContainer = document.getElementById('global-search-results');
             if (container) container.style.display = 'none';
             if (actions) actions.style.display = 'none';
-            if (resultsContainer) resultsContainer.style.display = 'flex'; // Показуємо результати
+            if (resultsContainer) resultsContainer.style.display = 'flex';
         },
 
         showLectureButtons() {
@@ -315,12 +316,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultsContainer = document.getElementById('global-search-results');
             if (container) container.style.display = 'grid';
             if (actions) actions.style.display = 'block';
-            if (resultsContainer) resultsContainer.style.display = 'none'; // Ховаємо результати
+            if (resultsContainer) resultsContainer.style.display = 'none';
         },
 
-        // --- Оновлена функція глобального пошуку ---
         async handleGlobalSearch(searchTerm) {
-             // Скасовуємо попередній запит, якщо він ще виконується
             if (this.state.globalSearchAbortController) {
                 this.state.globalSearchAbortController.abort();
             }
@@ -331,48 +330,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ term: searchTerm }),
-                    signal: this.state.globalSearchAbortController.signal // Передаємо сигнал для скасування
+                    signal: this.state.globalSearchAbortController.signal
                 });
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const results = await response.json();
-                this.renderSearchResults(results); // Відображаємо результати
+                this.renderSearchResults(results);
             } catch (error) {
                  if (error.name === 'AbortError') {
-                     console.log('Search request aborted'); // Це нормально при швидкому введенні
+                     console.log('Search request aborted');
                  } else {
                      console.error("Помилка глобального пошуку:", error);
-                     this.renderSearchResults([]); // Показуємо порожній результат у разі помилки
+                     this.renderSearchResults([]);
                  }
             } finally {
-                 this.state.globalSearchAbortController = null; // Очищуємо контролер
+                 this.state.globalSearchAbortController = null;
             }
         },
 
-         // --- Нова функція для відображення результатів глобального пошуку ---
         renderSearchResults(results) {
             const container = document.getElementById('global-search-results');
             if (!container) return;
-            container.innerHTML = ''; // Очищуємо попередні результати
+            container.innerHTML = '';
 
             if (results.length === 0) {
-                 // Можна додати повідомлення "Нічого не знайдено"
-                 // container.innerHTML = '<p>Нічого не знайдено.</p>';
                  return;
             }
 
             const langKey = this.state.currentLang.toUpperCase();
             results.forEach((word, index) => {
                 const item = document.createElement('div');
-                item.className = 'dict-item'; // Використовуємо той же стиль, що й у словнику
-                // Додаємо номер лекції до результату
+                item.className = 'dict-item';
                 const lectureLabel = word.lecture === 0 ? (this.state.texts[this.state.currentLang]?.notebook_lecture || 'Записник') : `L${word.lecture}`;
                 item.innerHTML = `<span class="search-result-lecture">[${lectureLabel}]</span> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                 container.appendChild(item);
             });
         },
-        // --- Кінець функцій пошуку ---
 
         displayMacanEasterEgg() {
             let display = document.getElementById('macan-easter-egg-display');
@@ -850,7 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
              const container = document.getElementById('volume-slider-container');
              if (!container) return;
 
-             container.style.display = 'block'; // Завжди видимий
+             container.style.display = 'block';
 
              const savedVolume = parseFloat(localStorage.getItem('volumeLevel') || '1');
 
@@ -907,21 +901,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
-                button.className = 'btn btn-lecture'; // Використовуємо новий базовий клас
+                button.className = 'btn btn-lecture';
                 button.dataset.action = 'select-lecture';
                 button.dataset.lecture = lectureNum;
-                button.dataset.lectureTitle = lectureNum; // Зберігаємо для тексту
+                button.dataset.lectureTitle = lectureNum;
                 container.appendChild(button);
             });
 
             if (this.state.viewMode === 'training') {
                 const startBtn = document.createElement('button');
-                startBtn.className = 'btn btn-start-training'; // Нові класи
+                startBtn.className = 'btn btn-start-training';
                 startBtn.dataset.action = 'start-selected-lectures-training';
                 startBtn.dataset.i18n = 'start_training';
                 actionsContainer.appendChild(startBtn);
             }
-            this.updateAllTexts(); // Оновлюємо текст кнопок
+            this.updateAllTexts();
         },
 
 
@@ -936,14 +930,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const lectureNum = this.state.selectedLectureForView;
             if (lectureNum === null) return;
 
-            // Перевіряємо, чи слова вже завантажені
             let words = this.state.loadedWords[lectureNum];
             if (!words) {
                 words = await this.loadWordsForLectures([lectureNum]);
-                this.state.loadedWords[lectureNum] = words; // Кешуємо слова
+                this.state.loadedWords[lectureNum] = words;
             }
 
-            this.filterDictionaryView(''); // Відображаємо всі слова
+            this.filterDictionaryView('');
         },
 
 
@@ -1142,24 +1135,32 @@ document.addEventListener('DOMContentLoaded', () => {
             return { level, progress: xp - startXp, needed };
         },
 
+        // Updated getRank to use new thresholds
         getRank(level) {
-            const RANKS = { 1: "🥉", 6: "🥈", 16: "🥇", 31: "🏆", 51: "💎" };
-            const NAMES = { 1: "Nováček", 6: "Učedník", 16: "Znalec", 31: "Mistr", 51: "Polyglot" };
-            let rankEmoji = "🥉", rankName = "Nováček";
+            let rankEmoji = RANKS[1]; // Default to first rank
+            let rankName = NAMES[1];
+            // Find the highest rank the user has achieved
             for (const lvl in RANKS) {
                 if (level >= parseInt(lvl, 10)) {
                     rankEmoji = RANKS[lvl];
                     rankName = NAMES[lvl];
+                } else {
+                    break; // Stop checking once level is lower than rank requirement
                 }
             }
             return { emoji: rankEmoji, name: rankName };
         },
 
+
          playMusic(eggName) {
+            // Перевірка чи ми не в чужому профілі (для іконок пасхалок)
             const isViewingOtherProfile = document.getElementById('view-profile-screen-active');
-            const isProfileEggIcon = event?.target?.closest('#easter-egg-icons');
+            const clickedElement = event?.target; // Get the element that was clicked
+             // Check if the click happened inside the easter egg icon container
+             const isProfileEggIcon = clickedElement?.closest('#easter-egg-icons');
+
             if (isViewingOtherProfile && isProfileEggIcon) {
-                return;
+                return; // Блокуємо активацію з чужого профілю
             }
 
             const newPlayer = this.elements.audio[eggName];
@@ -1186,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
              if (document.getElementById('settings-screen-active')) {
-                 this.renderVolumeSlider();
+                 this.renderVolumeSlider(); // Оновлюємо, щоб показати
              }
 
             this.startParticleRain(eggName);
@@ -1216,7 +1217,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
              if (document.getElementById('settings-screen-active')) {
-                 this.renderVolumeSlider(); // Перерендеримо, щоб він зник (через display: none)
+                 this.renderVolumeSlider(); // Оновлюємо, щоб сховати
              }
 
             this.stopParticleRain();
@@ -1237,7 +1238,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         updateEasterEggIcon(eggName) {
-             const currentScreen = document.querySelector('.screen.entering, .screen:not(.exiting)'); // Шукаємо активний або той, що з'являється
+             const currentScreen = document.querySelector('.screen.entering, .screen:not(.exiting)');
              if (currentScreen) {
                  const profileIcon = currentScreen.querySelector(`#easter-egg-icons .easter-egg-icon[data-egg="${eggName}"]`);
                   if (profileIcon) {
