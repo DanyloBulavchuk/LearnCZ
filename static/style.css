@@ -132,6 +132,7 @@ html.light-theme #lang-options { background-color: #fff; border-color: var(--bor
     filter: none; /* Завжди кольорова тут */
     margin-top: 5px; /* Невеликий відступ зверху */
 }
+#redstone-easter-egg.found { /* Додатковий стиль для знайденої, якщо знадобиться */ }
 #redstone-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -534,6 +535,13 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     width: 90%;
     max-width: 250px;
 }
+#profile-screen .back-button { /* Стиль кнопки "Назад" тільки для профілю */
+     position: absolute; /* Абсолютне позиціонування відносно .screen */
+     bottom: 10px; /* Відступ знизу */
+     left: 50%;
+     transform: translateX(-50%);
+}
+
 .profile-actions {
     display: flex;
     gap: 10px;
@@ -563,7 +571,7 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     align-items: center;
     justify-content: flex-start; /* Вирівнювання по верху */
     padding-top: 20px;
-    gap: 30px; /* Збільшили відстань між елементами */
+    gap: 30px; /* Відстань між елементами */
     display: flex;
     flex-direction: column;
 }
@@ -658,6 +666,7 @@ html.light-theme .slider-track {
     filter: none; /* Завжди кольорова тут */
     margin: 0 auto; /* Центрування без зайвих відступів */
 }
+#gold-easter-egg.found { }
 #gold-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -707,6 +716,7 @@ html.light-theme .dict-item b { color: #777; }
     transition: transform 0.2s, filter 0.3s;
     filter: none; /* Завжди кольорова тут */
 }
+#lazurit-easter-egg.found { }
 #lazurit-easter-egg:hover {
     transform: scale(1.15);
 }
@@ -796,19 +806,17 @@ html.light-theme .result-item.incorrect { background-color: #fed7d7; }
 .diff-incorrect { color: var(--danger-color); text-decoration: line-through; }
 
 /* --- MUSIC, EASTER EGGS, PARTICLES --- */
-/* Повзунок гучності тепер позиціонується всередині #settings-screen */
+/* Стилі для повзунка гучності в налаштуваннях */
 #volume-slider-container {
     width: 100%;
-    /* max-width: 350px; Змінено на: */
-    max-width: 300px; /* Тепер ширина контейнера = ширині повзунка */
-    display: block; /* Залишаємо видимим за замовчуванням */
-    margin-top: 10px;
+    max-width: 300px; /* Задали ширину контейнеру */
+    display: block; /* Завжди видимий */
+    margin: 10px auto 0 auto; /* Центруємо сам контейнер */
 }
 #volume-slider-settings {
-    width: 100%;
-    /* max-width: 300px; Видалено - успадковує від контейнера */
-    display: block;
-    margin: 0 auto; /* Центруємо сам повзунок */
+    width: 100%; /* Повзунок займає всю ширину контейнера */
+    /* display: block; Видалено - не потрібно */
+    /* margin: 0 auto; Видалено - контейнер вже відцентрований */
     cursor: pointer;
     -webkit-appearance: none;
     appearance: none;
@@ -964,6 +972,8 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 
     button, .glow-on-hover { width: 90%; max-width: 320px; }
     .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; width: 90%; max-width: 250px; }
+    #profile-screen .back-button { position: static; transform: none; margin-top: 20px; } /* Повертаємо нормальне позиціонування на мобільних */
+
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }
     .logo { font-size: 20px; position: static; transform: none;}
@@ -978,7 +988,6 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 
     /* Гарантуємо, що кнопка Назад видима */
     /* Видаляємо margin-top: auto для всіх кнопок "Назад" на мобільних */
-    /* #profile-screen .back-button Видалено */
     #settings-screen .back-button,
     #results-screen .back-button,
     .view-profile-actions {
