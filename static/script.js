@@ -446,16 +446,23 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '';
             // Отримуємо список слів *без* Macan для правильної нумерації
             const regularWordsInLecture = words.filter(w => !w.is_macan_easter_egg);
+            const macanWord = words.find(w => w.is_macan_easter_egg); // Знаходимо об'єкт Macan
 
-            filteredWords.forEach((word) => { // Видаляємо невикористаний index
+            filteredWords.forEach((word) => {
                 const item = document.createElement('div');
                 item.className = 'dict-item';
 
                 if (word.is_macan_easter_egg) {
-                    item.classList.add('macan-egg-item');
+                    item.classList.add('macan-egg-item'); // Додаємо клас для кліку
                     item.dataset.action = 'activate-macan-egg'; // Додаємо data-action для обробника
-                    // Формуємо рядок для Macan
-                    item.innerHTML = `<span>${word.CZ} - ${word.UA} - ${word.RU} - ${word.EN}</span>`;
+
+                    // Розраховуємо позицію Macan (50 або остання)
+                    const macanPosition = Math.min(49, regularWordsInLecture.length);
+
+                    // Формуємо рядок як для звичайного слова
+                    // Використовуємо UA, RU, EN з об'єкта macanWord
+                    const translationString = `${macanWord.UA}, ${macanWord.RU}, ${macanWord.EN}`;
+                    item.innerHTML = `<b>${macanPosition + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${translationString}</span>`;
                 } else {
                     // Рахуємо індекс *тільки* серед звичайних слів
                     const displayIndex = regularWordsInLecture.indexOf(word);

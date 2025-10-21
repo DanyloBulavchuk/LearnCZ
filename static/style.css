@@ -834,20 +834,6 @@ html.light-theme .dict-item { border: 1px solid var(--border-color); }
 html.light-theme .dict-item b { color: #777; }
 .cz-word { font-weight: bold; }
 
-.dict-item.macan-egg-item {
-    cursor: pointer;
-    text-align: center;
-    animation: macan-glow 2s infinite alternate;
-}
-.dict-item.macan-egg-item:hover {
-    background-color: var(--accent-color-light);
-}
-@keyframes macan-glow {
-    from { box-shadow: 0 0 10px var(--shadow-color); }
-    to { box-shadow: 0 0 30px var(--accent-color-glow), 0 0 20px var(--accent-color); }
-}
-
-
 #lazurit-easter-egg-container {
     display: flex;
     justify-content: center;
@@ -1150,9 +1136,10 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     #results-screen, #lecture-selection-screen, #dictionary-view-screen,
     #direction-selection-screen, #profile-screen, #view-profile-screen {
         justify-content: flex-start;
-        overflow-y: auto;
+        overflow-y: auto; /* Дозволяє прокрутку, якщо контент не влазить */
         padding-top: 20px;
-        padding-bottom: 20px;
+        padding-bottom: 80px; /* Додаємо відступ знизу, щоб кнопки не ховались за інтерфейсом ОС */
+        height: calc(100% - 20px); /* Обмежуємо висоту для роботи overflow */
     }
 
     .training-word { font-size: 2rem; }
@@ -1175,19 +1162,24 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
         margin-bottom: 10px;
     }
      .view-profile-actions { margin-bottom: 10px; }
-     
+
+    /* Оновлені стилі для кнопок профілю на мобільних */
     .profile-actions {
-        margin-top: 30px; /* Замінюємо 'auto' на фіксований відступ */
-        padding-top: 0;
-        flex-direction: column; /* Ставимо кнопки одну під одною */
-        align-items: center; /* Центруємо їх */
-        gap: 15px; /* Додаємо відступ між ними */
+        margin-top: 0; /* Прибираємо margin-top: auto */
+        padding-top: 20px; /* Додаємо внутрішній відступ зверху */
+        flex-direction: row; /* Розміщуємо в ряд */
+        flex-wrap: wrap; /* Дозволяємо перенос */
+        justify-content: center; /* Центруємо кнопки */
+        gap: 15px;
     }
 
     .profile-actions button {
-        width: 90%; /* Робимо їх ширину як у інших кнопок */
-        max-width: 320px;
+        width: auto; /* Дозволяємо кнопкам мати різну ширину */
+        max-width: calc(50% - 10px); /* Приблизно дві кнопки в ряд */
+        flex-grow: 1; /* Дозволяємо розтягуватися */
+        min-width: 140px; /* Мінімальна ширина для зручності */
     }
+
 
     #macan-easter-egg-display {
         width: 200px;
@@ -1208,4 +1200,14 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     button.char-btn, button.shift-btn { width: 30px; height: 30px; font-size: 14px; }
     button.shift-btn { width: 70px; }
     .back-button { padding: 10px; font-size: 14px; }
+
+    /* На дуже малих екранах кнопки профілю стають одна під одною */
+    .profile-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    .profile-actions button {
+        max-width: 320px; /* Повертаємо максимальну ширину */
+        width: 90%;
+    }
 }
