@@ -126,7 +126,6 @@
 
                     <div class="profile-actions">
                         <button class="btn btn-secondary" data-screen="settings-screen" data-i18n="settings"></button>
-                        <button class="btn btn-danger" data-action="logout" data-i18n="logout"></button>
                     </div>
                 </div>
             </div>
@@ -165,21 +164,30 @@
         <div id="settings-screen">
              <h1 class="title" data-i18n="settings_title"></h1>
 
+             <h2 class="settings-header" data-i18n="settings_security"></h2>
              <form id="settings-form">
-                <h2 data-i18n="change_pin"></h2>
                 <input type="password" id="new-pin" data-i18n-placeholder="new_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
                 <button type="submit" class="btn" data-i18n="save_changes"></button>
              </form>
 
+             <div class="settings-divider"></div>
+             
+             <h2 class="settings-header" data-i18n="settings_profile"></h2>
              <div id="gender-slider-container">
                  </div>
 
+             <div class="settings-divider"></div>
+
+             <h2 class="settings-header" data-i18n="settings_sound"></h2>
              <div id="volume-slider-container">
                  </div>
 
-             <button class="btn btn-secondary back-button" data-screen="profile-screen" data-i18n="back"></button>
-
              <div id="gold-easter-egg" data-egg="gold"></div>
+             
+             <div class="settings-divider"></div>
+
+             <button class="btn btn-danger" data-action="logout" data-i18n="logout"></button>
+             <button class="btn btn-secondary back-button" data-screen="profile-screen" data-i18n="back"></button>
         </div>
 
         <div id="lecture-selection-screen">
@@ -233,6 +241,11 @@
             <div id="results-summary"></div>
             <div id="results-list" class="scrollable"></div>
             <button class="btn back-button" data-screen="main-menu-screen" data-i18n="back_to_menu"></button>
+        </div>
+        
+        <div id="macan-easter-egg-screen">
+            <div id="macan-easter-egg-display"></div>
+            <button class="btn btn-secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
     </div>
 

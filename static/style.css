@@ -444,8 +444,16 @@ html.light-theme .leaderboard-item:hover:not(.current-user) { background-color: 
     to { filter: drop-shadow(0 0 8px gold); }
 }
 
-.lb-xp { color: #FFD700; font-weight: bold; white-space: nowrap; }
-html.light-theme .lb-xp { color: #d69e2e; }
+.lb-xp { 
+    font-weight: bold; 
+    white-space: nowrap;
+    margin-left: auto;
+    padding-left: 10px;
+}
+.leaderboard-item .lb-xp {
+    color: #FFD700;
+}
+html.light-theme .leaderboard-item .lb-xp { color: #d69e2e; }
 
 #avatar-container {
     display: flex;
@@ -616,13 +624,6 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     width: 90%;
     max-width: 250px;
 }
-/* Видаляємо позиціонування кнопки Назад для профілю */
-/* #profile-screen .back-button {
-     position: absolute;
-     bottom: 10px;
-     left: 50%;
-     transform: translateX(-50%);
-} */
 
 .profile-actions {
     display: flex;
@@ -652,32 +653,47 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     align-items: center;
     justify-content: flex-start;
     padding-top: 20px;
-    gap: 30px; /* Збільшили відстань */
+    gap: 15px;
     display: flex;
     flex-direction: column;
 }
-#settings-screen > h1,
-#settings-screen > form > h2 {
-    margin-bottom: 0;
-}
+
 #settings-screen > form,
 #settings-screen > #gender-slider-container,
 #settings-screen > #volume-slider-container,
-/* #settings-screen > #stop-music-button, Видалено */
-#settings-screen > .back-button,
-#settings-screen > #gold-easter-egg {
+#settings-screen > #gold-easter-egg,
+#settings-screen > .btn-danger {
     width: 100%;
     max-width: 350px;
 }
 #settings-screen > .back-button {
-    margin-top: auto;
-    margin-bottom: 10px;
+    margin-top: 10px;
+    max-width: 350px;
 }
 
+.settings-header {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    width: 100%;
+    max-width: 350px;
+    text-align: left;
+}
 
 .settings-divider {
-    display: none;
+    width: 100%;
+    max-width: 350px;
+    height: 1px;
+    background-color: rgba(159, 80, 255, 0.3);
+    margin: 15px 0;
 }
+html.light-theme .settings-divider {
+    background-color: var(--border-color);
+}
+
 
 #gender-slider-container {
     display: flex;
@@ -807,6 +823,20 @@ html.light-theme .dict-item { border: 1px solid var(--border-color); }
 html.light-theme .dict-item b { color: #777; }
 .cz-word { font-weight: bold; }
 
+.dict-item.macan-egg-item {
+    cursor: pointer;
+    text-align: center;
+    animation: macan-glow 2s infinite alternate;
+}
+.dict-item.macan-egg-item:hover {
+    background-color: var(--accent-color-light);
+}
+@keyframes macan-glow {
+    from { box-shadow: 0 0 10px var(--shadow-color); }
+    to { box-shadow: 0 0 30px var(--accent-color-glow), 0 0 20px var(--accent-color); }
+}
+
+
 #lazurit-easter-egg-container {
     display: flex;
     justify-content: center;
@@ -834,6 +864,13 @@ html.light-theme .dict-item b { color: #777; }
 .training-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 600px; }
 .training-progress { font-size: 1.2rem; opacity: 0.8; font-weight: 400; }
 .training-word { font-size: 3.5rem; font-weight: 900; color: #FFD700; text-align: center; }
+.training-word .adj-marker {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--text-color);
+    opacity: 0.6;
+    margin-left: 5px;
+}
 html.light-theme .training-word { color: var(--accent-color); }
 html:not(.light-theme) .training-word {
     text-shadow: 0 0 10px #ffd700a1;
@@ -1062,6 +1099,24 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     }
 }
 
+#macan-easter-egg-screen {
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+}
+#macan-easter-egg-display {
+    width: 300px;
+    height: 300px;
+    background-image: url(/static/macan.png);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    flex-shrink: 0;
+}
+#macan-easter-egg-screen .back-button {
+    margin-top: 0;
+}
+
 
 /* Mobile Adaptivity */
 @media (max-width: 768px) {
@@ -1079,8 +1134,6 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     button.btn, .glow-on-hover { width: 90%; max-width: 320px; } /* Використовуємо .btn */
     .btn { padding: 14px 25px; font-size: 16px; }
     .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; width: 90%; max-width: 250px; }
-    /* Видаляємо абсолютне позиціонування кнопки Назад в профілі на мобільних */
-    /* #profile-screen .back-button { position: static; transform: none; margin-top: 20px; } */
 
     #training-screen, #login-screen, #register-screen, #settings-screen,
     #results-screen, #lecture-selection-screen, #dictionary-view-screen,
@@ -1111,23 +1164,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
         margin-bottom: 10px;
     }
      .view-profile-actions { margin-bottom: 10px; }
-}
-
-@media (max-width: 480px) {
-    .title { font-size: 1.6rem; }
-    .panel { padding: 15px; }
-    .left-panel { min-width: 0; }
-    .lb-name { max-width: 120px; }
-    .lb-xp { font-size: 0.9rem; }
-    #profile-details .username, #profile-details-view .username { font-size: 2.2rem; }
-    .lecture-grid { grid-template-columns: 1fr; }
-    .training-word { font-size: 1.8rem; }
-    button.char-btn, button.shift-btn { width: 30px; height: 30px; font-size: 14px; }
-    button.shift-btn { width: 70px; }
-    .back-button { padding: 10px; font-size: 14px; }
-}
-
-@media (max-width: 768px) {
+     
     .profile-actions {
         margin-top: 30px; /* Замінюємо 'auto' на фіксований відступ */
         padding-top: 0;
@@ -1140,4 +1177,24 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
         width: 90%; /* Робимо їх ширину як у інших кнопок */
         max-width: 320px;
     }
+
+    #macan-easter-egg-display {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .title { font-size: 1.6rem; }
+    .panel { padding: 15px; }
+    .left-panel { min-width: 0; }
+    .lb-name { max-width: 100px; } /* Зменшуємо, щоб дати місце XP */
+    .lb-xp { font-size: 0.9rem; }
+    #profile-details .username, #profile-details-view .username { font-size: 2.2rem; }
+    .lecture-grid { grid-template-columns: 1fr; }
+    .training-word { font-size: 1.8rem; }
+    .training-word .adj-marker { font-size: 1rem; }
+    button.char-btn, button.shift-btn { width: 30px; height: 30px; font-size: 14px; }
+    button.shift-btn { width: 70px; }
+    .back-button { padding: 10px; font-size: 14px; }
 }

@@ -81,7 +81,8 @@ TEXTS = {
         'stop_music_button_text': "ЗУПИНИТИ МУЗИКУ", 'easter_eggs_title': "Пасхалки",
         'search_word': "Пошук слова...", 'view_profile_title': "Профіль користувача",
         'back_to_my_profile': "Повернутися у мій профіль",
-        'global_search_placeholder': "Пошук по всіх словах..."
+        'global_search_placeholder': "Пошук по всіх словах...",
+        'settings_security': "Безпека", 'settings_profile': "Профіль", 'settings_sound': "Звук"
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -108,7 +109,8 @@ TEXTS = {
         'stop_music_button_text': "STOP MUSIC", 'easter_eggs_title': "Easter Eggs",
         'search_word': "Search word...", 'view_profile_title': "User Profile",
         'back_to_my_profile': "Back to My Profile",
-        'global_search_placeholder': "Search all words..."
+        'global_search_placeholder': "Search all words...",
+        'settings_security': "Security", 'settings_profile': "Profile", 'settings_sound': "Sound"
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -135,7 +137,8 @@ TEXTS = {
         'stop_music_button_text': "ОСТАНОВИТЬ МУЗЫКУ", 'easter_eggs_title': "Пасхалки",
         'search_word': "Поиск слова...", 'view_profile_title': "Профиль пользователя",
         'back_to_my_profile': "Вернуться в мой профиль",
-        'global_search_placeholder': "Поиск по всем словам..."
+        'global_search_placeholder': "Поиск по всем словам...",
+        'settings_security': "Безопасность", 'settings_profile': "Профиль", 'settings_sound': "Звук"
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"
@@ -168,6 +171,7 @@ def load_all_words():
         except Exception as e:
             print(f"Помилка завантаження {filename}: {e}")
 
+    notebook_df = None
     if 'notebook.xlsx' in all_files:
         filename = 'notebook.xlsx'
         try:
@@ -177,6 +181,7 @@ def load_all_words():
                 df.columns = ['CZ', 'UA', 'RU', 'EN']
                 df.dropna(subset=['CZ', 'UA'], inplace=True)
                 df['lecture'] = 0
+                notebook_df = df
                 all_data.append(df)
         except Exception as e:
             print(f"Помилка завантаження {filename}: {e}")
@@ -186,7 +191,33 @@ def load_all_words():
 
     full_df = pd.concat(all_data, ignore_index=True)
     full_df.fillna('', inplace=True)
-    return full_df.to_dict('records')
+    
+    all_records = full_df.to_dict('records')
+
+    # --- Нова логіка для Завдання №3 (Macan) ---
+    notebook_words = [w for w in all_records if w['lecture'] == 0]
+    other_words = [w for w in all_records if w['lecture'] != 0]
+
+    macan_word = {
+        'CZ': 'Macan', 
+        'UA': 'macan', 
+        'RU': 'MACAN', 
+        'EN': 'МАКАН', 
+        'lecture': 0, 
+        'is_macan_easter_egg': True 
+    }
+    
+    insert_pos = 49
+    
+    if insert_pos > len(notebook_words):
+        insert_pos = len(notebook_words)
+        
+    notebook_words.insert(insert_pos, macan_word)
+    
+    final_word_list = other_words + notebook_words
+    # --- Кінець нової логіки ---
+
+    return final_word_list
 
 def load_avatars():
     avatars = {"M": [], "F": []}
@@ -347,6 +378,9 @@ def global_search():
 
     results = []
     for word in ALL_WORDS:
+        if word.get('is_macan_easter_egg', False):
+            continue
+            
         if (search_term in word.get('CZ', '').lower() or
             search_term in word.get('UA', '').lower() or
             search_term in word.get('RU', '').lower() or
