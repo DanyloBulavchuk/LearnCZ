@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
             globalSearchAbortController: null,
             globalSearchTimeout: null,
 
+            isTransitioning: false,
+
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
                 direction: '', selectedLectures: [],
@@ -69,6 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         addEventListeners() {
             document.body.addEventListener('click', (e) => {
+                if (this.state.isTransitioning) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn, .leaderboard-item');
 
                 if (!target) {
@@ -189,6 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         navigateTo(screenId) {
+            if (this.state.isTransitioning) return;
+            this.state.isTransitioning = true;
+
             if (this.elements.profileButton) {
                 this.elements.profileButton.disabled = (screenId === 'profile-screen' || screenId === 'view-profile-screen');
             }
@@ -203,12 +214,26 @@ document.addEventListener('DOMContentLoaded', () => {
                  this.renderSearchResults([]);
              }
 
+            let oldScreenRemoved = false;
+            let newScreenEntered = false;
+
+            const checkTransitionDone = () => {
+                if (oldScreenRemoved && newScreenEntered) {
+                    this.state.isTransitioning = false;
+                }
+            };
 
             const oldScreen = this.elements.appContainer.querySelector('.screen');
             if (oldScreen) {
                 oldScreen.classList.remove('entering');
                 oldScreen.classList.add('exiting');
-                oldScreen.addEventListener('animationend', () => oldScreen.remove(), { once: true });
+                oldScreen.addEventListener('animationend', () => {
+                    oldScreen.remove();
+                    oldScreenRemoved = true;
+                    checkTransitionDone();
+                }, { once: true });
+            } else {
+                oldScreenRemoved = true;
             }
 
 
@@ -218,9 +243,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 newScreen.className = 'screen entering';
                 newScreen.id = `${screenId}-active`;
                 newScreen.innerHTML = template.innerHTML;
-                this.elements.appContainer.appendChild(newScreen);
+                
+                newScreen.addEventListener('animationend', (e) => {
+                    if (e.animationName === 'fadeIn') {
+                        newScreenEntered = true;
+                        checkTransitionDone();
+                    }
+                }, { once: true });
 
+                this.elements.appContainer.appendChild(newScreen);
                 this.onScreenLoad(screenId);
+            } else {
+                newScreenEntered = true;
+                this.state.isTransitioning = false;
             }
         },
 
@@ -501,6 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async handleViewUserProfile(username) {
+            if (this.state.isTransitioning) return;
+            this.state.isTransitioning = true;
+
             try {
                 const response = await fetch(`/api/user/${username}`);
                 if (response.ok) {
@@ -511,10 +549,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.error('Failed to load user profile:', await response.text());
                     alert('Не вдалося завантажити профіль користувача.');
+                    this.state.isTransitioning = false;
                 }
             } catch (e) {
                 console.error('Error fetching user profile:', e);
                 alert('Помилка при завантаженні профілю.');
+                this.state.isTransitioning = false;
             }
         },
 

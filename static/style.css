@@ -347,10 +347,10 @@ html.light-theme .btn.btn-danger:hover {
 }
 
 /* Спеціальні кнопки (Shift, символи) */
-.char-btn, .shift-btn {
+button.char-btn, button.shift-btn {
     min-width: 45px; width: 45px; height: 45px; padding: 0; font-size: 20px;
 }
-.shift-btn { min-width: 100px; width: 100px; }
+button.shift-btn { min-width: 100px; width: 100px; }
 
 /* Кнопка старту тренування */
 .btn-start-training {
@@ -852,8 +852,8 @@ html:not(.light-theme) .training-word {
 
 #special-chars-keyboard { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 20px; }
 .keyboard-row { display: flex; justify-content: center; gap: 5px; flex-wrap: wrap; }
-.char-btn, .shift-btn { min-width: 45px; width: 45px; height: 45px; padding: 0; font-size: 20px; }
-.shift-btn { min-width: 100px; width: 100px; }
+button.char-btn, button.shift-btn { min-width: 45px; width: 45px; height: 45px; padding: 0; font-size: 20px; }
+button.shift-btn { min-width: 100px; width: 100px; }
 
 /* Theme Switcher */
 .theme-switch-wrapper {
@@ -1082,7 +1082,9 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     /* Видаляємо абсолютне позиціонування кнопки Назад в профілі на мобільних */
     /* #profile-screen .back-button { position: static; transform: none; margin-top: 20px; } */
 
-    #training-screen, #login-screen, #register-screen, #settings-screen {
+    #training-screen, #login-screen, #register-screen, #settings-screen,
+    #results-screen, #lecture-selection-screen, #dictionary-view-screen,
+    #direction-selection-screen, #profile-screen, #view-profile-screen {
         justify-content: flex-start;
         overflow-y: auto;
         padding-top: 20px;
@@ -1092,8 +1094,8 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }
     .logo { font-size: 20px; position: static; transform: none;}
-    .char-btn, .shift-btn { width: 35px; height: 35px; font-size: 16px; }
-    .shift-btn { width: 80px; }
+    button.char-btn, button.shift-btn { width: 35px; height: 35px; font-size: 16px; }
+    button.shift-btn { width: 80px; }
     #music-control-button {
          width: 90px;
          height: 90px;
@@ -1120,7 +1122,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     #profile-details .username, #profile-details-view .username { font-size: 2.2rem; }
     .lecture-grid { grid-template-columns: 1fr; }
     .training-word { font-size: 1.8rem; }
-    .char-btn, .shift-btn { width: 30px; height: 30px; font-size: 14px; }
-    .shift-btn { width: 70px; }
+    button.char-btn, button.shift-btn { width: 30px; height: 30px; font-size: 14px; }
+    button.shift-btn { width: 70px; }
     .back-button { padding: 10px; font-size: 14px; }
 }
