@@ -650,27 +650,31 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 
 
 #settings-screen {
-    align-items: center;
+    align-items: center; /* Центрує дочірні елементи як flex-items */
     justify-content: flex-start;
     padding-top: 20px;
     gap: 15px;
     display: flex;
     flex-direction: column;
+    width: 100%; /* Додаємо, щоб контейнер займав доступну ширину */
 }
 
+/* Центруємо конкретні блоки всередині #settings-screen */
 #settings-screen > form,
 #settings-screen > #gender-slider-container,
 #settings-screen > #volume-slider-container,
 #settings-screen > #gold-easter-egg,
-#settings-screen > .btn-danger {
+#settings-screen > .settings-divider,
+#settings-screen > .settings-header,
+#settings-screen > .btn-danger,
+#settings-screen > .back-button {
     width: 100%;
     max-width: 350px;
-}
-#settings-screen > .back-button {
-    margin-top: 10px;
-    max-width: 350px;
+    margin-left: auto; /* Додаємо авто-відступи */
+    margin-right: auto;/* Додаємо авто-відступи */
 }
 
+/* Залишаємо текст заголовків вирівняним по лівому краю всередині їх блоку */
 .settings-header {
     font-size: 1.2rem;
     font-weight: bold;
@@ -678,20 +682,27 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     opacity: 0.8;
     margin-top: 10px;
     margin-bottom: 5px;
-    width: 100%;
-    max-width: 350px;
-    text-align: left;
+    text-align: left; /* Текст зліва */
 }
 
+/* Стилі для роздільника */
 .settings-divider {
-    width: 100%;
-    max-width: 350px;
     height: 1px;
     background-color: rgba(159, 80, 255, 0.3);
-    margin: 15px 0;
+    margin-top: 15px;    /* Змінено з margin: 15px 0; */
+    margin-bottom: 15px; /* Змінено з margin: 15px 0; */
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
+}
+
+
+/* Додаткові відступи для кнопок внизу */
+#settings-screen > .btn-danger {
+     margin-top: 20px; /* Відступ над кнопкою Вийти */
+}
+#settings-screen > .back-button {
+    margin-top: 10px; /* Відступ над кнопкою Назад */
 }
 
 

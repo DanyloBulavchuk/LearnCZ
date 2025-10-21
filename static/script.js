@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("Transition in progress, click blocked."); // Debug log
                     return;
                 }
-                
+
                 const target = e.target.closest('[data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn, .leaderboard-item, .macan-egg-item');
 
                 if (!target) {
@@ -246,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newScreen.className = 'screen entering';
                 newScreen.id = `${screenId}-active`;
                 newScreen.innerHTML = template.innerHTML;
-                
+
                 newScreen.addEventListener('animationend', (e) => {
                     // Переконуємося, що це саме анімація появи 'fadeIn'
                     if (e.animationName === 'fadeIn') {
@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         displayMacanEasterEgg() {
-           // Ця функція більше не потрібна для показу, лише для стилізації
+           // Ця функція більше не потрібна для показу, використовується лише стилізація
         },
 
         hideMacanEasterEgg() {
@@ -434,22 +434,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const term = searchTerm.toLowerCase();
 
             const filteredWords = words.filter(word => {
-                if (word.is_macan_easter_egg) return true; // Завжди показуємо Macan
+                // Завжди показуємо Macan, якщо він є в поточній лекції (lectureNum === 0)
+                if (word.is_macan_easter_egg && lectureNum === 0) return true;
+                // Не показуємо Macan в інших лекціях
+                if (word.is_macan_easter_egg && lectureNum !== 0) return false;
+                // Стандартна логіка фільтрації для інших слів
                 return word.CZ.toLowerCase().includes(term) ||
                        (word[langKey] || word.UA).toLowerCase().includes(term);
             });
 
             container.innerHTML = '';
-            filteredWords.forEach((word, index) => {
+            // Отримуємо список слів *без* Macan для правильної нумерації
+            const regularWordsInLecture = words.filter(w => !w.is_macan_easter_egg);
+
+            filteredWords.forEach((word) => { // Видаляємо невикористаний index
                 const item = document.createElement('div');
                 item.className = 'dict-item';
-                
+
                 if (word.is_macan_easter_egg) {
                     item.classList.add('macan-egg-item');
                     item.dataset.action = 'activate-macan-egg'; // Додаємо data-action для обробника
+                    // Формуємо рядок для Macan
                     item.innerHTML = `<span>${word.CZ} - ${word.UA} - ${word.RU} - ${word.EN}</span>`;
                 } else {
-                    const displayIndex = words.filter(w => !w.is_macan_easter_egg).indexOf(word); // Рахуємо індекс без Macan
+                    // Рахуємо індекс *тільки* серед звичайних слів
+                    const displayIndex = regularWordsInLecture.indexOf(word);
                     item.innerHTML = `<b>${displayIndex + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                 }
                 container.appendChild(item);
@@ -554,8 +563,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.renderVolumeSlider();
             }
             // Оновити словник, якщо він відкритий, щоб переклади оновилися
-            if (document.getElementById('dictionary-view-screen-active')) {
-                this.filterDictionaryView(document.getElementById('dict-search-input').value);
+            const dictInput = document.getElementById('dict-search-input');
+            if (document.getElementById('dictionary-view-screen-active') && dictInput) {
+                 this.filterDictionaryView(dictInput.value);
             }
         },
 
@@ -609,7 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { console.error("Could not load initial data:", e); }
         },
 
-        async loadWordsForLectures(lectureIds) {
+        async loadWordsForLectures(lectureIds, excludeMacan = false) {
             // Перетворюємо ID лекцій на числа, ігноруючи 'random'
             const numericLectureIds = lectureIds.filter(id => id !== 'random').map(id => parseInt(id, 10));
             const hasRandom = lectureIds.includes('random');
@@ -647,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Збираємо фінальний список слів для тренування
+            // Збираємо фінальний список слів
             let allWords = [];
             if (hasRandom) {
                 // Якщо обрано 'random', беремо всі слова звідти
@@ -658,8 +668,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     allWords.push(...(this.state.loadedWords[id] || []));
                 });
             }
-            // Виключаємо слово Macan з тренувань
-            allWords = allWords.filter(word => !word.is_macan_easter_egg);
+
+            // --- Зміна для Завдання №3 ---
+            // Виключаємо слово Macan, тільки якщо викликано з excludeMacan = true (з startTraining)
+            if (excludeMacan) {
+                allWords = allWords.filter(word => !word.is_macan_easter_egg);
+            }
+            // --- Кінець зміни ---
+
             return allWords;
         },
 
@@ -1005,6 +1021,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Завантажуємо слова, якщо їх ще немає в кеші
             let words = this.state.loadedWords[lectureNum];
             if (!words) {
+                // Викликаємо БЕЗ excludeMacan = true, щоб Macan був у словнику
                 words = await this.loadWordsForLectures([lectureNum]);
                 this.state.loadedWords[lectureNum] = words; // Зберігаємо в кеш
             }
@@ -1026,8 +1043,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 lectureIds = selectedLectures;
             }
 
-            // Завантажуємо (або беремо з кешу) слова для цих лекцій
-            wordsToTrain = await this.loadWordsForLectures(lectureIds);
+            // Завантажуємо (або беремо з кешу) слова, ВИКЛЮЧАЮЧИ Macan
+            wordsToTrain = await this.loadWordsForLectures(lectureIds, true);
 
             // Якщо слів немає, повідомляємо користувача
             if (wordsToTrain.length === 0) {
@@ -1038,12 +1055,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Перемішуємо слова
             wordsToTrain.sort(() => Math.random() - 0.5);
-            
+
             // Зберігаємо стан тренування
             this.state.currentTraining.words = wordsToTrain;
             this.state.currentTraining.index = 0;
             this.state.currentTraining.results = [];
-            
+
             // Переходимо на екран тренування
             this.navigateTo('training-screen');
         },
@@ -1051,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCurrentWord() {
             const screen = document.getElementById('training-screen-active');
             if (!screen) return;
-            
+
             // Якщо слова закінчилися, переходимо до результатів
             if (this.state.currentTraining.index >= this.state.currentTraining.words.length) {
                 this.navigateTo('results-screen');
@@ -1063,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const T = this.state.texts[this.state.currentLang];
             const { index, words, direction } = this.state.currentTraining;
             const wordData = words[index];
-            
+
             // Оновлюємо прогрес (Слово X з Y)
             screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
             const langKey = this.state.currentLang.toUpperCase();
@@ -1072,15 +1089,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const questionWordRaw = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
             // Видаляємо дужки для перевірки відповіді, але зберігаємо оригінал для показу (adj.)
             const questionWordClean = questionWordRaw.replace(/\s*\(.*?\)\s*/g, '').trim();
-            
+
             let displayHtml = questionWordClean; // Слово для показу
-            
+
             // --- Нова логіка для Завдання №6 ((adj.)) ---
+            // Додаємо маркер ТІЛЬКИ якщо переклад З мови НА чеську І слово містить (adj.)
             if (direction === 'lang_to_cz' && questionWordRaw.toLowerCase().includes('(adj.)')) {
                 displayHtml += ` <span class="adj-marker">(adj.)</span>`;
             }
             // --- Кінець нової логіки ---
-            
+
             screen.querySelector('.training-word').innerHTML = displayHtml; // Показуємо слово (з можливим маркером)
 
             // Готуємо поле вводу
@@ -1103,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const T = this.state.texts[this.state.currentLang];
             const langKey = this.state.currentLang.toUpperCase();
             const userAnswer = inputEl.value.trim();
-            
+
             // Якщо поле пусте, просимо ввести відповідь
             if (userAnswer === '') {
                 alert(T.field_cannot_be_empty);
@@ -1117,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
             // Розбиваємо на варіанти, якщо є коми/крапки з комою, і приводимо до нижнього регістру
             const correctAnswers = correctAnswersRaw.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s);
-            
+
             // Перевіряємо, чи є відповідь користувача серед правильних варіантів
             const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
 
@@ -1146,8 +1164,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Зберігаємо результат цього слова
             results.push({
                 question: (direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA)).replace(/\s*\(.*?\)\s*/g, '').trim(), // Питання без дужок
-                userAnswer, 
-                isCorrect, 
+                userAnswer,
+                isCorrect,
                 correctAnswer: correctAnswers[0], // Перший варіант правильної відповіді
                 xp_earned
             });
@@ -1183,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Показуємо загальний результат
             summaryEl.innerHTML = `Ваш результат: <b>${correctCount} з ${results.length}</b> (+${totalXpEarned} XP)`;
             listEl.innerHTML = ''; // Очищуємо список
-            
+
             // Виводимо деталі по кожному слову
             results.forEach((res, index) => {
                 const item = document.createElement('div');
@@ -1294,7 +1312,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
              // Блокуємо, якщо це іконка в чужому профілі
             if (isViewingOtherProfile && isProfileEggIcon) {
-                return; 
+                return;
             }
 
             const newPlayer = this.elements.audio[eggName];
@@ -1325,7 +1343,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Якщо ми в налаштуваннях, оновлюємо слайдер гучності
              if (document.getElementById('settings-screen-active')) {
-                 this.renderVolumeSlider(); 
+                 this.renderVolumeSlider();
              }
 
             // Запускаємо дощ з частинок
@@ -1361,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Оновлюємо слайдер гучності в налаштуваннях
              if (document.getElementById('settings-screen-active')) {
-                 this.renderVolumeSlider(); 
+                 this.renderVolumeSlider();
              }
 
             // Зупиняємо дощ
