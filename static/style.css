@@ -1077,9 +1077,17 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .avatar-arrow { width: 40px; height: 40px; line-height: 36px; font-size: 1.8rem; }
 
     button.btn, .glow-on-hover { width: 90%; max-width: 320px; } /* Використовуємо .btn */
+    .btn { padding: 14px 25px; font-size: 16px; }
     .back-button { padding: 12px; font-size: 16px; min-width: 200px; margin-top: 20px; margin-bottom: 10px; width: 90%; max-width: 250px; }
     /* Видаляємо абсолютне позиціонування кнопки Назад в профілі на мобільних */
     /* #profile-screen .back-button { position: static; transform: none; margin-top: 20px; } */
+
+    #training-screen, #login-screen, #register-screen, #settings-screen {
+        justify-content: flex-start;
+        overflow-y: auto;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
 
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }
@@ -1089,7 +1097,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     #music-control-button {
          width: 90px;
          height: 90px;
-         bottom: 70px;
+         bottom: 20px;
     }
 
     #settings-screen .back-button,

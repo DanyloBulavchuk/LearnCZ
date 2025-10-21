@@ -126,13 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
                      clearTimeout(this.state.globalSearchTimeout);
                      const searchTerm = target.value.trim();
 
-                     // Macan easter egg check
-                     if (searchTerm.toLowerCase() === 'macan') {
-                         this.displayMacanEasterEgg();
-                     } else {
-                         this.hideMacanEasterEgg();
-                     }
-
                      if (searchTerm.length > 0) {
                          this.hideLectureButtons();
                          this.state.globalSearchTimeout = setTimeout(() => {
@@ -144,8 +137,15 @@ document.addEventListener('DOMContentLoaded', () => {
                      }
                  }
                  else if (target.id === 'dict-search-input') {
-                     // Macan check removed from here
-                     this.filterDictionaryView(target.value);
+                     const searchTerm = target.value.trim();
+
+                     if (searchTerm.toLowerCase() === 'macan') {
+                         this.displayMacanEasterEgg();
+                     } else {
+                         this.hideMacanEasterEgg();
+                     }
+
+                     this.filterDictionaryView(searchTerm);
                  }
              });
 
