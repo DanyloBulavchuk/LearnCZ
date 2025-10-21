@@ -1126,3 +1126,18 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     button.shift-btn { width: 70px; }
     .back-button { padding: 10px; font-size: 14px; }
 }
+
+@media (max-width: 768px) {
+    .profile-actions {
+        margin-top: 30px; /* Замінюємо 'auto' на фіксований відступ */
+        padding-top: 0;
+        flex-direction: column; /* Ставимо кнопки одну під одною */
+        align-items: center; /* Центруємо їх */
+        gap: 15px; /* Додаємо відступ між ними */
+    }
+
+    .profile-actions button {
+        width: 90%; /* Робимо їх ширину як у інших кнопок */
+        max-width: 320px;
+    }
+}

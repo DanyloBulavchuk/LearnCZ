@@ -116,6 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                     this.playMusic(dataset.egg);
+
+                    if (target.id === 'macan-easter-egg-display') {
+                        this.hideMacanEasterEgg();
+                    }
                 }
                 else if (target.matches('.char-btn')) this.insertChar(target.textContent);
                 else if (target.matches('.shift-btn')) this.toggleShift();
@@ -197,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         navigateTo(screenId) {
-            if (this.state.isTransitioning) return;
             this.state.isTransitioning = true;
 
             if (this.elements.profileButton) {
@@ -422,10 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 display.style.zIndex = '10000';
                 display.style.opacity = '0';
                 display.style.transition = 'opacity 0.5s ease';
-                display.addEventListener('click', () => {
-                    this.playMusic('macan');
-                    this.hideMacanEasterEgg();
-                });
                 document.body.appendChild(display);
                 requestAnimationFrame(() => {
                     display.style.opacity = '1';
@@ -536,9 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async handleViewUserProfile(username) {
-            if (this.state.isTransitioning) return;
-            this.state.isTransitioning = true;
-
             try {
                 const response = await fetch(`/api/user/${username}`);
                 if (response.ok) {
@@ -549,12 +545,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.error('Failed to load user profile:', await response.text());
                     alert('Не вдалося завантажити профіль користувача.');
-                    this.state.isTransitioning = false;
                 }
             } catch (e) {
                 console.error('Error fetching user profile:', e);
                 alert('Помилка при завантаженні профілю.');
-                this.state.isTransitioning = false;
             }
         },
 
