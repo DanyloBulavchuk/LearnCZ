@@ -664,7 +664,7 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 
 /* -- Settings Screen Centering Fix -- */
 #settings-screen {
-    align-items: center;
+    align-items: center; /* Центрує .settings-section і кнопки */
     justify-content: flex-start;
     padding-top: 20px;
     gap: 15px;
@@ -680,14 +680,8 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     flex-direction: column;
     align-items: center; /* Центруємо всі елементи всередині секції */
     gap: 15px; /* Додаємо відступ між елементами в секції */
-}
-
-#settings-screen > form,
-#settings-screen #gender-slider-container,
-#settings-screen #volume-slider-container,
-#settings-screen #gold-easter-egg {
-    width: 100%; /* Розтягуємо на всю ширину секції */
-    max-width: 350px; /* Додаткове обмеження */
+    margin-left: auto; /* Центруємо саму секцію */
+    margin-right: auto; /* Центруємо саму секцію */
 }
 
 /* Центрування форми та її вмісту */
@@ -698,7 +692,7 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     width: 100%;
 }
 #settings-form input, #settings-form button {
-    width: 100%; /* Поля вводу і кнопки займають всю ширину */
+    width: 100%; /* Поля вводу і кнопки займають всю ширину секції */
 }
 
 /* Центрування заголовків */
@@ -721,6 +715,8 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     margin-bottom: 15px;
     width: 100%;
     max-width: 350px; /* Обмежуємо ширину роздільника */
+    margin-left: auto; /* Центруємо роздільник */
+    margin-right: auto; /* Центруємо роздільник */
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
@@ -730,9 +726,9 @@ html.light-theme .settings-divider {
 #settings-screen > .btn-danger,
 #settings-screen > .back-button {
     width: 100%;
-    max-width: 350px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 350px; /* Обмежуємо ширину кнопок */
+    margin-left: auto; /* Центруємо кнопки */
+    margin-right: auto; /* Центруємо кнопки */
 }
 #settings-screen > .btn-danger {
      margin-top: 20px;
@@ -1145,7 +1141,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     flex-shrink: 0;
     cursor: pointer;
     transition: transform 0.3s ease, filter 0.3s ease;
-    margin: auto; /* Додано для центрування */
+    margin: auto; /* Центруємо зображення */
 }
 #macan-easter-egg-display:hover {
     transform: scale(1.1);
@@ -1166,6 +1162,8 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     flex-grow: 1; /* Займає доступну висоту */
     padding: 15px;
     margin-bottom: 15px; /* Відступ перед кнопкою Назад */
+    margin-left: auto; /* Центруємо контейнер */
+    margin-right: auto; /* Центруємо контейнер */
 }
 
 
