@@ -661,10 +661,9 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     max-width: 300px;
 }
 
-
 /* -- Settings Screen Centering Fix -- */
 #settings-screen {
-    align-items: center; /* Центрує .settings-section і кнопки */
+    align-items: center; /* Центрує дочірні елементи */
     justify-content: flex-start;
     padding-top: 20px;
     gap: 15px;
@@ -674,14 +673,13 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 }
 
 .settings-section {
-    width: 100%;
-    max-width: 350px; /* Обмежуємо ширину секції */
+    max-width: 350px; /* ТІЛЬКИ обмежуємо ширину секції */
     display: flex;
     flex-direction: column;
-    align-items: center; /* Центруємо всі елементи всередині секції */
-    gap: 15px; /* Додаємо відступ між елементами в секції */
-    margin-left: auto; /* Центруємо саму секцію */
-    margin-right: auto; /* Центруємо саму секцію */
+    align-items: center;
+    gap: 15px;
+    width: 90%; /* Зробимо трохи меншим за max-width для відступів на малих екранах */
+    /* margin-left/right: auto; - НЕ ПОТРІБНО, бо #settings-screen вже центрує */
 }
 
 /* Центрування форми та її вмісту */
@@ -689,10 +687,11 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
+    width: 100%; /* Форма займає всю ширину секції */
 }
 #settings-form input, #settings-form button {
-    width: 100%; /* Поля вводу і кнопки займають всю ширину секції */
+    width: 100%; /* Поля вводу і кнопки займають всю ширину форми */
+    max-width: 350px; /* Обмеження залишається */
 }
 
 /* Центрування заголовків */
@@ -703,8 +702,8 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     opacity: 0.8;
     margin-top: 10px;
     margin-bottom: 5px;
-    text-align: center; /* Заголовок по центру */
-    width: 100%;
+    text-align: center;
+    width: 100%; /* Заголовок займає всю ширину секції */
 }
 
 /* Стилі для роздільника */
@@ -713,10 +712,9 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     background-color: rgba(159, 80, 255, 0.3);
     margin-top: 15px;
     margin-bottom: 15px;
-    width: 100%;
+    width: 90%; /* Займає ширину батьківської секції */
     max-width: 350px; /* Обмежуємо ширину роздільника */
-    margin-left: auto; /* Центруємо роздільник */
-    margin-right: auto; /* Центруємо роздільник */
+    /* margin-left/right: auto; - НЕ ПОТРІБНО */
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
@@ -725,10 +723,9 @@ html.light-theme .settings-divider {
 /* Вирівнювання кнопок внизу */
 #settings-screen > .btn-danger,
 #settings-screen > .back-button {
-    width: 100%;
     max-width: 350px; /* Обмежуємо ширину кнопок */
-    margin-left: auto; /* Центруємо кнопки */
-    margin-right: auto; /* Центруємо кнопки */
+    width: 90%; /* Ширина як у секцій */
+    /* margin-left/right: auto; - НЕ ПОТРІБНО, бо #settings-screen центрує */
 }
 #settings-screen > .btn-danger {
      margin-top: 20px;
