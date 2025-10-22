@@ -661,9 +661,9 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     max-width: 300px;
 }
 
-/* -- Settings Screen Centering Fix -- */
+/* -- Settings Screen Centering Fix v3 -- */
 #settings-screen {
-    align-items: center; /* Центрує дочірні елементи */
+    /* align-items: center; - Прибираємо це */
     justify-content: flex-start;
     padding-top: 20px;
     gap: 15px;
@@ -673,13 +673,14 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 }
 
 .settings-section {
-    max-width: 350px; /* ТІЛЬКИ обмежуємо ширину секції */
+    max-width: 350px; /* Обмежуємо ширину секції */
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* Центруємо елементи *всередині* секції */
     gap: 15px;
-    width: 90%; /* Зробимо трохи меншим за max-width для відступів на малих екранах */
-    /* margin-left/right: auto; - НЕ ПОТРІБНО, бо #settings-screen вже центрує */
+    width: 90%; /* Ширина секції */
+    margin-left: auto; /* Центруємо саму секцію */
+    margin-right: auto; /* Центруємо саму секцію */
 }
 
 /* Центрування форми та її вмісту */
@@ -712,20 +713,22 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     background-color: rgba(159, 80, 255, 0.3);
     margin-top: 15px;
     margin-bottom: 15px;
-    width: 90%; /* Займає ширину батьківської секції */
+    width: 90%; /* Ширина як у секцій */
     max-width: 350px; /* Обмежуємо ширину роздільника */
-    /* margin-left/right: auto; - НЕ ПОТРІБНО */
+    margin-left: auto; /* Центруємо роздільник */
+    margin-right: auto; /* Центруємо роздільник */
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
 }
 
 /* Вирівнювання кнопок внизу */
-#settings-screen > .btn-danger,
-#settings-screen > .back-button {
+#settings-screen > .btn-danger, /* Застосовуємо margin auto до кнопки */
+#settings-screen > .back-button { /* Застосовуємо margin auto до кнопки */
     max-width: 350px; /* Обмежуємо ширину кнопок */
     width: 90%; /* Ширина як у секцій */
-    /* margin-left/right: auto; - НЕ ПОТРІБНО, бо #settings-screen центрує */
+    margin-left: auto; /* Центруємо кнопки */
+    margin-right: auto; /* Центруємо кнопки */
 }
 #settings-screen > .btn-danger {
      margin-top: 20px;
