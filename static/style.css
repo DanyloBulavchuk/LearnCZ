@@ -49,8 +49,8 @@ html.light-theme {
     --panel-bg: #f9fafb;
     --shadow-color: rgba(107, 114, 128, 0.15);
     --border-color: #9ca3af;
-    --button-bg: #e5e7eb; /* Base bg for light theme buttons */
-    --button-text-color: #1f2937;
+    --button-bg: #e5e7eb; 
+    --button-text-color: #111827;
     --button-hover-bg: #d1d5db;
 }
 
@@ -225,14 +225,14 @@ html.light-theme .header-button:hover:not(:disabled) {
 
 .title {
     font-size: 2.5rem; font-weight: 900; color: var(--accent-color);
-    text-align: center; margin-bottom: 30px; flex-shrink: 0;
+    text-align: center; margin-bottom: 40px; flex-shrink: 0;
     transition: color 0.5s ease, text-shadow 0.5s ease;
 }
 html:not(.light-theme) .title {
     text-shadow: 0 0 8px var(--shadow-color);
 }
 
-.button-group { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.button-group { display: flex; flex-direction: column; align-items: center; gap: 25px; }
 .button-group .btn { width: 90%; max-width: 320px; }
 
 /* --- Новий стиль кнопок --- */
@@ -370,7 +370,7 @@ button.shift-btn { min-width: 100px; width: 100px; }
 /* --- Кінець нового стилю кнопок --- */
 
 
-form { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; }
+form { display: flex; flex-direction: column; align-items: center; gap: 25px; width: 100%; }
 input[type="text"], input[type="password"] {
     font-family: var(--font-family); font-size: 18px; background: rgba(255, 255, 255, 0.05);
     border: 2px solid var(--accent-color); border-radius: 10px; color: var(--text-color);
@@ -399,7 +399,7 @@ html.light-theme input:focus {
 
 
 #profile-screen, #view-profile-screen { height: 100%; }
-.profile-layout { display: flex; flex-grow: 1; gap: 20px; min-height: 0; }
+.profile-layout { display: flex; flex-grow: 1; gap: 30px; min-height: 0; }
 .profile-layout.view-only .left-panel {
     display: none;
 }
@@ -408,7 +408,7 @@ html.light-theme input:focus {
 }
 
 .panel {
-    padding: 25px;
+    padding: 30px;
     background: var(--panel-bg);
     border-radius: 15px; height: 100%; display: flex; flex-direction: column;
     box-shadow: 0 15px 40px var(--shadow-color);
@@ -790,7 +790,7 @@ html.light-theme .slider-track {
     max-width: 450px; /* Збільшуємо максимальну ширину */
     width: 90%; /* Робимо поле трохи меншим за максимальну ширину для відступів */
 }
-.lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; padding: 10px; flex-grow: 1; }
+.lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 10px; flex-grow: 1; }
 .lecture-grid .btn { width: 100%; min-width: 0; padding: 25px; max-width: none; } /* Кнопки лекцій займають всю ширину */
 .lecture-grid .btn.selected:before { opacity: 1; background: linear-gradient(45deg, #48ff00, #00ffd5, #48ff00); }
 
@@ -807,7 +807,7 @@ html.light-theme .slider-track {
 #global-search-results {
     display: none; /* Ховаємо за замовчуванням */
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     flex-grow: 1; /* Займає вільне місце */
     width: 100%;
     max-width: 700px; /* Обмежуємо ширину як у словнику */
@@ -827,7 +827,7 @@ html.light-theme .slider-track {
     margin-bottom: 20px;
 }
 
-.dictionary-list { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; }
+.dictionary-list { display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
 .dict-item { background: var(--panel-bg); padding: 12px 18px; border-radius: 8px; box-shadow: 0 5px 15px var(--shadow-color); transition: all 0.5s ease; }
 html.light-theme .dict-item { border: 1px solid var(--border-color); }
 .dict-item b { color: #888; opacity: 0.7; }
@@ -857,7 +857,7 @@ html.light-theme .dict-item b { color: #777; }
 }
 
 /* Training Screen */
-#training-screen { align-items: center; justify-content: center; gap: 15px; }
+#training-screen { align-items: center; justify-content: center; gap: 20px; }
 .training-header { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 600px; }
 .training-progress { font-size: 1.2rem; opacity: 0.8; font-weight: 400; }
 .training-word { font-size: 3.5rem; font-weight: 900; color: #FFD700; text-align: center; }
@@ -1117,7 +1117,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 
 /* Mobile Adaptivity */
 @media (max-width: 768px) {
-    .title { font-size: 1.8rem; margin-bottom: 20px; }
+    .title { font-size: 1.8rem; margin-bottom: 30px; }
     #profile-screen, #view-profile-screen { justify-content: flex-start; }
     .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 20px; }
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; max-height: 40vh; }
@@ -1137,7 +1137,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     #direction-selection-screen, #profile-screen, #view-profile-screen {
         justify-content: flex-start;
         overflow-y: auto; /* Дозволяє прокрутку, якщо контент не влазить */
-        padding-top: 20px;
+        padding-top: 30px;
         padding-bottom: 80px; /* Додаємо відступ знизу, щоб кнопки не ховались за інтерфейсом ОС */
         height: calc(100% - 20px); /* Обмежуємо висоту для роботи overflow */
     }
@@ -1145,7 +1145,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .training-word { font-size: 2rem; }
     #main-header { padding: 10px 15px; }
     .logo { font-size: 20px; position: static; transform: none;}
-    button.char-btn, button.shift-btn { width: 35px; height: 35px; font-size: 16px; }
+    button.char-btn, button.shift-btn { width: 40px; height: 40px; font-size: 18px; }
     button.shift-btn { width: 80px; }
     #music-control-button {
          width: 90px;
@@ -1197,7 +1197,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     .lecture-grid { grid-template-columns: 1fr; }
     .training-word { font-size: 1.8rem; }
     .training-word .adj-marker { font-size: 1rem; }
-    button.char-btn, button.shift-btn { width: 30px; height: 30px; font-size: 14px; }
+    button.char-btn, button.shift-btn { width: 36px; height: 36px; font-size: 16px; }
     button.shift-btn { width: 70px; }
     .back-button { padding: 10px; font-size: 14px; }
 

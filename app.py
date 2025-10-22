@@ -19,11 +19,81 @@ def get_db_connection():
         print(f"DATABASE CONNECTION ERROR: {e}")
         abort(500, description="Cannot connect to the database.")
 
+def _load_all_words_from_excel():
+    WORDS_DIR_LEGACY = 'words_CZ'
+    all_data = []
+    if not os.path.exists(WORDS_DIR_LEGACY):
+        print(f"ПОПЕРЕДЖЕННЯ: Директорія {WORDS_DIR_LEGACY} не знайдена для імпорту.")
+        return []
+
+    all_files = [f for f in os.listdir(WORDS_DIR_LEGACY) if f.endswith('.xlsx')]
+
+    numeric_files = sorted(
+        [f for f in all_files if f[:-5].isdigit()],
+        key=lambda x: int(x.split('.')[0])
+    )
+
+    for filename in numeric_files:
+        try:
+            df = pd.read_excel(os.path.join(WORDS_DIR_LEGACY, filename), header=None, engine='openpyxl')
+            if df.shape[1] >= 4:
+                df = df.iloc[:, :4]
+                df.columns = ['CZ', 'UA', 'RU', 'EN']
+                df.dropna(subset=['CZ', 'UA'], inplace=True)
+                df['lecture'] = int(filename.split('.')[0])
+                all_data.append(df)
+        except Exception as e:
+            print(f"Помилка завантаження {filename} для імпорту: {e}")
+
+    if 'notebook.xlsx' in all_files:
+        filename = 'notebook.xlsx'
+        try:
+            df = pd.read_excel(os.path.join(WORDS_DIR_LEGACY, filename), header=None, engine='openpyxl')
+            if df.shape[1] >= 4:
+                df = df.iloc[:, :4]
+                df.columns = ['CZ', 'UA', 'RU', 'EN']
+                df.dropna(subset=['CZ', 'UA'], inplace=True)
+                df['lecture'] = 0
+                all_data.append(df)
+        except Exception as e:
+            print(f"Помилка завантаження {filename} для імпорту: {e}")
+
+    if not all_data:
+        return []
+
+    full_df = pd.concat(all_data, ignore_index=True)
+    full_df.fillna('', inplace=True)
+    
+    all_records = full_df.to_dict('records')
+
+    notebook_words = [w for w in all_records if w['lecture'] == 0]
+    other_words = [w for w in all_records if w['lecture'] != 0]
+
+    macan_word = {
+        'CZ': 'Macan', 
+        'UA': 'macan', 
+        'RU': 'MACAN', 
+        'EN': 'МАКАН', 
+        'lecture': 0, 
+        'is_macan_easter_egg': True 
+    }
+    
+    insert_pos = 49
+    
+    if insert_pos > len(notebook_words):
+        insert_pos = len(notebook_words)
+        
+    notebook_words.insert(insert_pos, macan_word)
+    
+    final_word_list = other_words + notebook_words
+    return final_word_list
+
 def init_db():
     conn = get_db_connection()
     if conn is None:
         print("ПОМИЛКА: Неможливо ініціалізувати БД, немає з'єднання.")
         return
+    
     with conn.cursor() as cur:
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -37,7 +107,19 @@ def init_db():
                 found_easter_eggs TEXT DEFAULT '[]'
             );
         """)
-
+        
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS words (
+                id SERIAL PRIMARY KEY,
+                lecture INTEGER NOT NULL,
+                cz TEXT NOT NULL,
+                ua TEXT NOT NULL,
+                ru TEXT,
+                en TEXT,
+                is_macan_easter_egg BOOLEAN DEFAULT FALSE
+            );
+        """)
+        
         try:
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(1) DEFAULT 'N';")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);")
@@ -45,14 +127,48 @@ def init_db():
             cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS streak_count;")
             cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS last_streak_date;")
         except psycopg2.Error as e:
-            print(f"Помилка при оновленні таблиці: {e}")
+            print(f"Помилка при оновленні таблиці users: {e}")
             conn.rollback()
         else:
             conn.commit()
 
+        cur.execute("SELECT COUNT(*) FROM words;")
+        word_count = cur.fetchone()[0]
+        
+        if word_count == 0:
+            print("Таблиця 'words' порожня. Запускаю імпорт з Excel-файлів...")
+            try:
+                words_to_import = _load_all_words_from_excel()
+                if not words_to_import:
+                    print("ПОМИЛКА: Не знайдено слів для імпорту.")
+                else:
+                    insert_query = """
+                        INSERT INTO words (lecture, cz, ua, ru, en, is_macan_easter_egg) 
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """
+                    data_to_insert = [
+                        (
+                            w.get('lecture'), 
+                            w.get('CZ'), 
+                            w.get('UA'), 
+                            w.get('RU', ''), 
+                            w.get('EN', ''), 
+                            w.get('is_macan_easter_egg', False)
+                        ) for w in words_to_import
+                    ]
+                    
+                    cur.executemany(insert_query, data_to_insert)
+                    conn.commit()
+                    print(f"Успішно імпортовано {len(data_to_insert)} слів до бази даних.")
+                    
+            except Exception as e:
+                print(f"ПОМИЛКА під час імпорту слів: {e}")
+                conn.rollback()
+        else:
+            print(f"Таблиця 'words' вже містить {word_count} слів. Імпорт пропущено.")
+
     conn.close()
 
-WORDS_DIR = 'words_CZ'
 AVATARS_DIR = os.path.join(app.static_folder, 'avatars')
 
 TEXTS = {
@@ -146,78 +262,34 @@ TEXTS['en']['cz_to_lang'] = "Czech → English"; TEXTS['en']['lang_to_cz'] = "En
 TEXTS['ru']['cz_to_lang'] = "Чешский → Русский"; TEXTS['ru']['lang_to_cz'] = "Русский → Чешский"
 
 
-def load_all_words():
-    all_data = []
-    if not os.path.exists(WORDS_DIR):
-        print(f"ПОПЕРЕДЖЕННЯ: Директорія {WORDS_DIR} не знайдена.")
+def load_all_words_from_db():
+    conn = get_db_connection()
+    if conn is None:
         return []
-
-    all_files = [f for f in os.listdir(WORDS_DIR) if f.endswith('.xlsx')]
-
-    numeric_files = sorted(
-        [f for f in all_files if f[:-5].isdigit()],
-        key=lambda x: int(x.split('.')[0])
-    )
-
-    for filename in numeric_files:
-        try:
-            df = pd.read_excel(os.path.join(WORDS_DIR, filename), header=None, engine='openpyxl')
-            if df.shape[1] >= 4:
-                df = df.iloc[:, :4]
-                df.columns = ['CZ', 'UA', 'RU', 'EN']
-                df.dropna(subset=['CZ', 'UA'], inplace=True)
-                df['lecture'] = int(filename.split('.')[0])
-                all_data.append(df)
-        except Exception as e:
-            print(f"Помилка завантаження {filename}: {e}")
-
-    notebook_df = None
-    if 'notebook.xlsx' in all_files:
-        filename = 'notebook.xlsx'
-        try:
-            df = pd.read_excel(os.path.join(WORDS_DIR, filename), header=None, engine='openpyxl')
-            if df.shape[1] >= 4:
-                df = df.iloc[:, :4]
-                df.columns = ['CZ', 'UA', 'RU', 'EN']
-                df.dropna(subset=['CZ', 'UA'], inplace=True)
-                df['lecture'] = 0
-                notebook_df = df
-                all_data.append(df)
-        except Exception as e:
-            print(f"Помилка завантаження {filename}: {e}")
-
-    if not all_data:
-        return []
-
-    full_df = pd.concat(all_data, ignore_index=True)
-    full_df.fillna('', inplace=True)
     
-    all_records = full_df.to_dict('records')
-
-    # --- Нова логіка для Завдання №3 (Macan) ---
-    notebook_words = [w for w in all_records if w['lecture'] == 0]
-    other_words = [w for w in all_records if w['lecture'] != 0]
-
-    macan_word = {
-        'CZ': 'Macan', 
-        'UA': 'macan', 
-        'RU': 'MACAN', 
-        'EN': 'МАКАН', 
-        'lecture': 0, 
-        'is_macan_easter_egg': True 
-    }
-    
-    insert_pos = 49
-    
-    if insert_pos > len(notebook_words):
-        insert_pos = len(notebook_words)
+    words_list = []
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, lecture, cz, ua, ru, en, is_macan_easter_egg FROM words ORDER BY lecture, id;")
+            rows = cur.fetchall()
+            
+            words_list = [
+                {
+                    "id": row[0],
+                    "lecture": row[1],
+                    "CZ": row[2],
+                    "UA": row[3],
+                    "RU": row[4],
+                    "EN": row[5],
+                    "is_macan_easter_egg": row[6]
+                } for row in rows
+            ]
+    except Exception as e:
+        print(f"Помилка завантаження слів з БД: {e}")
+    finally:
+        conn.close()
         
-    notebook_words.insert(insert_pos, macan_word)
-    
-    final_word_list = other_words + notebook_words
-    # --- Кінець нової логіки ---
-
-    return final_word_list
+    return words_list
 
 def load_avatars():
     avatars = {"M": [], "F": []}
@@ -235,7 +307,7 @@ def load_avatars():
     avatars['F'].sort()
     return avatars
 
-ALL_WORDS = load_all_words()
+ALL_WORDS = load_all_words_from_db()
 ALL_AVATARS = load_avatars()
 AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
 
@@ -338,10 +410,15 @@ def get_initial_data():
     conn = get_db_connection()
     if conn:
         with conn.cursor() as cur:
-            # Тепер також витягуємо found_easter_eggs для рейтингу
             cur.execute("SELECT original_case, xp, found_easter_eggs FROM users ORDER BY xp DESC, username ASC;")
             leaderboard = [{"username": row[0], "xp": row[1], "found_easter_eggs": row[2]} for row in cur.fetchall()]
         conn.close()
+    
+    global ALL_WORDS, AVAILABLE_LECTURES
+    if not ALL_WORDS:
+        ALL_WORDS = load_all_words_from_db()
+        AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
+
     return jsonify({
         "lectures": AVAILABLE_LECTURES,
         "leaderboard": leaderboard,
@@ -368,24 +445,48 @@ def get_words():
 
     return jsonify(words_to_train)
 
-# Новий ендпоінт для глобального пошуку
 @app.route('/api/global_search', methods=['POST'])
 def global_search():
     data = request.json
-    search_term = data.get('term', '').lower().strip()
+    search_term = data.get('term', '').strip()
     if not search_term:
         return jsonify([])
 
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify([])
+        
     results = []
-    for word in ALL_WORDS:
-        if word.get('is_macan_easter_egg', False):
-            continue
+    try:
+        with conn.cursor() as cur:
+            search_pattern = f"%{search_term}%"
+            cur.execute("""
+                SELECT id, lecture, cz, ua, ru, en, is_macan_easter_egg 
+                FROM words 
+                WHERE is_macan_easter_egg = FALSE AND (
+                    cz ILIKE %s OR 
+                    ua ILIKE %s OR 
+                    ru ILIKE %s OR 
+                    en ILIKE %s
+                )
+                LIMIT 100;
+            """, (search_pattern, search_pattern, search_pattern, search_pattern))
             
-        if (search_term in word.get('CZ', '').lower() or
-            search_term in word.get('UA', '').lower() or
-            search_term in word.get('RU', '').lower() or
-            search_term in word.get('EN', '').lower()):
-            results.append(word)
+            rows = cur.fetchall()
+            results = [
+                {
+                    "id": row[0],
+                    "lecture": row[1],
+                    "CZ": row[2],
+                    "UA": row[3],
+                    "RU": row[4],
+                    "EN": row[5]
+                } for row in rows
+            ]
+    except Exception as e:
+        print(f"Помилка глобального пошуку в БД: {e}")
+    finally:
+        conn.close()
 
     return jsonify(results)
 
@@ -455,7 +556,7 @@ def save_easter_eggs():
     if not isinstance(eggs_list, list) or not all(isinstance(egg, str) for egg in eggs_list):
         abort(400, description="Invalid data format for easter eggs.")
 
-    allowed_eggs = ["emerald", "diamond", "gold", "lazurit", "redstone", "macan"] # Додано macan
+    allowed_eggs = ["emerald", "diamond", "gold", "lazurit", "redstone", "macan"]
     valid_eggs = [egg for egg in eggs_list if egg in allowed_eggs]
 
     eggs_json_string = json.dumps(valid_eggs)
@@ -471,6 +572,9 @@ def save_easter_eggs():
 
 with app.app_context():
     init_db()
+    ALL_WORDS = load_all_words_from_db()
+    AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
+    print(f"Завантажено {len(ALL_WORDS)} слів з БД.")
 
 if __name__ == '__main__':
     app.run(debug=False)
