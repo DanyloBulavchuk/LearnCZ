@@ -94,7 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (target.matches('.leaderboard-item') && target.classList.contains('current-user')) {
-                    return;
+                    // Дозволяємо клік на себе в окремому рейтингу
+                    if (!document.getElementById('leaderboard-screen-active')) {
+                       return;
+                    }
                 }
 
                 if (dataset.screen) this.navigateTo(dataset.screen);
@@ -344,6 +347,10 @@ document.addEventListener('DOMContentLoaded', () => {
                  case 'macan-easter-egg-screen':
                     // Можливо, тут потрібно щось додати, якщо екран має динамічний контент
                     break;
+                 case 'leaderboard-screen':
+                    this.renderLeaderboardStandalone();
+                    break;
+
             }
         },
 
@@ -531,34 +538,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 'prev-avatar': () => this.handleAvatarChange(-1),
                 'next-avatar': () => this.handleAvatarChange(1),
                 'activate-macan-egg': () => {
-                    this.navigateTo('macan-easter-egg-screen');
+                    this.navigateTo('macan-easter-egg-screen'); // Тільки перехід
                 },
                 'activate-macan-music': () => {
-                    this.playMusic('macan');
+                    this.playMusic('macan'); // Тільки музика і зарахування
                 },
             };
             if (actions[action]) actions[action](dataset);
         },
 
         async handleViewUserProfile(username) {
-             // Видаляємо дублююче isTransitioning = true; navigateTo це зробить
             try {
                 const response = await fetch(`/api/user/${username}`);
                 if (response.ok) {
                     const userData = await response.json();
                     userData.found_easter_eggs = JSON.parse(userData.found_easter_eggs || '[]');
                     this.state.viewingUser = userData;
-                    this.navigateTo('view-profile-screen'); // navigateTo сама встановить isTransitioning
+                    this.navigateTo('view-profile-screen');
                 } else {
                     console.error('Failed to load user profile:', await response.text());
                     alert('Не вдалося завантажити профіль користувача.');
-                    // Якщо була помилка, треба зняти блокування вручну (бо navigateTo не викликалась)
-                    // this.state.isTransitioning = false; // Не потрібно, бо navigateTo не викликалось, прапор не встановлювався
                 }
             } catch (e) {
                 console.error('Error fetching user profile:', e);
                 alert('Помилка при завантаженні профілю.');
-                // this.state.isTransitioning = false; // Те саме
             }
         },
 
@@ -576,6 +579,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('dictionary-view-screen-active') && dictInput) {
                  this.filterDictionaryView(dictInput.value);
             }
+            // Оновити рейтинг, якщо він відкритий
+             if (document.getElementById('leaderboard-screen-active')) {
+                  this.renderLeaderboardStandalone();
+             }
         },
 
         updateAllTexts() {
@@ -678,12 +685,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // --- Зміна для Завдання №3 ---
-            // Виключаємо слово Macan, тільки якщо викликано з excludeMacan = true (з startTraining)
             if (excludeMacan) {
                 allWords = allWords.filter(word => !word.is_macan_easter_egg);
             }
-            // --- Кінець зміни ---
 
             return allWords;
         },
@@ -762,57 +766,59 @@ document.addEventListener('DOMContentLoaded', () => {
              const screen = document.getElementById(isViewing ? 'view-profile-screen-active' : 'profile-screen-active');
              if (!screen) return;
              const detailsContainer = screen.querySelector(isViewing ? '#profile-details-view' : '#profile-details');
-             const leaderboardContainer = screen.querySelector('#leaderboard-container');
 
              if (!detailsContainer || !userData) return;
 
-             // Якщо переглядаємо чужий профіль, ховаємо рейтинг
-             if (isViewing && leaderboardContainer) {
-                  leaderboardContainer.closest('.left-panel')?.remove();
-             }
+             // Рейтинг тепер на окремому екрані, тому його тут не рендеримо
 
              const xp = userData.xp;
              const { level, progress, needed } = this.xpToLevel(xp);
              const { emoji, name } = this.getRank(level);
              const T = this.state.texts[this.state.currentLang];
 
-             // Формуємо HTML для деталей профілю
              detailsContainer.innerHTML = `<div class="username">${userData.username}</div>
                  <div class="rank"><span class="emoji">${emoji}</span> ${name}</div>
                  <div class="level-info">${T.level} ${level}</div>
                  <div class="xp-bar"><div class="xp-bar-fill" style="width: ${(progress / needed) * 100}%;"></div></div>
                  <div>${progress} / ${needed} XP</div>`;
+        },
 
-             // Якщо це наш профіль, рендеримо рейтинг
-             if (!isViewing && leaderboardContainer && this.state.currentUser) {
-                  leaderboardContainer.innerHTML = ''; // Очищуємо попередній рейтинг
-                  (this.state.leaderboard || []).forEach((user, index) => {
-                       const userLevel = this.xpToLevel(user.xp).level;
-                       const userRank = this.getRank(userLevel);
-                       const item = document.createElement('div');
-                       item.className = 'leaderboard-item';
-                       item.dataset.username = user.username; // Зберігаємо ім'я для можливості кліку
+        renderLeaderboardStandalone() {
+            const leaderboardContainer = document.getElementById('leaderboard-container-standalone');
+            if (!leaderboardContainer) return;
 
-                       let userEggs = [];
-                       try {
-                           // Обережно парсимо пасхалки, бо може бути помилка
-                           userEggs = JSON.parse(user.found_easter_eggs || '[]');
-                       } catch (e) { console.error("Error parsing easter eggs for leaderboard user", user.username, e); }
-                       const hasAllEggs = userEggs.length >= TOTAL_EASTER_EGGS;
-                       const crown = hasAllEggs ? '<span class="crown-icon">👑</span>' : ''; // Додаємо корону, якщо всі зібрані
+            leaderboardContainer.innerHTML = ''; // Очищуємо попередній рейтинг
 
-                       // Виділяємо поточного користувача в рейтингу
-                       if (user.username === this.state.currentUser.username) {
-                            item.classList.add('current-user');
-                       }
-                       // Формуємо HTML для рядка рейтингу
-                       item.innerHTML = `<span class="lb-pos">${index + 1}.</span>
-                           <span class="lb-rank">${userRank.emoji}</span>
-                           <span class="lb-name">${user.username}${crown}</span>
-                           <span class="lb-xp">(${user.xp} XP)</span>`;
-                       leaderboardContainer.appendChild(item);
-                  });
-             }
+            if (!this.state.leaderboard || this.state.leaderboard.length === 0) {
+                 leaderboardContainer.innerHTML = '<p>Рейтинг порожній.</p>'; // Повідомлення, якщо даних немає
+                 return;
+            }
+
+            (this.state.leaderboard || []).forEach((user, index) => {
+                 const userLevel = this.xpToLevel(user.xp).level;
+                 const userRank = this.getRank(userLevel);
+                 const item = document.createElement('div');
+                 item.className = 'leaderboard-item';
+                 item.dataset.username = user.username; // Зберігаємо ім'я для можливості кліку
+
+                 let userEggs = [];
+                 try {
+                     userEggs = JSON.parse(user.found_easter_eggs || '[]');
+                 } catch (e) { console.error("Error parsing easter eggs for leaderboard user", user.username, e); }
+                 const hasAllEggs = userEggs.length >= TOTAL_EASTER_EGGS;
+                 const crown = hasAllEggs ? '<span class="crown-icon">👑</span>' : '';
+
+                 // Виділяємо поточного користувача в рейтингу
+                 if (this.state.currentUser && user.username === this.state.currentUser.username) {
+                      item.classList.add('current-user');
+                 }
+
+                 item.innerHTML = `<span class="lb-pos">${index + 1}.</span>
+                     <span class="lb-rank">${userRank.emoji}</span>
+                     <span class="lb-name">${user.username}${crown}</span>
+                     <span class="lb-xp">(${user.xp} XP)</span>`;
+                 leaderboardContainer.appendChild(item);
+            });
         },
 
 

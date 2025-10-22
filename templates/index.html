@@ -83,6 +83,7 @@
                 <button class="btn" data-action="start-random-training" data-i18n="random_training"></button>
                 <button class="btn" data-action="start-specific-training" data-i18n="specific_training"></button>
                 <button class="btn" data-action="show-dictionary" data-i18n="dictionary"></button>
+                <button class="btn" data-screen="leaderboard-screen" data-i18n="leaderboard_title"></button>
                 <button class="btn btn-secondary" data-screen="settings-screen" data-i18n="settings"></button>
             </div>
 
@@ -93,47 +94,39 @@
         </div>
 
         <div id="profile-screen">
-            <h1 class="title" data-i18n="profile_title"></h1>
-            <div class="profile-layout">
-                <div class="panel left-panel">
-                    <h2 data-i18n="leaderboard_title"></h2>
-                    <div id="leaderboard-container" class="scrollable"></div>
-                </div>
-                <div class="panel right-panel">
+             <h1 class="title" data-i18n="profile_title"></h1>
+             <div class="profile-layout profile-single-panel">
+                 <div class="panel right-panel"> <div id="avatar-container">
+                         <div id="avatar-image-wrapper">
+                             </div>
+                         <div id="avatar-controls">
+                             <button class="avatar-arrow" data-action="prev-avatar"></button>
+                             <span id="avatar-name"></span>
+                             <button class="avatar-arrow" data-action="next-avatar"></button>
+                         </div>
+                     </div>
 
-                    <div id="avatar-container">
-                        <div id="avatar-image-wrapper">
-                            </div>
-                        <div id="avatar-controls">
-                            <button class="avatar-arrow" data-action="prev-avatar"></button>
-                            <span id="avatar-name"></span>
-                            <button class="avatar-arrow" data-action="next-avatar"></button>
-                        </div>
-                    </div>
+                     <div id="profile-details">
+                         </div>
 
-                    <div id="profile-details">
-                        </div>
+                     <div id="easter-egg-container">
+                         <h3 data-i18n="easter_eggs_title"></h3>
+                         <div id="easter-egg-icons">
+                             <div class="easter-egg-icon" data-egg="emerald"></div>
+                             <div class="easter-egg-icon" data-egg="gold"></div>
+                             <div class="easter-egg-icon" data-egg="lazurit"></div>
+                             <div class="easter-egg-icon" data-egg="redstone"></div>
+                             <div class="easter-egg-icon" data-egg="diamond"></div>
+                             <div class="easter-egg-icon" data-egg="macan"></div> </div>
+                     </div>
+                 </div>
+             </div>
+        </div>
 
-                    <div id="easter-egg-container">
-                        <h3 data-i18n="easter_eggs_title"></h3>
-                        <div id="easter-egg-icons">
-                            <div class="easter-egg-icon" data-egg="emerald"></div>
-                            <div class="easter-egg-icon" data-egg="gold"></div>
-                            <div class="easter-egg-icon" data-egg="lazurit"></div>
-                            <div class="easter-egg-icon" data-egg="redstone"></div>
-                            <div class="easter-egg-icon" data-egg="diamond"></div>
-                            <div class="easter-egg-icon" data-egg="macan"></div> </div>
-                    </div>
-
-                    <div class="profile-actions">
-                    </div>
-                </div>
-            </div>
-            </div>
 
         <div id="view-profile-screen">
              <h1 class="title" data-i18n="view_profile_title"></h1>
-             <div class="profile-layout view-only">
+             <div class="profile-layout view-only profile-single-panel">
                  <div class="panel right-panel"> <div id="avatar-container">
                          <div id="avatar-image-wrapper-view">
                              </div>
@@ -164,25 +157,30 @@
         <div id="settings-screen">
              <h1 class="title" data-i18n="settings_title"></h1>
 
-             <h2 class="settings-header" data-i18n="settings_security"></h2>
-             <form id="settings-form">
-                <input type="password" id="new-pin" data-i18n-placeholder="new_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
-                <button type="submit" class="btn" data-i18n="save_changes"></button>
-             </form>
+             <div class="settings-section">
+                <h2 class="settings-header" data-i18n="settings_security"></h2>
+                <form id="settings-form">
+                    <input type="password" id="new-pin" data-i18n-placeholder="new_pin" pattern="\d{4}" title="PIN must be 4 digits" required>
+                    <button type="submit" class="btn" data-i18n="save_changes"></button>
+                </form>
+             </div>
 
              <div class="settings-divider"></div>
              
-             <h2 class="settings-header" data-i18n="settings_profile"></h2>
-             <div id="gender-slider-container">
-                 </div>
+             <div class="settings-section">
+                <h2 class="settings-header" data-i18n="settings_profile"></h2>
+                <div id="gender-slider-container">
+                    </div>
+             </div>
 
              <div class="settings-divider"></div>
 
-             <h2 class="settings-header" data-i18n="settings_sound"></h2>
-             <div id="volume-slider-container">
-                 </div>
-
-             <div id="gold-easter-egg" data-egg="gold"></div>
+             <div class="settings-section">
+                <h2 class="settings-header" data-i18n="settings_sound"></h2>
+                <div id="volume-slider-container">
+                    </div>
+                <div id="gold-easter-egg" data-egg="gold"></div>
+             </div>
              
              <div class="settings-divider"></div>
 
@@ -247,6 +245,14 @@
             <div id="macan-easter-egg-display" data-action="activate-macan-music"></div>
             <button class="btn btn-secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
+
+        <div id="leaderboard-screen">
+            <h1 class="title" data-i18n="leaderboard_title"></h1>
+            <div id="leaderboard-container-standalone" class="scrollable leaderboard-standalone-container">
+                </div>
+            <button class="btn btn-secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
+        </div>
+
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

@@ -49,8 +49,8 @@ html.light-theme {
     --panel-bg: #f9fafb;
     --shadow-color: rgba(107, 114, 128, 0.15);
     --border-color: #9ca3af;
-    --button-bg: #e5e7eb; 
-    --button-text-color: #111827;
+    --button-bg: #e5e7eb;
+    --button-text-color: #111827; /* Зробили текст темнішим для кращого контрасту */
     --button-hover-bg: #d1d5db;
 }
 
@@ -312,12 +312,13 @@ html.light-theme .btn:hover {
 html.light-theme .btn.btn-secondary {
      background-color: var(--button-bg);
      border-color: var(--secondary-color);
-     color: var(--button-text-color);
+     color: var(--button-text-color); /* Використовуємо основний колір тексту теми */
 }
 html.light-theme .btn.btn-secondary:hover {
      background-color: var(--secondary-color-light);
      box-shadow: 0 6px 20px var(--secondary-color-glow), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
      border-color: transparent;
+     color: #fff; /* Робимо текст білим при наведенні для кращого контрасту */
 }
 
 
@@ -338,12 +339,13 @@ html.light-theme .btn.btn-secondary:hover {
 html.light-theme .btn.btn-danger {
      background-color: var(--button-bg);
      border-color: var(--danger-color);
-     color: var(--button-text-color);
+     color: var(--button-text-color); /* Використовуємо основний колір тексту теми */
 }
 html.light-theme .btn.btn-danger:hover {
      background-color: var(--danger-color-light);
      box-shadow: 0 6px 20px var(--danger-color-glow), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
      border-color: transparent;
+     color: #fff; /* Робимо текст білим при наведенні для кращого контрасту */
 }
 
 /* Спеціальні кнопки (Shift, символи) */
@@ -400,6 +402,17 @@ html.light-theme input:focus {
 
 #profile-screen, #view-profile-screen { height: 100%; }
 .profile-layout { display: flex; flex-grow: 1; gap: 30px; min-height: 0; }
+.profile-layout.profile-single-panel {
+    justify-content: center; /* Центруємо одну панель */
+}
+.profile-layout.profile-single-panel .right-panel {
+    flex: 0 1 600px; /* Займає максимум 600px ширини, але може стискатись */
+    height: auto; /* Висота по контенту */
+    max-height: 100%; /* Не вище за екран */
+    overflow-y: auto; /* Додаємо прокрутку, якщо контент не влазить */
+}
+
+
 .profile-layout.view-only .left-panel {
     display: none;
 }
@@ -444,8 +457,8 @@ html.light-theme .leaderboard-item:hover:not(.current-user) { background-color: 
     to { filter: drop-shadow(0 0 8px gold); }
 }
 
-.lb-xp { 
-    font-weight: bold; 
+.lb-xp {
+    font-weight: bold;
     white-space: nowrap;
     margin-left: auto;
     padding-left: 10px;
@@ -649,6 +662,7 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 }
 
 
+/* -- Settings Screen Centering Fix -- */
 #settings-screen {
     align-items: center;
     justify-content: flex-start;
@@ -659,29 +673,35 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     width: 100%;
 }
 
-.settings-centered-content {
+.settings-section {
     width: 100%;
-    max-width: 350px;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 350px; /* Обмежуємо ширину секції */
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center; /* Центруємо всі елементи всередині секції */
+    gap: 15px; /* Додаємо відступ між елементами в секції */
 }
 
 #settings-screen > form,
-#settings-screen > #gender-slider-container,
-#settings-screen > #volume-slider-container,
-#settings-screen > #gold-easter-egg,
-#settings-screen > .settings-divider,
-#settings-screen > .btn-danger,
-#settings-screen > .back-button {
-    width: 100%;
-    max-width: 350px;
-    margin-left: auto;
-    margin-right: auto;
+#settings-screen #gender-slider-container,
+#settings-screen #volume-slider-container,
+#settings-screen #gold-easter-egg {
+    width: 100%; /* Розтягуємо на всю ширину секції */
+    max-width: 350px; /* Додаткове обмеження */
 }
 
+/* Центрування форми та її вмісту */
+#settings-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+#settings-form input, #settings-form button {
+    width: 100%; /* Поля вводу і кнопки займають всю ширину */
+}
+
+/* Центрування заголовків */
 .settings-header {
     font-size: 1.2rem;
     font-weight: bold;
@@ -689,26 +709,31 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     opacity: 0.8;
     margin-top: 10px;
     margin-bottom: 5px;
-    text-align: center;
+    text-align: center; /* Заголовок по центру */
     width: 100%;
-    max-width: 350px;
-    margin-left: auto;
-    margin-right: auto;
 }
 
+/* Стилі для роздільника */
 .settings-divider {
     height: 1px;
     background-color: rgba(159, 80, 255, 0.3);
     margin-top: 15px;
     margin-bottom: 15px;
     width: 100%;
-    max-width: 350px;
+    max-width: 350px; /* Обмежуємо ширину роздільника */
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
 }
 
-
+/* Вирівнювання кнопок внизу */
+#settings-screen > .btn-danger,
+#settings-screen > .back-button {
+    width: 100%;
+    max-width: 350px;
+    margin-left: auto;
+    margin-right: auto;
+}
 #settings-screen > .btn-danger {
      margin-top: 20px;
 }
@@ -783,7 +808,7 @@ html.light-theme .slider-track {
     background-repeat: no-repeat;
     transition: transform 0.2s, filter 0.3s;
     filter: none;
-    margin: 0 auto;
+    margin: 10px auto 0 auto; /* Відступ зверху */
 }
 
 #gold-easter-egg:hover {
@@ -793,11 +818,11 @@ html.light-theme .slider-track {
 
 .global-search { /* Стилі для нового поля пошуку */
     margin-bottom: 20px;
-    display: block; 
+    display: block;
     margin-left: auto;
     margin-right: auto;
-    max-width: 450px; 
-    width: 90%; 
+    max-width: 450px;
+    width: 90%;
 }
 .lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 10px; flex-grow: 1; }
 .lecture-grid .btn { width: 100%; min-width: 0; padding: 25px; max-width: none; } /* Кнопки лекцій займають всю ширину */
@@ -1120,6 +1145,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     flex-shrink: 0;
     cursor: pointer;
     transition: transform 0.3s ease, filter 0.3s ease;
+    margin: auto; /* Додано для центрування */
 }
 #macan-easter-egg-display:hover {
     transform: scale(1.1);
@@ -1129,12 +1155,30 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     margin-top: 0;
 }
 
+/* Standalone Leaderboard Screen */
+#leaderboard-screen {
+    justify-content: flex-start; /* Вирівнювання згори */
+    align-items: center; /* Центрування по горизонталі */
+}
+.leaderboard-standalone-container {
+    width: 100%;
+    max-width: 600px; /* Обмежуємо ширину */
+    flex-grow: 1; /* Займає доступну висоту */
+    padding: 15px;
+    margin-bottom: 15px; /* Відступ перед кнопкою Назад */
+}
+
 
 /* Mobile Adaptivity */
 @media (max-width: 768px) {
     .title { font-size: 1.8rem; margin-bottom: 30px; }
     #profile-screen, #view-profile-screen { justify-content: flex-start; }
     .profile-layout { flex-direction: column; overflow-y: auto; flex-grow: 1; gap: 20px; padding-bottom: 20px; }
+    .profile-layout.profile-single-panel .right-panel {
+        flex-basis: auto; /* Скидаємо flex-basis */
+        max-height: none; /* Забираємо обмеження висоти на мобільних */
+    }
+
     .left-panel { border-right: none; border-bottom: 1px solid rgba(159, 80, 255, 0.3); padding-bottom: 20px; min-width: 0; flex-shrink: 0; max-height: 40vh; }
     html.light-theme .left-panel { border-bottom-color: var(--border-color); }
     #leaderboard-container { max-height: none; }
@@ -1149,7 +1193,8 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 
     #training-screen, #login-screen, #register-screen, #settings-screen,
     #results-screen, #lecture-selection-screen, #dictionary-view-screen,
-    #direction-selection-screen, #profile-screen, #view-profile-screen {
+    #direction-selection-screen, #profile-screen, #view-profile-screen,
+    #leaderboard-screen { /* Додали новий екран сюди */
         justify-content: flex-start;
         overflow-y: auto; /* Дозволяє прокрутку, якщо контент не влазить */
         padding-top: 30px;
@@ -1170,6 +1215,7 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
 
     #settings-screen .back-button,
     #results-screen .back-button,
+    #leaderboard-screen .back-button, /* Додали новий екран сюди */
     .view-profile-actions {
         margin-top: 20px;
         position: relative;
