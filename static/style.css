@@ -650,31 +650,38 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
 
 
 #settings-screen {
-    align-items: center; /* Центрує дочірні елементи як flex-items */
+    align-items: center;
     justify-content: flex-start;
     padding-top: 20px;
     gap: 15px;
     display: flex;
     flex-direction: column;
-    width: 100%; /* Додаємо, щоб контейнер займав доступну ширину */
+    width: 100%;
 }
 
-/* Центруємо конкретні блоки всередині #settings-screen */
+.settings-centered-content {
+    width: 100%;
+    max-width: 350px;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 #settings-screen > form,
 #settings-screen > #gender-slider-container,
 #settings-screen > #volume-slider-container,
 #settings-screen > #gold-easter-egg,
 #settings-screen > .settings-divider,
-#settings-screen > .settings-header,
 #settings-screen > .btn-danger,
 #settings-screen > .back-button {
     width: 100%;
     max-width: 350px;
-    margin-left: auto; /* Додаємо авто-відступи */
-    margin-right: auto;/* Додаємо авто-відступи */
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Залишаємо текст заголовків вирівняним по лівому краю всередині їх блоку */
 .settings-header {
     font-size: 1.2rem;
     font-weight: bold;
@@ -682,27 +689,31 @@ html.light-theme .xp-bar { background-color: #e2e8f0; }
     opacity: 0.8;
     margin-top: 10px;
     margin-bottom: 5px;
-    text-align: left; /* Текст зліва */
+    text-align: center;
+    width: 100%;
+    max-width: 350px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Стилі для роздільника */
 .settings-divider {
     height: 1px;
     background-color: rgba(159, 80, 255, 0.3);
-    margin-top: 15px;    /* Змінено з margin: 15px 0; */
-    margin-bottom: 15px; /* Змінено з margin: 15px 0; */
+    margin-top: 15px;
+    margin-bottom: 15px;
+    width: 100%;
+    max-width: 350px;
 }
 html.light-theme .settings-divider {
     background-color: var(--border-color);
 }
 
 
-/* Додаткові відступи для кнопок внизу */
 #settings-screen > .btn-danger {
-     margin-top: 20px; /* Відступ над кнопкою Вийти */
+     margin-top: 20px;
 }
 #settings-screen > .back-button {
-    margin-top: 10px; /* Відступ над кнопкою Назад */
+    margin-top: 10px;
 }
 
 
@@ -782,13 +793,11 @@ html.light-theme .slider-track {
 
 .global-search { /* Стилі для нового поля пошуку */
     margin-bottom: 20px;
-    /* Видаляємо max-width: 100%; */
-    /* Додаємо наступні рядки для центрування та ширини: */
-    display: block; /* Потрібно для роботи margin: auto */
+    display: block; 
     margin-left: auto;
     margin-right: auto;
-    max-width: 450px; /* Збільшуємо максимальну ширину */
-    width: 90%; /* Робимо поле трохи меншим за максимальну ширину для відступів */
+    max-width: 450px; 
+    width: 90%; 
 }
 .lecture-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 10px; flex-grow: 1; }
 .lecture-grid .btn { width: 100%; min-width: 0; padding: 25px; max-width: none; } /* Кнопки лекцій займають всю ширину */
@@ -1109,6 +1118,12 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
     background-position: center;
     background-repeat: no-repeat;
     flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.3s ease, filter 0.3s ease;
+}
+#macan-easter-egg-display:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
 }
 #macan-easter-egg-screen .back-button {
     margin-top: 0;

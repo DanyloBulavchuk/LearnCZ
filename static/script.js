@@ -532,6 +532,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 'next-avatar': () => this.handleAvatarChange(1),
                 'activate-macan-egg': () => {
                     this.navigateTo('macan-easter-egg-screen');
+                },
+                'activate-macan-music': () => {
                     this.playMusic('macan');
                 },
             };

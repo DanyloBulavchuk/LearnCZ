@@ -83,6 +83,7 @@
                 <button class="btn" data-action="start-random-training" data-i18n="random_training"></button>
                 <button class="btn" data-action="start-specific-training" data-i18n="specific_training"></button>
                 <button class="btn" data-action="show-dictionary" data-i18n="dictionary"></button>
+                <button class="btn btn-secondary" data-screen="settings-screen" data-i18n="settings"></button>
             </div>
 
             <div id="music-control-button" data-egg="emerald">
@@ -125,7 +126,6 @@
                     </div>
 
                     <div class="profile-actions">
-                        <button class="btn btn-secondary" data-screen="settings-screen" data-i18n="settings"></button>
                     </div>
                 </div>
             </div>
@@ -187,7 +187,7 @@
              <div class="settings-divider"></div>
 
              <button class="btn btn-danger" data-action="logout" data-i18n="logout"></button>
-             <button class="btn btn-secondary back-button" data-screen="profile-screen" data-i18n="back"></button>
+             <button class="btn btn-secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
 
         <div id="lecture-selection-screen">
@@ -244,7 +244,7 @@
         </div>
         
         <div id="macan-easter-egg-screen">
-            <div id="macan-easter-egg-display"></div>
+            <div id="macan-easter-egg-display" data-action="activate-macan-music"></div>
             <button class="btn btn-secondary back-button" data-screen="main-menu-screen" data-i18n="back"></button>
         </div>
     </div>
