@@ -2,6 +2,7 @@ import os
 import json
 import pandas as pd
 import psycopg2
+import re
 from datetime import date, timedelta
 from flask import Flask, jsonify, render_template, request, session, abort, send_from_directory
 from dotenv import load_dotenv
@@ -12,12 +13,35 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default_fallback_secret_key_for_dev')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
+# --- УВАГА: Змініть на False після першого успішного запуску, щоб не перезаписувати базу щоразу ---
+FORCE_RELOAD_WORDS = True 
+# ------------------------------------------------------------------------------------------------
+
 def get_db_connection():
     try:
         return psycopg2.connect(DATABASE_URL)
     except Exception as e:
         print(f"DATABASE CONNECTION ERROR: {e}")
         abort(500, description="Cannot connect to the database.")
+
+def get_lecture_sort_key(lecture_id):
+    """Сортувальний ключ для лекцій: 0 (notebook) -> A1.1 -> A1.2 -> A1.10 -> B1.1"""
+    lecture_id = str(lecture_id)
+    if lecture_id == '0':
+        return ('', 0) # Notebook first
+    
+    # Шукаємо патерн A1.1 (ЛітериЦифри.Цифри)
+    match = re.match(r"^([A-Z0-9]+)\.(\d+)$", lecture_id)
+    if match:
+        # Повертаємо кортеж (Рівень, Номер), наприклад ('A1', 1)
+        # Це дозволить сортувати спочатку за рівнем, потім за номером
+        return (match.group(1), int(match.group(2)))
+    
+    # Fallback для старих числових назв або інших форматів
+    if lecture_id.isdigit():
+        return ('', int(lecture_id))
+        
+    return (lecture_id, 0)
 
 def _load_all_words_from_excel():
     WORDS_DIR_LEGACY = 'words_CZ'
@@ -26,37 +50,64 @@ def _load_all_words_from_excel():
         print(f"ПОПЕРЕДЖЕННЯ: Директорія {WORDS_DIR_LEGACY} не знайдена для імпорту.")
         return []
 
-    all_files = [f for f in os.listdir(WORDS_DIR_LEGACY) if f.endswith('.xlsx')]
+    all_files = os.listdir(WORDS_DIR_LEGACY)
+    
+    # Розділяємо файли на лекції та блокноти
+    lecture_files = []
+    notebook_files = []
 
-    numeric_files = sorted(
-        [f for f in all_files if f[:-5].isdigit()],
-        key=lambda x: int(x.split('.')[0])
-    )
+    for f in all_files:
+        if not f.endswith('.xlsx'):
+            continue
+            
+        # Якщо файл закінчується на notebook.xlsx (наприклад A1.notebook.xlsx або просто notebook.xlsx)
+        if f.lower().endswith('notebook.xlsx'):
+            notebook_files.append(f)
+            continue
 
-    for filename in numeric_files:
+        # Перевірка на новий формат A1.1.xlsx або B2.10.xlsx
+        if re.match(r"^[A-Z0-9]+\.\d+\.xlsx$", f):
+            lecture_files.append(f)
+        # Перевірка на старий числовий формат 1.xlsx
+        elif f[:-5].isdigit():
+            lecture_files.append(f)
+
+    # Сортуємо файли лекцій
+    def file_sort_key(filename):
+        name = filename[:-5] # remove .xlsx
+        return get_lecture_sort_key(name)
+
+    sorted_files = sorted(lecture_files, key=file_sort_key)
+
+    # Завантажуємо лекції
+    for filename in sorted_files:
         try:
             df = pd.read_excel(os.path.join(WORDS_DIR_LEGACY, filename), header=None, engine='openpyxl')
             if df.shape[1] >= 4:
                 df = df.iloc[:, :4]
                 df.columns = ['CZ', 'UA', 'RU', 'EN']
                 df.dropna(subset=['CZ', 'UA'], inplace=True)
-                df['lecture'] = int(filename.split('.')[0])
+                
+                # lecture ID - це назва файлу без розширення (наприклад, "A1.1")
+                lecture_id = filename[:-5]
+                df['lecture'] = lecture_id
                 all_data.append(df)
         except Exception as e:
             print(f"Помилка завантаження {filename} для імпорту: {e}")
 
-    if 'notebook.xlsx' in all_files:
-        filename = 'notebook.xlsx'
+    # Завантажуємо блокноти (один або декілька, об'єднуємо їх під lecture = "0")
+    for filename in notebook_files:
         try:
+            print(f"Знайдено блокнот: {filename}")
             df = pd.read_excel(os.path.join(WORDS_DIR_LEGACY, filename), header=None, engine='openpyxl')
             if df.shape[1] >= 4:
                 df = df.iloc[:, :4]
                 df.columns = ['CZ', 'UA', 'RU', 'EN']
                 df.dropna(subset=['CZ', 'UA'], inplace=True)
-                df['lecture'] = 0
+                df['lecture'] = "0" # ID 0 завжди для блокнота
                 all_data.append(df)
         except Exception as e:
-            print(f"Помилка завантаження {filename} для імпорту: {e}")
+            print(f"Помилка завантаження блокнота {filename}: {e}")
 
     if not all_data:
         return []
@@ -66,20 +117,20 @@ def _load_all_words_from_excel():
     
     all_records = full_df.to_dict('records')
 
-    notebook_words = [w for w in all_records if w['lecture'] == 0]
-    other_words = [w for w in all_records if w['lecture'] != 0]
+    notebook_words = [w for w in all_records if w['lecture'] == "0"]
+    other_words = [w for w in all_records if w['lecture'] != "0"]
 
+    # Додаємо пасхалку Macan у блокнот
     macan_word = {
         'CZ': 'Macan', 
         'UA': 'macan', 
         'RU': 'MACAN', 
         'EN': 'МАКАН', 
-        'lecture': 0, 
+        'lecture': "0", 
         'is_macan_easter_egg': True 
     }
     
     insert_pos = 49
-    
     if insert_pos > len(notebook_words):
         insert_pos = len(notebook_words)
         
@@ -95,6 +146,7 @@ def init_db():
         return
     
     with conn.cursor() as cur:
+        # Створення таблиць
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -111,7 +163,7 @@ def init_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS words (
                 id SERIAL PRIMARY KEY,
-                lecture INTEGER NOT NULL,
+                lecture TEXT NOT NULL,
                 cz TEXT NOT NULL,
                 ua TEXT NOT NULL,
                 ru TEXT,
@@ -120,23 +172,32 @@ def init_db():
             );
         """)
         
+        # Міграції колонок
         try:
+            cur.execute("ALTER TABLE words ALTER COLUMN lecture TYPE TEXT;")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(1) DEFAULT 'N';")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS found_easter_eggs TEXT DEFAULT '[]';")
             cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS streak_count;")
             cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS last_streak_date;")
-        except psycopg2.Error as e:
-            print(f"Помилка при оновленні таблиці users: {e}")
-            conn.rollback()
-        else:
             conn.commit()
+        except psycopg2.Error as e:
+            print(f"Помилка при оновленні структури таблиць: {e}")
+            conn.rollback()
 
+        # --- ЛОГІКА ПЕРЕЗАВАНТАЖЕННЯ СЛІВ ---
         cur.execute("SELECT COUNT(*) FROM words;")
         word_count = cur.fetchone()[0]
         
+        should_reload = FORCE_RELOAD_WORDS
+        
+        if should_reload:
+            print("УВАГА: Виконується примусове очищення таблиці words (FORCE_RELOAD_WORDS = True).")
+            cur.execute("TRUNCATE TABLE words RESTART IDENTITY;")
+            word_count = 0 # Тепер таблиця порожня, підемо в блок імпорту
+
         if word_count == 0:
-            print("Таблиця 'words' порожня. Запускаю імпорт з Excel-файлів...")
+            print("Таблиця 'words' порожня або очищена. Запускаю імпорт з Excel-файлів...")
             try:
                 words_to_import = _load_all_words_from_excel()
                 if not words_to_import:
@@ -270,7 +331,7 @@ def load_all_words_from_db():
     words_list = []
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, lecture, cz, ua, ru, en, is_macan_easter_egg FROM words ORDER BY lecture, id;")
+            cur.execute("SELECT id, lecture, cz, ua, ru, en, is_macan_easter_egg FROM words ORDER BY id;")
             rows = cur.fetchall()
             
             words_list = [
@@ -309,7 +370,7 @@ def load_avatars():
 
 ALL_WORDS = load_all_words_from_db()
 ALL_AVATARS = load_avatars()
-AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
+AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)), key=get_lecture_sort_key)
 
 @app.route('/')
 def index(): return render_template('index.html')
@@ -415,9 +476,11 @@ def get_initial_data():
         conn.close()
     
     global ALL_WORDS, AVAILABLE_LECTURES
-    if not ALL_WORDS:
+    # Перезавантажуємо список слів, якщо він порожній або якщо ми форсували оновлення БД
+    if not ALL_WORDS or FORCE_RELOAD_WORDS:
         ALL_WORDS = load_all_words_from_db()
-        AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
+    
+    AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)), key=get_lecture_sort_key)
 
     return jsonify({
         "lectures": AVAILABLE_LECTURES,
@@ -436,12 +499,7 @@ def get_words():
     if 'random' in lecture_ids:
         words_to_train = ALL_WORDS
     else:
-        try:
-            numeric_ids = [int(lid) for lid in lecture_ids]
-            words_to_train = [word for word in ALL_WORDS if word['lecture'] in numeric_ids]
-        except ValueError:
-             print(f"Помилка: отримано нечислові ID лекцій: {lecture_ids}")
-             words_to_train = []
+        words_to_train = [word for word in ALL_WORDS if word['lecture'] in lecture_ids]
 
     return jsonify(words_to_train)
 
@@ -573,7 +631,7 @@ def save_easter_eggs():
 with app.app_context():
     init_db()
     ALL_WORDS = load_all_words_from_db()
-    AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)))
+    AVAILABLE_LECTURES = sorted(list(set(word['lecture'] for word in ALL_WORDS)), key=get_lecture_sort_key)
     print(f"Завантажено {len(ALL_WORDS)} слів з БД.")
 
 if __name__ == '__main__':
