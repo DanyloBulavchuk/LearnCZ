@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (this.state.isTransitioning) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log("Transition in progress, click blocked."); // Debug log
                     return;
                 }
 
@@ -94,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (target.matches('.leaderboard-item') && target.classList.contains('current-user')) {
-                    // Дозволяємо клік на себе в окремому рейтингу
                     if (!document.getElementById('leaderboard-screen-active')) {
                        return;
                     }
@@ -150,7 +148,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  }
                  else if (target.id === 'dict-search-input') {
                      const searchTerm = target.value.trim();
-                     // Видалено перевірку на 'macan' тут
                      this.filterDictionaryView(searchTerm);
                  }
              });
@@ -195,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         navigateTo(screenId) {
-            // Перевірка на початку, щоб ігнорувати кліки під час переходу
             if (this.state.isTransitioning) {
                  console.log(`Navigation to ${screenId} blocked: Transition already in progress.`);
                  return;
@@ -221,8 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let newScreenEntered = false;
 
             const checkTransitionDone = () => {
-                // Ця функція викликається двічі: після зникнення старого екрана і після появи нового.
-                // Тільки коли обидві події відбулися, ми розблоковуємо навігацію.
                 if (oldScreenRemoved && newScreenEntered) {
                     console.log(`Navigation to ${screenId} finished. isTransitioning = false.`);
                     this.state.isTransitioning = false;
@@ -240,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     checkTransitionDone();
                 }, { once: true });
             } else {
-                oldScreenRemoved = true; // Якщо старого екрана не було, вважаємо його "видаленим".
+                oldScreenRemoved = true;
             }
 
             const template = this.elements.templates.querySelector(`#${screenId}`);
@@ -251,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 newScreen.innerHTML = template.innerHTML;
 
                 newScreen.addEventListener('animationend', (e) => {
-                    // Переконуємося, що це саме анімація появи 'fadeIn'
                     if (e.animationName === 'fadeIn') {
                         newScreenEntered = true;
                         console.log("New screen entered.");
@@ -260,12 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, { once: true });
 
                 this.elements.appContainer.appendChild(newScreen);
-                this.onScreenLoad(screenId); // Запускаємо логіку для нового екрана
+                this.onScreenLoad(screenId);
             } else {
-                // Якщо шаблон не знайдено, щось пішло не так, але ми маємо розблокувати навігацію.
                 console.error(`Template not found for screenId: ${screenId}`);
-                newScreenEntered = true; // Вважаємо новий екран "з'явившимся" (хоча його немає)
-                checkTransitionDone(); // Розблоковуємо навігацію
+                newScreenEntered = true;
+                checkTransitionDone();
             }
         },
 
@@ -324,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 case 'dictionary-view-screen':
                     this.renderDictionary();
-                    if (this.state.selectedLectureForView === 0) {
+                    if (this.state.selectedLectureForView === '0') {
                         this.renderLazuritEasterEgg();
                     }
                     break;
@@ -341,11 +333,10 @@ document.addEventListener('DOMContentLoaded', () => {
                          this.renderAvatarUI(this.state.viewingUser, true);
                          this.renderEasterEggs(this.state.viewingUser);
                      } else {
-                         this.navigateTo('main-menu-screen'); // Якщо немає даних, повертаємося
+                         this.navigateTo('main-menu-screen');
                      }
                     break;
                  case 'macan-easter-egg-screen':
-                    // Можливо, тут потрібно щось додати, якщо екран має динамічний контент
                     break;
                  case 'leaderboard-screen':
                     this.renderLeaderboardStandalone();
@@ -415,63 +406,65 @@ document.addEventListener('DOMContentLoaded', () => {
             results.forEach((word, index) => {
                 const item = document.createElement('div');
                 item.className = 'dict-item';
-                const lectureLabel = word.lecture === 0 ? (this.state.texts[this.state.currentLang]?.notebook_lecture || 'Записник') : `L${word.lecture}`;
+                
+                let lectureLabel = '';
+                if (word.lecture === '0') {
+                    lectureLabel = this.state.texts[this.state.currentLang]?.notebook_lecture || 'Записник';
+                } else {
+                    // Форматування для пошуку: якщо A1.1 -> (A1) L1, якщо 1 -> L1
+                    const match = word.lecture.match(/^([A-Z0-9]+)\.(\d+)$/);
+                    if (match) {
+                         lectureLabel = `(${match[1]}) L${match[2]}`;
+                    } else {
+                         lectureLabel = `L${word.lecture}`;
+                    }
+                }
+                
                 item.innerHTML = `<span class="search-result-lecture">[${lectureLabel}]</span> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                 container.appendChild(item);
             });
         },
 
         displayMacanEasterEgg() {
-           // Ця функція більше не потрібна для показу, використовується лише стилізація
         },
 
         hideMacanEasterEgg() {
-           // Ця функція більше не потрібна для ховання
         },
 
         filterDictionaryView(searchTerm) {
             const container = document.getElementById('dictionary-words-container');
             if (!container) return;
 
-            const lectureNum = this.state.selectedLectureForView;
-            if (lectureNum === null) return;
+            const lectureId = this.state.selectedLectureForView;
+            if (lectureId === null) return;
 
-            const words = this.state.loadedWords[lectureNum] || [];
+            const words = this.state.loadedWords[lectureId] || [];
             const langKey = this.state.currentLang.toUpperCase();
             const term = searchTerm.toLowerCase();
 
             const filteredWords = words.filter(word => {
-                // Завжди показуємо Macan, якщо він є в поточній лекції (lectureNum === 0)
-                if (word.is_macan_easter_egg && lectureNum === 0) return true;
-                // Не показуємо Macan в інших лекціях
-                if (word.is_macan_easter_egg && lectureNum !== 0) return false;
-                // Стандартна логіка фільтрації для інших слів
+                if (word.is_macan_easter_egg && lectureId === '0') return true;
+                if (word.is_macan_easter_egg && lectureId !== '0') return false;
                 return word.CZ.toLowerCase().includes(term) ||
                        (word[langKey] || word.UA).toLowerCase().includes(term);
             });
 
             container.innerHTML = '';
-            // Отримуємо список слів *без* Macan для правильної нумерації
             const regularWordsInLecture = words.filter(w => !w.is_macan_easter_egg);
-            const macanWord = words.find(w => w.is_macan_easter_egg); // Знаходимо об'єкт Macan
+            const macanWord = words.find(w => w.is_macan_easter_egg);
 
             filteredWords.forEach((word) => {
                 const item = document.createElement('div');
                 item.className = 'dict-item';
 
                 if (word.is_macan_easter_egg) {
-                    item.classList.add('macan-egg-item'); // Додаємо клас для кліку
-                    item.dataset.action = 'activate-macan-egg'; // Додаємо data-action для обробника
+                    item.classList.add('macan-egg-item');
+                    item.dataset.action = 'activate-macan-egg';
 
-                    // Розраховуємо позицію Macan (50 або остання)
                     const macanPosition = Math.min(49, regularWordsInLecture.length);
-
-                    // Формуємо рядок як для звичайного слова
-                    // Використовуємо UA, RU, EN з об'єкта macanWord
                     const translationString = `${macanWord.UA}, ${macanWord.RU}, ${macanWord.EN}`;
                     item.innerHTML = `<b>${macanPosition + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${translationString}</span>`;
                 } else {
-                    // Рахуємо індекс *тільки* серед звичайних слів
                     const displayIndex = regularWordsInLecture.indexOf(word);
                     item.innerHTML = `<b>${displayIndex + 1}.</b> <span class="cz-word">${word.CZ}</span> — <span class="ua-word">${word[langKey] || word.UA}</span>`;
                 }
@@ -495,7 +488,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.navigateTo('lecture-selection-screen');
                 },
                 'select-lecture': (ds) => {
-                    const lectureNum = (ds.lecture === '0' || ds.lecture === 0) ? 0 : parseInt(ds.lecture, 10);
+                    // lectureNum is string now ("A1.1", "1", "0")
+                    const lectureNum = ds.lecture; 
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${lectureNum}"]`);
                     if (!btn) return;
 
@@ -538,10 +532,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 'prev-avatar': () => this.handleAvatarChange(-1),
                 'next-avatar': () => this.handleAvatarChange(1),
                 'activate-macan-egg': () => {
-                    this.navigateTo('macan-easter-egg-screen'); // Тільки перехід
+                    this.navigateTo('macan-easter-egg-screen');
                 },
                 'activate-macan-music': () => {
-                    this.playMusic('macan'); // Тільки музика і зарахування
+                    this.playMusic('macan');
                 },
             };
             if (actions[action]) actions[action](dataset);
@@ -574,12 +568,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.renderGenderSlider();
                 this.renderVolumeSlider();
             }
-            // Оновити словник, якщо він відкритий, щоб переклади оновилися
             const dictInput = document.getElementById('dict-search-input');
             if (document.getElementById('dictionary-view-screen-active') && dictInput) {
                  this.filterDictionaryView(dictInput.value);
             }
-            // Оновити рейтинг, якщо він відкритий
              if (document.getElementById('leaderboard-screen-active')) {
                   this.renderLeaderboardStandalone();
              }
@@ -593,32 +585,41 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('[data-i18n]').forEach(el => { if (texts[el.dataset.i18n]) el.textContent = texts[el.dataset.i18n]; });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (texts[el.dataset.i18nPlaceholder]) el.placeholder = texts[el.dataset.i18nPlaceholder]; });
             document.querySelectorAll('[data-lecture-title]').forEach(el => {
-                const lectureNum = el.dataset.lectureTitle;
-                if (lectureNum === '0') {
+                const lectureId = el.dataset.lectureTitle;
+                if (lectureId === '0') {
                     el.textContent = texts.notebook_lecture || 'Мій записник';
                 } else {
-                    el.textContent = `${texts.lecture || 'Лекція'} №${lectureNum}`;
+                    // Нова логіка парсингу назви лекції
+                    // Перевіряємо формат A1.1 (ЛітериЦифри.Цифри)
+                    const match = lectureId.match(/^([A-Z0-9]+)\.(\d+)$/);
+                    if (match) {
+                        const level = match[1];
+                        const num = match[2];
+                        // Формуємо рядок: (A1) Лекція 1
+                        el.textContent = `(${level}) ${texts.lecture || 'Лекція'} ${num}`;
+                    } else {
+                        // Стандартний формат для сумісності або якщо ім'я просте "1"
+                        el.textContent = `${texts.lecture || 'Лекція'} ${lectureId}`;
+                    }
                 }
             });
         },
 
         async checkSession() {
             try {
-                await this.loadInitialData(); // Завантажуємо базові дані (лекції, рейтинг, тексти)
-                const response = await fetch('/api/session'); // Перевіряємо, чи є активна сесія
+                await this.loadInitialData();
+                const response = await fetch('/api/session');
                 const data = await response.json();
                 this.state.currentUser = data.user || null;
                 if (this.state.currentUser) {
-                    // Якщо користувач залогінений, парсимо його знайдені пасхалки
                     this.state.currentUser.found_easter_eggs = JSON.parse(this.state.currentUser.found_easter_eggs || '[]');
                 }
             } catch (e) {
                 console.error("Error checking session:", e);
-                this.state.currentUser = null; // Якщо помилка, вважаємо, що користувач не залогінений
+                this.state.currentUser = null;
             }
             finally {
-                this.updateHeader(); // Оновлюємо шапку (показуємо/ховаємо кнопку профілю)
-                // Визначаємо, куди перейти: якщо є користувач - в меню, якщо ні - на екран привітання
+                this.updateHeader();
                 this.navigateTo(this.state.currentUser ? 'main-menu-screen' : 'welcome-screen');
             }
         },
@@ -631,23 +632,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.state.leaderboard = data.leaderboard;
                 this.state.texts = data.texts;
                 this.state.avatars = data.avatars;
-                this.setLanguage(this.state.currentLang); // Застосовуємо поточну мову до завантажених текстів
+                this.setLanguage(this.state.currentLang);
             } catch (e) { console.error("Could not load initial data:", e); }
         },
 
         async loadWordsForLectures(lectureIds, excludeMacan = false) {
-            // Перетворюємо ID лекцій на числа, ігноруючи 'random'
-            const numericLectureIds = lectureIds.filter(id => id !== 'random').map(id => parseInt(id, 10));
+            // Фільтруємо 'random', але НЕ парсимо інші ID в int, бо вони можуть бути "A1.1"
+            const filteredLectureIds = lectureIds.filter(id => id !== 'random');
             const hasRandom = lectureIds.includes('random');
 
-            // Визначаємо, які лекції ще не завантажені
-            const lecturesToFetch = numericLectureIds.filter(id => !this.state.loadedWords[id]);
-            // Перевіряємо, чи треба завантажити 'random' і чи він ще не завантажений
+            const lecturesToFetch = filteredLectureIds.filter(id => !this.state.loadedWords[id]);
             const fetchRandom = hasRandom && !this.state.loadedWords['random'];
 
-            // Якщо є що завантажувати (конкретні лекції або 'random')
             if (lecturesToFetch.length > 0 || fetchRandom) {
-                // Визначаємо, що саме запитувати у сервера
                 const requestBody = { lectures: fetchRandom ? ['random'] : lecturesToFetch };
                 try {
                      const response = await fetch('/api/get_words', {
@@ -656,31 +653,26 @@ document.addEventListener('DOMContentLoaded', () => {
                          body: JSON.stringify(requestBody)
                      });
                      if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
-                     const words = await response.json(); // Отримуємо список слів
+                     const words = await response.json();
 
-                     // Зберігаємо завантажені слова у state
                      if (fetchRandom) {
-                         this.state.loadedWords['random'] = words; // Всі слова для 'random'
+                         this.state.loadedWords['random'] = words;
                      } else {
-                         // Розподіляємо слова по конкретних лекціях
                          lecturesToFetch.forEach(id => {
                              this.state.loadedWords[id] = words.filter(w => w.lecture === id);
                          });
                      }
                 } catch (error) {
                      console.error("Помилка завантаження слів:", error);
-                     return []; // Повертаємо пустий масив у разі помилки
+                     return [];
                 }
             }
 
-            // Збираємо фінальний список слів
             let allWords = [];
             if (hasRandom) {
-                // Якщо обрано 'random', беремо всі слова звідти
                 allWords = [...(this.state.loadedWords['random'] || [])];
             } else {
-                // Інакше, збираємо слова з усіх обраних лекцій
-                numericLectureIds.forEach(id => {
+                filteredLectureIds.forEach(id => {
                     allWords.push(...(this.state.loadedWords[id] || []));
                 });
             }
@@ -729,16 +721,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 const data = await response.json();
                 this.state.currentUser = data.user;
-                this.state.currentUser.found_easter_eggs = []; // Новий користувач, пасхалок немає
+                this.state.currentUser.found_easter_eggs = [];
                 this.updateHeader(); this.navigateTo('main-menu-screen');
             } else { alert(`Помилка реєстрації: ${await response.text()}`); }
         },
 
         async handleLogout() {
             await fetch('/api/logout', { method: 'POST' });
-            this.stopAllMusic(); // Зупиняємо музику при виході
+            this.stopAllMusic();
             this.state.currentUser = null;
-            this.state.loadedWords = {}; // Очищуємо кеш слів
+            this.state.loadedWords = {};
             this.updateHeader();
             this.navigateTo('welcome-screen');
         },
@@ -756,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 alert(this.state.texts[this.state.currentLang].pin_changed_success);
-                this.navigateTo('profile-screen'); // Повертаємося в профіль після зміни
+                this.navigateTo('profile-screen');
             } else {
                 alert('Не вдалося змінити PIN-код.');
             }
@@ -768,8 +760,6 @@ document.addEventListener('DOMContentLoaded', () => {
              const detailsContainer = screen.querySelector(isViewing ? '#profile-details-view' : '#profile-details');
 
              if (!detailsContainer || !userData) return;
-
-             // Рейтинг тепер на окремому екрані, тому його тут не рендеримо
 
              const xp = userData.xp;
              const { level, progress, needed } = this.xpToLevel(xp);
@@ -787,10 +777,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const leaderboardContainer = document.getElementById('leaderboard-container-standalone');
             if (!leaderboardContainer) return;
 
-            leaderboardContainer.innerHTML = ''; // Очищуємо попередній рейтинг
+            leaderboardContainer.innerHTML = '';
 
             if (!this.state.leaderboard || this.state.leaderboard.length === 0) {
-                 leaderboardContainer.innerHTML = '<p>Рейтинг порожній.</p>'; // Повідомлення, якщо даних немає
+                 leaderboardContainer.innerHTML = '<p>Рейтинг порожній.</p>';
                  return;
             }
 
@@ -799,7 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  const userRank = this.getRank(userLevel);
                  const item = document.createElement('div');
                  item.className = 'leaderboard-item';
-                 item.dataset.username = user.username; // Зберігаємо ім'я для можливості кліку
+                 item.dataset.username = user.username;
 
                  let userEggs = [];
                  try {
@@ -808,7 +798,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  const hasAllEggs = userEggs.length >= TOTAL_EASTER_EGGS;
                  const crown = hasAllEggs ? '<span class="crown-icon">👑</span>' : '';
 
-                 // Виділяємо поточного користувача в рейтингу
                  if (this.state.currentUser && user.username === this.state.currentUser.username) {
                       item.classList.add('current-user');
                  }
@@ -829,7 +818,6 @@ document.addEventListener('DOMContentLoaded', () => {
              if (!container || !userData) return;
 
              const foundEggs = userData.found_easter_eggs || [];
-             // Проходимо по всіх іконках і додаємо/видаляємо клас 'found'
              container.querySelectorAll('.easter-egg-icon').forEach(icon => {
                   icon.classList.toggle('found', foundEggs.includes(icon.dataset.egg));
              });
@@ -848,7 +836,6 @@ document.addEventListener('DOMContentLoaded', () => {
              const T = this.state.texts[this.state.currentLang];
              const { gender, avatar } = userData;
 
-             // Ховаємо елементи керування та ім'я, якщо переглядаємо чужий профіль
              if (controls) {
                   controls.style.display = isReadonly ? 'none' : 'flex';
              }
@@ -856,8 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  nameEl.style.display = isReadonly ? 'none' : 'block';
              }
 
-
-             // Якщо стать не обрана або аватара немає
              if (gender === 'N' || !gender || !avatar) {
                  wrapper.innerHTML = `<span>${T.avatar_unavailable}</span>`;
                  if (controls) controls.classList.add('hidden');
@@ -865,7 +850,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  return;
              }
 
-             // Перевіряємо, чи існує такий аватар для обраної статі
              const avatarList = this.state.avatars[gender] || [];
              if (avatarList.length === 0 || !avatarList.includes(avatar)) {
                  wrapper.innerHTML = `<span>${T.avatar_unavailable}</span>`;
@@ -874,39 +858,34 @@ document.addEventListener('DOMContentLoaded', () => {
                  return;
              }
 
-             // Показуємо стрілки, якщо це наш профіль
              if (controls) controls.classList.remove('hidden');
 
-             // Встановлюємо поточний індекс аватара, якщо це наш профіль
              if (!isReadonly && this.state.currentUser && userData.username === this.state.currentUser.username) {
                  this.state.currentAvatarIndex = avatarList.indexOf(avatar);
              }
 
-             // Показуємо зображення аватара та його ім'я
              wrapper.innerHTML = `<img src="/avatars/${avatar}" alt="Avatar">`;
              if (nameEl && !isReadonly) nameEl.textContent = avatar.replace(`${gender}_`, '').replace('.png', '').replace('.jpg', '');
         },
 
 
         async handleAvatarChange(direction) {
-            if (this.state.viewingUser) return; // Не дозволяємо змінювати чужий аватар
+            if (this.state.viewingUser) return;
 
             const { gender } = this.state.currentUser;
             const avatarList = this.state.avatars[gender];
-            if (!avatarList || avatarList.length === 0) return; // Немає аватарів для цієї статі
+            if (!avatarList || avatarList.length === 0) return;
 
-            // Розраховуємо новий індекс з урахуванням "зациклення"
             let newIndex = this.state.currentAvatarIndex + direction;
             if (newIndex < 0) newIndex = avatarList.length - 1;
             if (newIndex >= avatarList.length) newIndex = 0;
 
             const newAvatar = avatarList[newIndex];
-            this.state.currentAvatarIndex = newIndex; // Зберігаємо новий індекс
-            this.state.currentUser.avatar = newAvatar; // Оновлюємо аватар у стані
+            this.state.currentAvatarIndex = newIndex;
+            this.state.currentUser.avatar = newAvatar;
 
-            this.renderAvatarUI(this.state.currentUser, false); // Перемальовуємо UI
+            this.renderAvatarUI(this.state.currentUser, false);
 
-            // Зберігаємо новий аватар на сервері
             await fetch('/api/settings/save_avatar', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ avatar: newAvatar })
@@ -918,7 +897,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!container) return;
             const T = this.state.texts[this.state.currentLang];
 
-            // Генеруємо HTML для слайдера статі
             container.innerHTML = `
                 <span class="gender-label">${T.gender_female}</span>
                 <label class="gender-switch">
@@ -928,7 +906,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="gender-label">${T.gender_male}</span>
             `;
 
-            // Встановлюємо стан слайдера відповідно до поточної статі користувача
             const slider = container.querySelector('#gender-slider');
             if (this.state.currentUser.gender === 'M') {
                 slider.checked = true;
@@ -939,35 +916,30 @@ document.addEventListener('DOMContentLoaded', () => {
              const container = document.getElementById('volume-slider-container');
              if (!container) return;
 
-             container.style.display = 'block'; // Робимо видимим
+             container.style.display = 'block';
 
-             // Завантажуємо збережену гучність або ставимо 1 (максимум) за замовчуванням
              const savedVolume = parseFloat(localStorage.getItem('volumeLevel') || '1');
 
-             // Генеруємо HTML для слайдера гучності
              container.innerHTML = `
                  <input type="range" id="volume-slider-settings" min="0" max="1" step="0.01" value="${savedVolume}">
              `;
-             this.setVolume(savedVolume); // Встановлюємо початкову гучність
+             this.setVolume(savedVolume);
          },
 
 
         async handleGenderChange(gender) {
             this.state.currentUser.gender = gender;
-            this.state.currentAvatarIndex = 0; // Скидаємо індекс аватара
+            this.state.currentAvatarIndex = 0;
 
-            // Вибираємо перший аватар для нової статі або null, якщо їх немає
             const avatarList = this.state.avatars[gender] || [];
             const newAvatar = avatarList.length > 0 ? avatarList[0] : null;
             this.state.currentUser.avatar = newAvatar;
 
-            // Зберігаємо нову стать та аватар на сервері
             await fetch('/api/settings/save_avatar', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ gender: gender, avatar: newAvatar })
             });
 
-            // Якщо ми зараз на екрані профілю, оновлюємо UI аватара
             if (document.getElementById('profile-screen-active')) {
                 this.renderAvatarUI(this.state.currentUser, false);
             }
@@ -976,16 +948,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderLazuritEasterEgg() {
             const container = document.getElementById('lazurit-easter-egg-container');
             if (!container) return;
-            container.innerHTML = ''; // Очищуємо
+            container.innerHTML = '';
 
             const T = this.state.texts[this.state.currentLang];
-            // Перевіряємо, чи знайдена ця пасхалка
             const found = this.state.currentUser && this.state.currentUser.found_easter_eggs.includes('lazurit');
 
             const eggEl = document.createElement('div');
             eggEl.id = 'lazurit-easter-egg';
-            eggEl.dataset.egg = 'lazurit'; // Додаємо атрибут для обробника кліків
-            if (found) eggEl.classList.add('found'); // Додаємо клас, якщо знайдено
+            eggEl.dataset.egg = 'lazurit';
+            if (found) eggEl.classList.add('found');
 
             container.appendChild(eggEl);
         },
@@ -996,21 +967,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const actionsContainer = document.getElementById('lecture-actions-container');
             if (!container || !actionsContainer) return;
 
-            this.state.currentTraining.selectedLectures = []; // Скидаємо вибір
+            this.state.currentTraining.selectedLectures = [];
             container.innerHTML = '';
             actionsContainer.innerHTML = '';
 
-            // Створюємо кнопки для кожної доступної лекції
             this.state.lectures.forEach(lectureNum => {
                 const button = document.createElement('button');
                 button.className = 'btn btn-lecture';
-                button.dataset.action = 'select-lecture'; // Для обробки вибору
+                button.dataset.action = 'select-lecture';
                 button.dataset.lecture = lectureNum;
-                button.dataset.lectureTitle = lectureNum; // Для перекладу назви
+                button.dataset.lectureTitle = lectureNum;
                 container.appendChild(button);
             });
 
-            // Якщо ми в режимі вибору для тренування, додаємо кнопку "Старт"
             if (this.state.viewMode === 'training') {
                 const startBtn = document.createElement('button');
                 startBtn.className = 'btn btn-start-training';
@@ -1018,7 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 startBtn.dataset.i18n = 'start_training';
                 actionsContainer.appendChild(startBtn);
             }
-            this.updateAllTexts(); // Оновлюємо тексти на всіх кнопках
+            this.updateAllTexts();
         },
 
 
@@ -1027,21 +996,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.getElementById('dict-search-input');
             if (!container || !searchInput) return;
 
-            container.innerHTML = ''; // Очищуємо список
-            searchInput.value = ''; // Очищуємо пошук
+            container.innerHTML = '';
+            searchInput.value = '';
 
-            const lectureNum = this.state.selectedLectureForView;
-            if (lectureNum === null) return; // Якщо лекція не вибрана, нічого не робимо
+            const lectureId = this.state.selectedLectureForView;
+            if (lectureId === null) return;
 
-            // Завантажуємо слова, якщо їх ще немає в кеші
-            let words = this.state.loadedWords[lectureNum];
+            let words = this.state.loadedWords[lectureId];
             if (!words) {
-                // Викликаємо БЕЗ excludeMacan = true, щоб Macan був у словнику
-                words = await this.loadWordsForLectures([lectureNum]);
-                this.state.loadedWords[lectureNum] = words; // Зберігаємо в кеш
+                words = await this.loadWordsForLectures([lectureId]);
+                this.state.loadedWords[lectureId] = words;
             }
 
-            // Рендеримо слова (включаючи Macan, якщо це Записник)
             this.filterDictionaryView('');
         },
 
@@ -1051,32 +1017,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const { mode, selectedLectures } = this.state.currentTraining;
             let lectureIds = [];
 
-            // Визначаємо, які лекції використовувати
             if (mode === 'random') {
                 lectureIds = ['random'];
             } else if (mode === 'specific_selected') {
                 lectureIds = selectedLectures;
             }
 
-            // Завантажуємо (або беремо з кешу) слова, ВИКЛЮЧАЮЧИ Macan
             wordsToTrain = await this.loadWordsForLectures(lectureIds, true);
 
-            // Якщо слів немає, повідомляємо користувача
             if (wordsToTrain.length === 0) {
                 alert("Для цього режиму немає слів.");
-                this.state.isTransitioning = false; // Розблоковуємо навігацію
+                this.state.isTransitioning = false;
                 return;
             }
 
-            // Перемішуємо слова
             wordsToTrain.sort(() => Math.random() - 0.5);
 
-            // Зберігаємо стан тренування
             this.state.currentTraining.words = wordsToTrain;
             this.state.currentTraining.index = 0;
             this.state.currentTraining.results = [];
 
-            // Переходимо на екран тренування
             this.navigateTo('training-screen');
         },
 
@@ -1084,48 +1044,40 @@ document.addEventListener('DOMContentLoaded', () => {
             const screen = document.getElementById('training-screen-active');
             if (!screen) return;
 
-            // Якщо слова закінчилися, переходимо до результатів
             if (this.state.currentTraining.index >= this.state.currentTraining.words.length) {
                 this.navigateTo('results-screen');
                 return;
             }
 
-            this.state.isCheckingAnswer = false; // Скидаємо прапорець перевірки
+            this.state.isCheckingAnswer = false;
 
             const T = this.state.texts[this.state.currentLang];
             const { index, words, direction } = this.state.currentTraining;
             const wordData = words[index];
 
-            // Оновлюємо прогрес (Слово X з Y)
             screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
             const langKey = this.state.currentLang.toUpperCase();
 
-            // Визначаємо слово-питання залежно від напрямку
             const questionWordRaw = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
-            // Видаляємо дужки для перевірки відповіді, але зберігаємо оригінал для показу (adj.)
             const questionWordClean = questionWordRaw.replace(/\s*\(.*?\)\s*/g, '').trim();
 
-            let displayHtml = questionWordClean; // Слово для показу
+            let displayHtml = questionWordClean;
 
-            // --- Нова логіка для Завдання №6 ((adj.)) ---
-            // Додаємо маркер ТІЛЬКИ якщо переклад З мови НА чеську І слово містить (adj.)
             if (direction === 'lang_to_cz' && questionWordRaw.toLowerCase().includes('(adj.)')) {
                 displayHtml += ` <span class="adj-marker">(adj.)</span>`;
             }
-            // --- Кінець нової логіки ---
 
-            screen.querySelector('.training-word').innerHTML = displayHtml; // Показуємо слово (з можливим маркером)
+            screen.querySelector('.training-word').innerHTML = displayHtml;
 
-            // Готуємо поле вводу
             const inputEl = screen.querySelector('.training-input');
             inputEl.value = '';
             inputEl.disabled = false;
-            inputEl.focus(); // Ставимо фокус
-            screen.querySelector('.training-feedback').innerHTML = ''; // Очищуємо фідбек
+            inputEl.focus();
+            screen.querySelector('.training-feedback').innerHTML = '';
         },
 
         async checkAnswer() {
-            if (this.state.isCheckingAnswer) return; // Блокуємо повторну перевірку
+            if (this.state.isCheckingAnswer) return;
             this.state.isCheckingAnswer = true;
 
             const screen = document.getElementById('training-screen-active');
@@ -1137,63 +1089,51 @@ document.addEventListener('DOMContentLoaded', () => {
             const langKey = this.state.currentLang.toUpperCase();
             const userAnswer = inputEl.value.trim();
 
-            // Якщо поле пусте, просимо ввести відповідь
             if (userAnswer === '') {
                 alert(T.field_cannot_be_empty);
-                this.state.isCheckingAnswer = false; // Розблоковуємо
+                this.state.isCheckingAnswer = false;
                 return;
             }
 
-            // Визначаємо правильну відповідь(і)
             const correctAnswersRawWithParen = direction === 'cz_to_lang' ? (wordData[langKey] || wordData.UA) : wordData.CZ;
-            // Видаляємо дужки та всередині них для чистої перевірки
             const correctAnswersRaw = correctAnswersRawWithParen.replace(/\s*\(.*?\)\s*/g, '');
-            // Розбиваємо на варіанти, якщо є коми/крапки з комою, і приводимо до нижнього регістру
             const correctAnswers = correctAnswersRaw.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s);
 
-            // Перевіряємо, чи є відповідь користувача серед правильних варіантів
             const isCorrect = correctAnswers.includes(userAnswer.toLowerCase());
 
             let xp_earned = 0;
             if (isCorrect) {
-                // Нараховуємо XP
                 xp_earned = direction === 'lang_to_cz' ? 12 : 5;
-                feedbackEl.innerHTML = `<span class="xp-gain">${T.correct} +${xp_earned} XP</span>`; // Показуємо анімацію XP
-                // Відправляємо XP на сервер
+                feedbackEl.innerHTML = `<span class="xp-gain">${T.correct} +${xp_earned} XP</span>`;
                 const response = await fetch('/api/update_xp', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ xp: xp_earned })
                 });
                 if(response.ok) {
                     const data = await response.json();
-                     // Оновлюємо XP у локальному стані користувача
                      if (this.state.currentUser) {
                           this.state.currentUser.xp = data.new_xp;
                      }
                 }
             } else {
-                // Якщо помилка, показуємо правильну відповідь
                 feedbackEl.innerHTML = `${T.mistake} <br> <span style="opacity: 0.7">${T.correct_is} ${correctAnswers[0]}</span>`;
             }
 
-            // Зберігаємо результат цього слова
             results.push({
-                question: (direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA)).replace(/\s*\(.*?\)\s*/g, '').trim(), // Питання без дужок
+                question: (direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA)).replace(/\s*\(.*?\)\s*/g, '').trim(),
                 userAnswer,
                 isCorrect,
-                correctAnswer: correctAnswers[0], // Перший варіант правильної відповіді
+                correctAnswer: correctAnswers[0],
                 xp_earned
             });
 
-            // Забарвлюємо фідбек
             feedbackEl.style.color = isCorrect ? 'var(--success-color)' : 'var(--danger-color)';
-            inputEl.disabled = true; // Блокуємо поле вводу
+            inputEl.disabled = true;
 
-            // Чекаємо трохи і переходимо до наступного слова
             setTimeout(() => {
                 this.state.currentTraining.index++;
-                this.renderCurrentWord(); // Рендеримо наступне слово
-            }, isCorrect ? 1200 : 2000); // Довша затримка при помилці
+                this.renderCurrentWord();
+            }, isCorrect ? 1200 : 2000);
         },
 
         renderResults() {
@@ -1202,50 +1142,41 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!summaryEl || !listEl) return;
 
             const { results } = this.state.currentTraining;
-            // Якщо результатів немає (наприклад, користувач вийшов одразу)
             if (!results || results.length === 0) {
                  summaryEl.innerHTML = "Ви не відповіли на жодне слово.";
                  listEl.innerHTML = '';
                  return;
             }
 
-            // Рахуємо статистику
             const correctCount = results.filter(r => r.isCorrect).length;
             const totalXpEarned = results.reduce((sum, res) => sum + (res.xp_earned || 0), 0);
 
-            // Показуємо загальний результат
             summaryEl.innerHTML = `Ваш результат: <b>${correctCount} з ${results.length}</b> (+${totalXpEarned} XP)`;
-            listEl.innerHTML = ''; // Очищуємо список
+            listEl.innerHTML = '';
 
-            // Виводимо деталі по кожному слову
             results.forEach((res, index) => {
                 const item = document.createElement('div');
                 item.className = `result-item ${res.isCorrect ? 'correct' : 'incorrect'}`;
-                // Генеруємо HTML з підсвічуванням різниці для неправильних відповідей
                 const answerHTML = res.isCorrect ? `<span class="diff-correct">${res.userAnswer}</span>` : this.generateDiffHtml(res.correctAnswer, res.userAnswer);
                 item.innerHTML = `<b>${index + 1}.</b> ${res.question} - ${answerHTML} <span>(+${res.xp_earned || 0} XP)</span>`;
                 listEl.appendChild(item);
             });
 
-            // Оновлюємо дані (рейтинг), бо XP могли змінитися
             this.loadInitialData();
         },
 
-        // Допоміжна функція для підсвічування різниці між відповідями
         generateDiffHtml(correct, user) {
-            if (!user) return `<span class="diff-incorrect">(пусто)</span> -> <span class="diff-correct">${correct}</span>`; // Якщо відповіді не було
+            if (!user) return `<span class="diff-incorrect">(пусто)</span> -> <span class="diff-correct">${correct}</span>`;
             let html = '';
             const userLower = user.toLowerCase();
             const correctLower = correct.toLowerCase();
-            // Порівнюємо посимвольно
             for (let i = 0; i < Math.max(user.length, correct.length); i++) {
                 if (userLower[i] === correctLower[i]) {
-                    html += `<span class="diff-correct">${user[i] || ''}</span>`; // Зелений, якщо співпадає
+                    html += `<span class="diff-correct">${user[i] || ''}</span>`;
                 } else {
-                    html += `<span class="diff-incorrect">${user[i] || ''}</span>`; // Червоний, якщо не співпадає
+                    html += `<span class="diff-incorrect">${user[i] || ''}</span>`;
                 }
             }
-            // Додаємо правильну відповідь у дужках для наочності
             html += ` <span style="opacity: 0.7">( ${correct} )</span>`;
             return html;
         },
@@ -1257,61 +1188,52 @@ document.addEventListener('DOMContentLoaded', () => {
             const keyboardContainer = document.getElementById('special-chars-keyboard');
             if (!keyboardContainer) return;
 
-            // Генеруємо HTML для клавіатури спецсимволів
             let html = '<div class="keyboard-row">';
             chars.forEach((char, index) => {
                 html += `<button type="button" class="char-btn btn">${char}</button>`;
-                if (index === 7) { // Переносимо на новий рядок після 8-го символу
+                if (index === 7) {
                     html += '</div><div class="keyboard-row">';
                 }
             });
             html += '</div>';
-            // Додаємо кнопку Shift
             html += `<div class="keyboard-row"><button type="button" class="shift-btn btn btn-secondary">Shift</button></div>`;
             keyboardContainer.innerHTML = html;
         },
 
         toggleShift() {
-            this.state.isShiftActive = !this.state.isShiftActive; // Перемикаємо стан Shift
-            this.renderKeyboard(); // Перемальовуємо клавіатуру
+            this.state.isShiftActive = !this.state.isShiftActive;
+            this.renderKeyboard();
         },
 
-        // Вставляє символ у поле вводу на позицію курсора
         insertChar(char) {
             const inputEl = document.querySelector('.training-input');
             if (inputEl) {
                 const start = inputEl.selectionStart;
                 const end = inputEl.selectionEnd;
                 inputEl.value = inputEl.value.substring(0, start) + char + inputEl.value.substring(end);
-                // Встановлюємо курсор після вставленого символу
                 inputEl.selectionStart = inputEl.selectionEnd = start + 1;
-                inputEl.focus(); // Повертаємо фокус
+                inputEl.focus();
             }
         },
 
-        // Розраховує рівень, прогрес до наступного рівня та XP для наступного рівня
         xpToLevel(xp) {
             let level = 1, startXp = 0, needed = 100;
-            // Рахуємо рівень, поки XP вистачає
             while (xp >= startXp + needed) {
                 startXp += needed; level++;
-                // Розраховуємо XP для наступного рівня (збільшується на 20% кожен раз)
                 needed = Math.floor(100 * (1.2 ** (level - 1)));
             }
             return { level, progress: xp - startXp, needed };
         },
 
-        // Визначає ранг (емодзі та назву) за рівнем
         getRank(level) {
-            let rankEmoji = RANKS[1]; // Ранг за замовчуванням
+            let rankEmoji = RANKS[1];
             let rankName = NAMES[1];
-            // Шукаємо найвищий досягнутий ранг
             for (const lvl in RANKS) {
                 if (level >= parseInt(lvl, 10)) {
                     rankEmoji = RANKS[lvl];
                     rankName = NAMES[lvl];
                 } else {
-                    break; // Зупиняємося, як тільки рівень менший за вимогу
+                    break;
                 }
             }
             return { emoji: rankEmoji, name: rankName };
@@ -1319,65 +1241,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
          playMusic(eggName) {
-            // Перевірка чи ми не в чужому профілі (для іконок пасхалок)
             const isViewingOtherProfile = document.getElementById('view-profile-screen-active');
-            const clickedElement = event?.target; // Get the element that was clicked
-             // Check if the click happened inside the easter egg icon container
+            const clickedElement = event?.target;
              const isProfileEggIcon = clickedElement?.closest('#easter-egg-icons');
 
-             // Блокуємо, якщо це іконка в чужому профілі
             if (isViewingOtherProfile && isProfileEggIcon) {
                 return;
             }
 
             const newPlayer = this.elements.audio[eggName];
-            if (!newPlayer) return; // Якщо аудіофайл не знайдено
+            if (!newPlayer) return;
 
-            // Якщо натиснули на ту саму музику, що вже грає - зупиняємо
             if (this.state.currentMusicPlayer === newPlayer && this.state.isMusicPlaying) {
                 this.stopAllMusic();
                 return;
             }
 
-            // Зупиняємо поточну музику перед запуском нової
             this.stopAllMusic();
 
             this.state.currentMusicPlayer = newPlayer;
             const savedVolume = parseFloat(localStorage.getItem('volumeLevel') || '1');
-            this.state.currentMusicPlayer.volume = savedVolume; // Встановлюємо гучність
-            this.state.currentMusicPlayer.play(); // Запускаємо
+            this.state.currentMusicPlayer.volume = savedVolume;
+            this.state.currentMusicPlayer.play();
             this.state.isMusicPlaying = true;
-            this.state.currentParticleType = eggName; // Запам'ятовуємо тип частинок для дощу
+            this.state.currentParticleType = eggName;
 
-            // Оновлюємо вигляд кнопки музики (смарагд/діамант)
             const musicBtn = document.getElementById('music-control-button');
             if (musicBtn) {
                 const currentEggType = musicBtn.dataset.egg;
                  musicBtn.classList.toggle('playing', eggName === currentEggType);
             }
 
-            // Якщо ми в налаштуваннях, оновлюємо слайдер гучності
              if (document.getElementById('settings-screen-active')) {
                  this.renderVolumeSlider();
              }
 
-            // Запускаємо дощ з частинок
             this.startParticleRain(eggName);
 
-            // Якщо ця пасхалка ще не знайдена, додаємо її і зберігаємо
             if (this.state.currentUser && !this.state.currentUser.found_easter_eggs.includes(eggName)) {
                 this.state.currentUser.found_easter_eggs.push(eggName);
-                this.updateEasterEggIcon(eggName); // Оновлюємо іконку в профілі
-                this.saveFoundEasterEggs(); // Зберігаємо на сервері
+                this.updateEasterEggIcon(eggName);
+                this.saveFoundEasterEggs();
             }
         },
 
 
         stopAllMusic() {
-            // Якщо нічого не грає і дощу немає, нічого не робимо
             if (!this.state.isMusicPlaying && !this.state.isRaining) return;
 
-            // Зупиняємо всі аудіоплеєри і скидаємо час відтворення
             for (const key in this.elements.audio) {
                 this.elements.audio[key].pause();
                 this.elements.audio[key].currentTime = 0;
@@ -1386,25 +1297,21 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.isMusicPlaying = false;
             this.state.currentMusicPlayer = null;
 
-            // Прибираємо анімацію з кнопки музики
             const musicBtn = document.getElementById('music-control-button');
             if (musicBtn) {
                 musicBtn.classList.remove('playing');
             }
 
-            // Оновлюємо слайдер гучності в налаштуваннях
              if (document.getElementById('settings-screen-active')) {
                  this.renderVolumeSlider();
              }
 
-            // Зупиняємо дощ
             this.stopParticleRain();
         },
 
         async saveFoundEasterEggs() {
             if (!this.state.currentUser) return;
             try {
-                // Відправляємо оновлений список знайдених пасхалок на сервер
                 await fetch('/api/settings/save_easter_eggs', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1417,26 +1324,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         updateEasterEggIcon(eggName) {
-             // Знаходимо поточний активний екран
              const currentScreen = document.querySelector('.screen.entering, .screen:not(.exiting)');
              if (currentScreen) {
-                 // Знаходимо іконку пасхалки в контейнері #easter-egg-icons (у профілі)
                  const profileIcon = currentScreen.querySelector(`#easter-egg-icons .easter-egg-icon[data-egg="${eggName}"]`);
                   if (profileIcon) {
-                     profileIcon.classList.add('found'); // Додаємо клас 'found'
+                     profileIcon.classList.add('found');
                   }
              }
 
-             // Знаходимо *іншу* іконку цієї пасхалки (не в контейнері #easter-egg-icons)
-             // Наприклад, #gold-easter-egg у налаштуваннях
              const specificIcon = document.querySelector(`[data-egg="${eggName}"]:not(.easter-egg-icon)`);
-              // Перевіряємо, чи вона видима (offsetParent !== null)
               if (specificIcon && specificIcon.offsetParent !== null) {
-                 specificIcon.classList.add('found'); // Додаємо клас 'found'
+                 specificIcon.classList.add('found');
              }
         },
 
-        // Встановлює гучність для всіх аудіоплеєрів
         setVolume(volume) {
             const vol = parseFloat(volume);
             for (const key in this.elements.audio) {
@@ -1444,16 +1345,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        // Зберігає гучність у localStorage
         saveVolume(volume) {
             localStorage.setItem('volumeLevel', volume);
         },
 
-        // Завантажує гучність з localStorage і застосовує її
         loadVolume() {
             const savedVolume = localStorage.getItem('volumeLevel') || '1';
             this.setVolume(savedVolume);
-             // Оновлюємо повзунок у налаштуваннях, якщо він існує
              const settingsSlider = document.getElementById('volume-slider-settings');
              if (settingsSlider) {
                  settingsSlider.value = savedVolume;
@@ -1461,67 +1359,58 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         startParticleRain(particleName) {
-            if (this.state.isRaining) this.stopParticleRain(); // Зупиняємо попередній дощ
+            if (this.state.isRaining) this.stopParticleRain();
             this.state.isRaining = true;
-            this.state.lastParticleTimestamp = 0; // Скидаємо таймер
+            this.state.lastParticleTimestamp = 0;
             this.state.currentParticleType = particleName;
-            // Запускаємо цикл анімації
             this.state.animationFrameId = requestAnimationFrame(this.particleRainLoop.bind(this));
         },
 
         particleRainLoop(timestamp) {
-            if (!this.state.isRaining) return; // Зупиняємо цикл, якщо дощ вимкнено
+            if (!this.state.isRaining) return;
 
-            const PARTICLE_INTERVAL = 120; // Інтервал між появою частинок (мс)
-            // Якщо пройшло достатньо часу з моменту появи останньої частинки
+            const PARTICLE_INTERVAL = 120;
             if (timestamp - this.state.lastParticleTimestamp > PARTICLE_INTERVAL) {
-                this.state.lastParticleTimestamp = timestamp; // Оновлюємо час
+                this.state.lastParticleTimestamp = timestamp;
 
-                // Створюємо нову частинку
                 const particle = document.createElement('div');
                 particle.classList.add('falling-particle');
-                particle.style.backgroundImage = `url('/static/${this.state.currentParticleType}.png')`; // Встановлюємо зображення
+                particle.style.backgroundImage = `url('/static/${this.state.currentParticleType}.png')`;
 
-                // Задаємо випадкові розмір, тривалість падіння та прозорість
-                const size = Math.random() * 10 + 10; // Розмір від 10 до 20px
-                const duration = Math.random() * 5 + 7; // Тривалість від 7 до 12 сек
+                const size = Math.random() * 10 + 10;
+                const duration = Math.random() * 5 + 7;
 
                 particle.style.width = `${size}px`;
                 particle.style.height = `${size}px`;
-                particle.style.left = `${Math.random() * 100}vw`; // Випадкова позиція по горизонталі
-                particle.style.animationDuration = `${duration}s`; // Випадкова тривалість анімації
-                particle.style.opacity = Math.random() * 0.4 + 0.4; // Випадкова напівпрозорість
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.animationDuration = `${duration}s`;
+                particle.style.opacity = Math.random() * 0.4 + 0.4;
 
-                // Додаємо частинку на сторінку
                 this.elements.particleRainContainer.appendChild(particle);
 
-                // Видаляємо частинку після завершення анімації
                 setTimeout(() => {
                     particle.remove();
                 }, duration * 1000);
             }
 
-            // Плануємо наступний кадр анімації
             this.state.animationFrameId = requestAnimationFrame(this.particleRainLoop.bind(this));
         },
 
         stopParticleRain() {
             this.state.isRaining = false;
             this.state.currentParticleType = null;
-            // Зупиняємо цикл анімації
             if (this.state.animationFrameId) {
                 cancelAnimationFrame(this.state.animationFrameId);
                 this.state.animationFrameId = null;
             }
 
-            // Плавно ховаємо та видаляємо всі існуючі частинки
             this.elements.particleRainContainer.querySelectorAll('.falling-particle').forEach(el => {
                 el.style.transition = 'opacity 0.5s ease-out';
                 el.style.opacity = '0';
-                setTimeout(() => el.remove(), 500); // Видаляємо через 0.5 сек
+                setTimeout(() => el.remove(), 500);
             });
         }
     };
 
-    app.init(); // Запускаємо додаток
+    app.init();
 });
