@@ -16,13 +16,16 @@
 </head>
 <body>
     <header id="main-header">
-        <div id="lang-switcher">
-            <div id="current-lang-btn" class="flag-icon flag-ua"></div>
-            <div id="lang-options">
-                <div class="flag-icon flag-ua" data-lang="ua"></div>
-                <div class="flag-icon flag-us" data-lang="en"></div>
-                <div class="flag-icon flag-ru" data-lang="ru"></div>
-                <div id="redstone-easter-egg" data-egg="redstone"></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button id="global-back-btn" style="display: none; padding: 5px 12px; font-size: 20px;">&#8592;</button>
+            <div id="lang-switcher">
+                <div id="current-lang-btn" class="flag-icon flag-ua"></div>
+                <div id="lang-options">
+                    <div class="flag-icon flag-ua" data-lang="ua"></div>
+                    <div class="flag-icon flag-us" data-lang="en"></div>
+                    <div class="flag-icon flag-ru" data-lang="ru"></div>
+                    <div id="redstone-easter-egg" data-egg="redstone"></div>
+                </div>
             </div>
         </div>
         <div class="logo" data-screen="main-menu-screen" style="cursor: pointer;">CzechBuddy</div>
@@ -221,6 +224,7 @@
         <div id="training-screen">
             <div class="training-header">
                 <div class="training-progress"></div>
+                <div class="training-score-display"></div>
             </div>
             <div class="training-word"></div>
             <form class="training-form">

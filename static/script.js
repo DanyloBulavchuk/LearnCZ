@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             globalSearchTimeout: null,
 
             isTransitioning: false,
+            screenHistory: [], // ДОДАНО ДЛЯ СТРІЛКИ НАЗАД
 
             currentTraining: {
                 words: [], index: 0, results: [], mode: '',
@@ -77,11 +78,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const target = e.target.closest('[data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn, .leaderboard-item, .macan-egg-item');
+                const target = e.target.closest('#global-back-btn, [data-screen], [data-action], [data-lang], [data-egg], .char-btn, .shift-btn, .leaderboard-item, .macan-egg-item');
 
                 if (!target) {
                     if (!this.elements.langSwitcher.contains(e.target)) {
                         this.elements.langOptions.classList.remove('visible');
+                    }
+                    return;
+                }
+
+                if (target.id === 'global-back-btn') {
+                    if (this.state.screenHistory.length > 0) {
+                        const prevScreen = this.state.screenHistory.pop();
+                        this.navigateTo(prevScreen, true);
                     }
                     return;
                 }
@@ -152,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  }
              });
 
-
             document.body.addEventListener('change', (e) => {
                 const target = e.target;
                 if (target.id === 'theme-checkbox') {
@@ -191,13 +199,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
 
-        navigateTo(screenId) {
+        navigateTo(screenId, isBack = false) {
             if (this.state.isTransitioning) {
-                 console.log(`Navigation to ${screenId} blocked: Transition already in progress.`);
                  return;
             }
             this.state.isTransitioning = true;
-            console.log(`Starting navigation to ${screenId}. isTransitioning = true.`);
+
+            const oldScreen = this.elements.appContainer.querySelector('.screen');
+            const currentScreenId = oldScreen ? oldScreen.id.replace('-active', '') : null;
+
+            // Логіка для глобальної стрілочки "Назад"
+            const noHistoryScreens = ['welcome-screen', 'login-screen', 'register-screen', 'main-menu-screen'];
+            if (!isBack && currentScreenId && !noHistoryScreens.includes(currentScreenId)) {
+                this.state.screenHistory.push(currentScreenId);
+            }
+            if (noHistoryScreens.includes(screenId)) {
+                this.state.screenHistory = []; // Очищуємо історію, якщо ми в головному меню
+            }
+
+            const globalBackBtn = document.getElementById('global-back-btn');
+            if (globalBackBtn) {
+                if (noHistoryScreens.includes(screenId) || this.state.screenHistory.length === 0) {
+                    globalBackBtn.style.display = 'none';
+                } else {
+                    globalBackBtn.style.display = 'block';
+                }
+            }
 
             if (this.elements.profileButton) {
                 this.elements.profileButton.disabled = (screenId === 'profile-screen' || screenId === 'view-profile-screen');
@@ -218,19 +245,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const checkTransitionDone = () => {
                 if (oldScreenRemoved && newScreenEntered) {
-                    console.log(`Navigation to ${screenId} finished. isTransitioning = false.`);
                     this.state.isTransitioning = false;
                 }
             };
 
-            const oldScreen = this.elements.appContainer.querySelector('.screen');
             if (oldScreen) {
                 oldScreen.classList.remove('entering');
                 oldScreen.classList.add('exiting');
                 oldScreen.addEventListener('animationend', () => {
                     oldScreen.remove();
                     oldScreenRemoved = true;
-                    console.log("Old screen removed.");
                     checkTransitionDone();
                 }, { once: true });
             } else {
@@ -247,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 newScreen.addEventListener('animationend', (e) => {
                     if (e.animationName === 'fadeIn') {
                         newScreenEntered = true;
-                        console.log("New screen entered.");
                         checkTransitionDone();
                     }
                 }, { once: true });
@@ -255,7 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.elements.appContainer.appendChild(newScreen);
                 this.onScreenLoad(screenId);
             } else {
-                console.error(`Template not found for screenId: ${screenId}`);
                 newScreenEntered = true;
                 checkTransitionDone();
             }
@@ -1052,12 +1074,16 @@ document.addEventListener('DOMContentLoaded', () => {
             this.state.isCheckingAnswer = false;
 
             const T = this.state.texts[this.state.currentLang];
-            const { index, words, direction } = this.state.currentTraining;
+            const { index, words, direction, results } = this.state.currentTraining;
             const wordData = words[index];
 
+            // Оновлення прогресу та рахунку в реальному часі
             screen.querySelector('.training-progress').textContent = `${T.word} ${index + 1} ${T.of} ${words.length}`;
-            const langKey = this.state.currentLang.toUpperCase();
+            
+            const correctAnswersCount = results.filter(r => r.isCorrect).length;
+            screen.querySelector('.training-score-display').textContent = `${T.correct_score_label} ${correctAnswersCount}/${words.length}`;
 
+            const langKey = this.state.currentLang.toUpperCase();
             const questionWordRaw = direction === 'cz_to_lang' ? wordData.CZ : (wordData[langKey] || wordData.UA);
             const questionWordClean = questionWordRaw.replace(/\s*\(.*?\)\s*/g, '').trim();
 

@@ -259,7 +259,8 @@ TEXTS = {
         'search_word': "Пошук слова...", 'view_profile_title': "Профіль користувача",
         'back_to_my_profile': "Повернутися у мій профіль",
         'global_search_placeholder': "Пошук по всіх словах...",
-        'settings_security': "Безпека", 'settings_profile': "Профіль", 'settings_sound': "Звук"
+        'settings_security': "Безпека", 'settings_profile': "Профіль", 'settings_sound': "Звук",
+        'correct_score_label': "Правильно:"
     },
     'en': {
         'welcome': "Welcome!", 'login': "Login", 'register': "Register",
@@ -287,7 +288,8 @@ TEXTS = {
         'search_word': "Search word...", 'view_profile_title': "User Profile",
         'back_to_my_profile': "Back to My Profile",
         'global_search_placeholder': "Search all words...",
-        'settings_security': "Security", 'settings_profile': "Profile", 'settings_sound': "Sound"
+        'settings_security': "Security", 'settings_profile': "Profile", 'settings_sound': "Sound",
+        'correct_score_label': "Correct:"
     },
     'ru': {
         'welcome': "Добро пожаловать!", 'login': "Вход", 'register': "Регистрация",
@@ -315,7 +317,8 @@ TEXTS = {
         'search_word': "Поиск слова...", 'view_profile_title': "Профиль пользователя",
         'back_to_my_profile': "Вернуться в мой профиль",
         'global_search_placeholder': "Поиск по всем словам...",
-        'settings_security': "Безопасность", 'settings_profile': "Профиль", 'settings_sound': "Звук"
+        'settings_security': "Безопасность", 'settings_profile': "Профиль", 'settings_sound': "Звук",
+        'correct_score_label': "Верно:"
     }
 }
 TEXTS['ua']['cz_to_lang'] = "Чеська → Українська"; TEXTS['ua']['lang_to_cz'] = "Українська → Чеська"

@@ -1270,3 +1270,44 @@ html.light-theme #music-control-button img.diamond { opacity: 1; }
         width: 90%;
     }
 }
+
+#settings-screen > .btn-danger,
+#settings-screen > .back-button {
+    align-self: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+#global-back-btn {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+html.light-theme #global-back-btn {
+    border-color: var(--border-color);
+}
+#global-back-btn:hover {
+    background-color: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+}
+
+.training-score-display {
+    font-weight: 900;
+    font-size: 1.2rem;
+    color: var(--accent-color);
+    background: rgba(159, 80, 255, 0.1);
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(159, 80, 255, 0.3);
+}
+html.light-theme .training-score-display {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.3);
+}
