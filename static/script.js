@@ -501,17 +501,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         handleAction(action, dataset) {
             const actions = {
-                'save-and-exit': () => this.saveTrainingProgress(),
-                'continue-saved-training': () => {
-                    if (this.state.currentUser && this.state.currentUser.saved_session) {
-                        try {
-                            this.state.currentTraining = JSON.parse(this.state.currentUser.saved_session);
-                            this.navigateTo('training-screen');
-                        } catch(e) {
-                            console.error("Помилка відновлення сесії", e);
-                        }
-                    }
-                },
                 'start-random-training': () => {
                     this.state.currentTraining.mode = 'random';
                     this.navigateTo('direction-selection-screen');
@@ -525,7 +514,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.navigateTo('lecture-selection-screen');
                 },
                 'select-lecture': (ds) => {
-                    // lectureNum is string now ("A1.1", "1", "0")
                     const lectureNum = ds.lecture; 
                     const btn = document.querySelector(`#lecture-buttons-container [data-lecture="${lectureNum}"]`);
                     if (!btn) return;
@@ -556,7 +544,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.state.currentTraining.direction = ds.direction;
                     this.startTraining();
                 },
-                'finish-training': () => this.navigateTo('results-screen'),
+                'finish-training': () => {
+                    this.clearTrainingProgress(); // ТЕПЕР ПРОЦЕС ПОВНІСТЮ ОЧИЩУЄТЬСЯ ПРИ ЗАВЕРШЕННІ
+                    this.navigateTo('results-screen');
+                },
+                'save-and-exit': () => this.saveTrainingProgress(),
+                'continue-saved-training': () => {
+                    if (this.state.currentUser && this.state.currentUser.saved_session) {
+                        try {
+                            this.state.currentTraining = JSON.parse(this.state.currentUser.saved_session);
+                            this.navigateTo('training-screen');
+                        } catch(e) {
+                            console.error("Помилка відновлення сесії", e);
+                        }
+                    }
+                },
                 'logout': () => this.handleLogout(),
                 'back-to-dict-select': () => {
                     this.state.viewMode = 'dictionary';
