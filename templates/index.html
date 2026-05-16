@@ -83,6 +83,7 @@
         <div id="main-menu-screen">
             <h1 class="title" data-i18n="main_menu_title"></h1>
             <div class="button-group">
+                <button class="btn btn-start-training" data-action="continue-saved-training" data-i18n="continue_training" style="display: none; background-color: var(--success-color); color: #000;"></button>
                 <button class="btn" data-action="start-random-training" data-i18n="random_training"></button>
                 <button class="btn" data-action="start-specific-training" data-i18n="specific_training"></button>
                 <button class="btn" data-action="show-dictionary" data-i18n="dictionary"></button>
@@ -234,7 +235,8 @@
             <div id="special-chars-keyboard"></div>
             <div class="training-buttons">
                 <button class="btn training-check-btn" data-i18n="check"></button>
-                <button class="btn btn-secondary training-exit-btn" data-action="finish-training" data-i18n="finish_training"></button>
+                <button class="btn btn-secondary" data-action="save-and-exit" data-i18n="save_and_exit"></button>
+                <button class="btn btn-danger training-exit-btn" data-action="finish-training" data-i18n="finish_training"></button>
             </div>
         </div>
 

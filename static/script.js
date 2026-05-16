@@ -315,6 +315,10 @@ document.addEventListener('DOMContentLoaded', () => {
             switch (screenId) {
                 case 'main-menu-screen':
                     this.updateMusicButtonForTheme(localStorage.getItem('theme') === 'light');
+                    const continueBtn = activeScreen.querySelector('[data-action="continue-saved-training"]');
+                    if (continueBtn) {
+                        continueBtn.style.display = (this.state.currentUser && this.state.currentUser.saved_session) ? 'block' : 'none';
+                    }
                     break;
                 case 'profile-screen':
                     this.renderProfile(this.state.currentUser);
@@ -497,6 +501,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         handleAction(action, dataset) {
             const actions = {
+                'save-and-exit': () => this.saveTrainingProgress(),
+                'continue-saved-training': () => {
+                    if (this.state.currentUser && this.state.currentUser.saved_session) {
+                        try {
+                            this.state.currentTraining = JSON.parse(this.state.currentUser.saved_session);
+                            this.navigateTo('training-screen');
+                        } catch(e) {
+                            console.error("Помилка відновлення сесії", e);
+                        }
+                    }
+                },
                 'start-random-training': () => {
                     this.state.currentTraining.mode = 'random';
                     this.navigateTo('direction-selection-screen');
@@ -1062,11 +1077,42 @@ document.addEventListener('DOMContentLoaded', () => {
             this.navigateTo('training-screen');
         },
 
+        async saveTrainingProgress() {
+            const sessionData = this.state.currentTraining;
+            try {
+                const response = await fetch('/api/training/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_data: sessionData })
+                });
+                if (response.ok) {
+                    if (this.state.currentUser) {
+                        this.state.currentUser.saved_session = JSON.stringify(sessionData);
+                    }
+                    alert(this.state.texts[this.state.currentLang].progress_saved || "Прогрес збережено!");
+                    this.navigateTo('main-menu-screen');
+                }
+            } catch (e) {
+                console.error("Помилка збереження", e);
+            }
+        },
+
+        async clearTrainingProgress() {
+            if (!this.state.currentUser || !this.state.currentUser.saved_session) return;
+            try {
+                await fetch('/api/training/clear', { method: 'POST' });
+                this.state.currentUser.saved_session = null;
+            } catch (e) {
+                console.error("Помилка очищення", e);
+            }
+        },
+
         renderCurrentWord() {
             const screen = document.getElementById('training-screen-active');
             if (!screen) return;
 
             if (this.state.currentTraining.index >= this.state.currentTraining.words.length) {
+                this.clearTrainingProgress();
                 this.navigateTo('results-screen');
                 return;
             }

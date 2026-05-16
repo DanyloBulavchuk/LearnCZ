@@ -146,7 +146,6 @@ def init_db():
         return
     
     with conn.cursor() as cur:
-        # Створення таблиць
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -156,7 +155,8 @@ def init_db():
                 xp INTEGER DEFAULT 0,
                 gender VARCHAR(1) DEFAULT 'N',
                 avatar VARCHAR(255),
-                found_easter_eggs TEXT DEFAULT '[]'
+                found_easter_eggs TEXT DEFAULT '[]',
+                saved_session TEXT DEFAULT NULL
             );
         """)
         
@@ -172,62 +172,37 @@ def init_db():
             );
         """)
         
-        # Міграції колонок
         try:
             cur.execute("ALTER TABLE words ALTER COLUMN lecture TYPE TEXT;")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(1) DEFAULT 'N';")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255);")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS found_easter_eggs TEXT DEFAULT '[]';")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS saved_session TEXT DEFAULT NULL;")
             cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS streak_count;")
             cur.execute("ALTER TABLE users DROP COLUMN IF EXISTS last_streak_date;")
             conn.commit()
         except psycopg2.Error as e:
-            print(f"Помилка при оновленні структури таблиць: {e}")
+            print(f"Помилка при оновленні структури: {e}")
             conn.rollback()
 
-        # --- ЛОГІКА ПЕРЕЗАВАНТАЖЕННЯ СЛІВ ---
         cur.execute("SELECT COUNT(*) FROM words;")
         word_count = cur.fetchone()[0]
         
         should_reload = FORCE_RELOAD_WORDS
-        
         if should_reload:
-            print("УВАГА: Виконується примусове очищення таблиці words (FORCE_RELOAD_WORDS = True).")
             cur.execute("TRUNCATE TABLE words RESTART IDENTITY;")
-            word_count = 0 # Тепер таблиця порожня, підемо в блок імпорту
+            word_count = 0 
 
         if word_count == 0:
-            print("Таблиця 'words' порожня або очищена. Запускаю імпорт з Excel-файлів...")
             try:
                 words_to_import = _load_all_words_from_excel()
-                if not words_to_import:
-                    print("ПОМИЛКА: Не знайдено слів для імпорту.")
-                else:
-                    insert_query = """
-                        INSERT INTO words (lecture, cz, ua, ru, en, is_macan_easter_egg) 
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                    """
-                    data_to_insert = [
-                        (
-                            w.get('lecture'), 
-                            w.get('CZ'), 
-                            w.get('UA'), 
-                            w.get('RU', ''), 
-                            w.get('EN', ''), 
-                            w.get('is_macan_easter_egg', False)
-                        ) for w in words_to_import
-                    ]
-                    
+                if words_to_import:
+                    insert_query = "INSERT INTO words (lecture, cz, ua, ru, en, is_macan_easter_egg) VALUES (%s, %s, %s, %s, %s, %s)"
+                    data_to_insert = [(w.get('lecture'), w.get('CZ'), w.get('UA'), w.get('RU', ''), w.get('EN', ''), w.get('is_macan_easter_egg', False)) for w in words_to_import]
                     cur.executemany(insert_query, data_to_insert)
                     conn.commit()
-                    print(f"Успішно імпортовано {len(data_to_insert)} слів до бази даних.")
-                    
             except Exception as e:
-                print(f"ПОМИЛКА під час імпорту слів: {e}")
                 conn.rollback()
-        else:
-            print(f"Таблиця 'words' вже містить {word_count} слів. Імпорт пропущено.")
-
     conn.close()
 
 AVATARS_DIR = os.path.join(app.static_folder, 'avatars')
@@ -260,6 +235,7 @@ TEXTS = {
         'back_to_my_profile': "Повернутися у мій профіль",
         'global_search_placeholder': "Пошук по всіх словах...",
         'settings_security': "Безпека", 'settings_profile': "Профіль", 'settings_sound': "Звук",
+        'save_and_exit': "Зберегти та вийти", 'continue_training': "Продовжити тренування", 'progress_saved': "Прогрес успішно збережено!",
         'correct_score_label': "Правильно:"
     },
     'en': {
@@ -289,6 +265,7 @@ TEXTS = {
         'back_to_my_profile': "Back to My Profile",
         'global_search_placeholder': "Search all words...",
         'settings_security': "Security", 'settings_profile': "Profile", 'settings_sound': "Sound",
+        'save_and_exit': "Save and Exit", 'continue_training': "Continue Training", 'progress_saved': "Progress saved successfully!",
         'correct_score_label': "Correct:"
     },
     'ru': {
@@ -318,6 +295,7 @@ TEXTS = {
         'back_to_my_profile': "Вернуться в мой профиль",
         'global_search_placeholder': "Поиск по всем словам...",
         'settings_security': "Безопасность", 'settings_profile': "Профиль", 'settings_sound': "Звук",
+        'save_and_exit': "Сохранить и выйти", 'continue_training': "Продолжить обучение", 'progress_saved': "Прогресс успешно сохранен!",
         'correct_score_label': "Верно:"
     }
 }
@@ -405,18 +383,12 @@ def login():
     conn = get_db_connection()
     if conn is None: abort(500)
     with conn.cursor() as cur:
-        cur.execute("SELECT original_case, pin, xp, gender, avatar, found_easter_eggs FROM users WHERE username = %s;", (username.lower(),))
+        cur.execute("SELECT original_case, pin, xp, gender, avatar, found_easter_eggs, saved_session FROM users WHERE username = %s;", (username.lower(),))
         user = cur.fetchone()
     conn.close()
     if user and user[1] == pin:
         session['username'] = user[0]
-        return jsonify({"user": {
-            "username": user[0],
-            "xp": user[2],
-            "gender": user[3],
-            "avatar": user[4],
-            "found_easter_eggs": user[5]
-        }})
+        return jsonify({"user": {"username": user[0], "xp": user[2], "gender": user[3], "avatar": user[4], "found_easter_eggs": user[5], "saved_session": user[6]}})
     abort(401)
 
 @app.route('/api/logout', methods=['POST'])
@@ -432,20 +404,13 @@ def get_session():
             session.pop('username', None)
             return jsonify({"user": None})
         with conn.cursor() as cur:
-            cur.execute("SELECT xp, gender, avatar, found_easter_eggs FROM users WHERE username = %s;", (session['username'].lower(),))
+            cur.execute("SELECT xp, gender, avatar, found_easter_eggs, saved_session FROM users WHERE username = %s;", (session['username'].lower(),))
             user = cur.fetchone()
         conn.close()
         if user:
-            return jsonify({"user": {
-                "username": session['username'],
-                "xp": user[0],
-                "gender": user[1],
-                "avatar": user[2],
-                "found_easter_eggs": user[3]
-            }})
+            return jsonify({"user": {"username": session['username'], "xp": user[0], "gender": user[1], "avatar": user[2], "found_easter_eggs": user[3], "saved_session": user[4]}})
         else:
             session.pop('username', None)
-            return jsonify({"user": None})
     return jsonify({"user": None})
 
 @app.route('/api/user/<username>')
@@ -627,6 +592,29 @@ def save_easter_eggs():
     if conn is None: abort(500)
     with conn.cursor() as cur:
         cur.execute("UPDATE users SET found_easter_eggs = %s WHERE username = %s;", (eggs_json_string, user_key))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+@app.route('/api/training/save', methods=['POST'])
+def save_training():
+    if 'username' not in session: abort(401)
+    session_data = request.json.get('session_data')
+    conn = get_db_connection()
+    if conn is None: abort(500)
+    with conn.cursor() as cur:
+        cur.execute("UPDATE users SET saved_session = %s WHERE username = %s;", (json.dumps(session_data), session['username'].lower()))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success"})
+
+@app.route('/api/training/clear', methods=['POST'])
+def clear_training():
+    if 'username' not in session: abort(401)
+    conn = get_db_connection()
+    if conn is None: abort(500)
+    with conn.cursor() as cur:
+        cur.execute("UPDATE users SET saved_session = NULL WHERE username = %s;", (session['username'].lower(),))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
